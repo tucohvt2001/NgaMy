@@ -1,0 +1,30 @@
+import { Router } from 'express';
+import healthRoutes from './health.routes';
+import authRoutes from './auth.routes';
+import accountRoutes from './account.routes';
+import memberRoutes from './member.routes';
+import teamRoutes from './team.routes';
+import positionRoutes from './position.routes';
+import eventRoutes from './event.routes';
+import attendanceRoutes from './attendance.routes';
+import leaveRoutes from './leave.routes';
+import salaryRoutes from './salary.routes';
+import dashboardRoutes from './dashboard.routes';
+import reportRoutes from './report.routes';
+
+const router = Router();
+
+router.use('/', healthRoutes);
+router.use('/', authRoutes);
+router.use('/', accountRoutes);
+router.use('/', memberRoutes);
+router.use('/', teamRoutes);
+router.use('/', positionRoutes);
+router.use('/', eventRoutes);
+router.use('/', attendanceRoutes);
+router.use('/', leaveRoutes);
+router.use('/', salaryRoutes);
+router.use('/', dashboardRoutes);
+router.use('/', reportRoutes);
+
+export default router;

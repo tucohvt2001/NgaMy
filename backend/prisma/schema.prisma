@@ -1,0 +1,292 @@
+// Prisma schema - Hệ thống quản lý CLB Lân Sư Rồng Nga My Thượng
+// Dùng PostgreSQL (chạy local qua Neon/Railway free tier hoặc DB production khi deploy).
+// Lưu ý: các trường trạng thái dùng String (không dùng enum của Prisma) để không phải viết lại migration
+// khi từng chạy thử nghiệm với SQLite; giá trị hợp lệ được validate ở tầng Zod (xem src/validators)
+// và liệt kê trong src/types/enums.ts.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============ AUTH & PHÂN QUYỀN ============
+
+model Role {
+  id          String   @id @default(cuid())
+  name        String   @unique // SUPER_ADMIN, ADMIN, TEAM_LEADER, MEMBER
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users           User[]
+  rolePermissions RolePermission[]
+}
+
+model Permission {
+  id          String   @id @default(cuid())
+  code        String   @unique // vd: member:create, event:read
+  description String?
+  createdAt   DateTime @default(now())
+
+  rolePermissions RolePermission[]
+}
+
+model RolePermission {
+  id           String @id @default(cuid())
+  roleId       String
+  permissionId String
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+}
+
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  email        String   @unique
+  passwordHash String
+  memberId     String?  @unique
+  roleId       String
+  isActive     Boolean  @default(true)
+  refreshToken String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  role   Role    @relation(fields: [roleId], references: [id])
+  member Member? @relation(fields: [memberId], references: [id])
+
+  createdEvents        Event[]        @relation("EventCreatedBy")
+  confirmedAttendances Attendance[]   @relation("AttendanceConfirmedBy")
+  approvedLeaves       LeaveRequest[] @relation("LeaveApprovedBy")
+  confirmedSalaries    SalaryRecord[] @relation("SalaryConfirmedBy")
+
+  @@index([roleId])
+}
+
+// ============ NHÂN SỰ ============
+
+model Position {
+  id          String   @id @default(cuid())
+  name        String   @unique // Chủ nhiệm, Đội trưởng, Lân đầu, Lân đuôi, Trống, ...
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members       Member[]       @relation("MemberPositions")
+  eventMembers  EventMember[]
+  salaryConfigs SalaryConfig[]
+  salaryDetails SalaryDetail[]
+}
+
+model Team {
+  id          String   @id @default(cuid())
+  name        String   @unique // Đội Lân, Đội Sư, Đội Trống, Đội Nhạc, Hậu Cần
+  description String?
+  leaderId    String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  leader  Member?  @relation("TeamLeader", fields: [leaderId], references: [id])
+  members Member[] @relation("MemberTeams")
+
+  @@index([leaderId])
+}
+
+model Member {
+  id          String    @id @default(cuid())
+  memberCode  String    @unique
+  fullName    String
+  avatar      String?
+  dateOfBirth DateTime?
+  gender      String? // MALE, FEMALE, OTHER
+  phone       String?
+  address     String?
+  joinDate    DateTime?
+  status      String    @default("ACTIVE") // ACTIVE, INACTIVE, ON_LEAVE
+  bankAccount String?
+  bankName    String?
+  note        String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Một thành viên có thể thuộc nhiều đội/nhóm và đảm nhiệm nhiều chức vụ cùng lúc
+  teams     Team[]     @relation("MemberTeams")
+  positions Position[] @relation("MemberPositions")
+
+  user          User?
+  ledTeams      Team[]         @relation("TeamLeader")
+  eventMembers  EventMember[]
+  attendances   Attendance[]
+  leaveRequests LeaveRequest[]
+  salaryConfigs SalaryConfig[]
+  salaryRecords SalaryRecord[]
+
+  @@index([status])
+}
+
+// ============ HOẠT ĐỘNG ============
+
+model Event {
+  id            String    @id @default(cuid())
+  eventCode     String    @unique
+  name          String
+  eventDate     DateTime
+  startTime     DateTime?
+  endTime       DateTime?
+  location      String
+  customerName  String?
+  customerPhone String?
+  contractValue Float?
+  status        String    @default("DRAFT") // DRAFT, CONFIRMED, IN_PROGRESS, COMPLETED, CANCELLED
+  description   String?
+  createdBy     String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  creator       User           @relation("EventCreatedBy", fields: [createdBy], references: [id])
+  eventMembers  EventMember[]
+  attendances   Attendance[]
+  salaryConfigs SalaryConfig[]
+  salaryDetails SalaryDetail[]
+
+  @@index([eventDate])
+  @@index([status])
+}
+
+model EventMember {
+  id         String   @id @default(cuid())
+  eventId    String
+  memberId   String
+  positionId String
+  status     String   @default("ASSIGNED") // ASSIGNED, CONFIRMED, DECLINED, REPLACED
+  note       String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  event    Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  member   Member   @relation(fields: [memberId], references: [id])
+  position Position @relation(fields: [positionId], references: [id])
+
+  @@unique([eventId, memberId])
+  @@index([eventId])
+  @@index([memberId])
+  @@index([positionId])
+}
+
+model Attendance {
+  id           String    @id @default(cuid())
+  eventId      String
+  memberId     String
+  checkInTime  DateTime?
+  checkOutTime DateTime?
+  status       String    @default("PRESENT") // PRESENT, LATE, ABSENT_WITH_PERMISSION, ABSENT_WITHOUT_PERMISSION, REPLACED
+  note         String?
+  confirmedBy  String?
+  confirmedAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  event           Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  member          Member @relation(fields: [memberId], references: [id])
+  confirmedByUser User?  @relation("AttendanceConfirmedBy", fields: [confirmedBy], references: [id])
+
+  @@unique([eventId, memberId])
+  @@index([eventId])
+  @@index([memberId])
+  @@index([status])
+}
+
+model LeaveRequest {
+  id         String    @id @default(cuid())
+  memberId   String
+  fromDate   DateTime
+  toDate     DateTime
+  reason     String
+  status     String    @default("PENDING") // PENDING, APPROVED, REJECTED
+  approvedBy String?
+  approvedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  member   Member @relation(fields: [memberId], references: [id])
+  approver User?  @relation("LeaveApprovedBy", fields: [approvedBy], references: [id])
+
+  @@index([memberId])
+  @@index([status])
+}
+
+// ============ TIỀN CÔNG ============
+
+model SalaryConfig {
+  id         String   @id @default(cuid())
+  positionId String?
+  memberId   String?
+  eventId    String?
+  amount     Float
+  note       String?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  position Position? @relation(fields: [positionId], references: [id])
+  member   Member?   @relation(fields: [memberId], references: [id])
+  event    Event?    @relation(fields: [eventId], references: [id])
+
+  @@index([positionId])
+  @@index([memberId])
+  @@index([eventId])
+}
+
+model SalaryRecord {
+  id            String    @id @default(cuid())
+  memberId      String
+  month         Int
+  year          Int
+  totalSessions Int       @default(0)
+  baseAmount    Float     @default(0)
+  allowance     Float     @default(0)
+  bonus         Float     @default(0)
+  deduction     Float     @default(0)
+  totalAmount   Float     @default(0)
+  status        String    @default("DRAFT") // DRAFT, CONFIRMED
+  confirmedBy   String?
+  confirmedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  member          Member         @relation(fields: [memberId], references: [id])
+  confirmedByUser User?          @relation("SalaryConfirmedBy", fields: [confirmedBy], references: [id])
+  details         SalaryDetail[]
+
+  @@unique([memberId, month, year])
+  @@index([memberId])
+  @@index([status])
+  @@index([year, month])
+}
+
+model SalaryDetail {
+  id             String   @id @default(cuid())
+  salaryRecordId String
+  eventId        String?
+  positionId     String?
+  amount         Float
+  note           String?
+  createdAt      DateTime @default(now())
+
+  salaryRecord SalaryRecord @relation(fields: [salaryRecordId], references: [id], onDelete: Cascade)
+  event        Event?       @relation(fields: [eventId], references: [id])
+  position     Position?    @relation(fields: [positionId], references: [id])
+
+  @@index([salaryRecordId])
+  @@index([eventId])
+}
