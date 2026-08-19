@@ -2,6 +2,9 @@
 FROM node:20-alpine AS base
 WORKDIR /app
 
+# Cài đặt thư viện cần thiết cho Prisma
+RUN apk update && apk add --no-cache openssl libc6-compat
+
 FROM base AS deps
 COPY package.json package-lock.json ./
 RUN npm ci
