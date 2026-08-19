@@ -11,18 +11,23 @@ import { errorHandler, notFoundHandler } from './middlewares/errorHandler';
 export function createApp(): Application {
   const app: Application = express();
 
-  const allowedOrigins = env.corsOrigin.split(',').map((origin) => origin.trim());
+  const allowedOrigins = env.corsOrigin.split(',').map((origin) => origin.trim().replace(/\/$/, ''));
 
   app.use(helmet());
   app.use(
     cors({
       origin: (origin, callback) => {
         // Cho phép request không có origin (Postman, server-to-server) và các origin được cấu hình
-        if (!origin || allowedOrigins.includes(origin)) {
+        if (
+          !origin ||
+          allowedOrigins.includes('*') ||
+          allowedOrigins.includes(origin) ||
+          allowedOrigins.includes(origin.replace(/\/$/, ''))
+        ) {
           callback(null, true);
           return;
         }
-        callback(new Error('Not allowed by CORS'));
+        callback(new Error(`Not allowed by CORS: ${origin}`));
       },
       credentials: true,
     }),

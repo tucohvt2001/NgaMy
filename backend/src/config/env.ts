@@ -31,7 +31,7 @@ export const env: EnvConfig = {
   jwtExpiresIn: getEnv('JWT_EXPIRES_IN', '15m'),
   jwtRefreshSecret: getEnv('JWT_REFRESH_SECRET', 'dev_refresh_secret_change_me'),
   jwtRefreshExpiresIn: getEnv('JWT_REFRESH_EXPIRES_IN', '7d'),
-  corsOrigin: getEnv('CORS_ORIGIN', 'http://localhost:3000'),
+  corsOrigin: getEnv('CORS_ORIGIN', 'http://localhost:3000,https://nga-my.vercel.app,https://ngamy-api.onrender.com'),
   loginRateLimitWindowMs: Number(getEnv('LOGIN_RATE_LIMIT_WINDOW_MS', '900000')),
   loginRateLimitMax: Number(getEnv('LOGIN_RATE_LIMIT_MAX', '10')),
 };
