@@ -2,7 +2,7 @@ import { prisma } from '../config/prisma';
 import { AppError } from '../utils/AppError';
 import { eventMemberRepository } from '../repositories/eventMember.repository';
 import { eventRepository } from '../repositories/event.repository';
-import { CreateEventMemberInput, UpdateEventMemberInput } from '../validators/eventMember.validator';
+import { CreateEventMemberInput, UpdateEventMemberInput, BatchAssignMemberInput } from '../validators/eventMember.validator';
 
 // Tính các cảnh báo nghiệp vụ khi phân công thành viên vào sự kiện (không chặn thao tác, chỉ cảnh báo)
 async function buildWarnings(memberId: string, positionId: string, eventId: string, eventDate: Date) {
@@ -76,6 +76,53 @@ export const eventMemberService = {
     });
 
     return { eventMember, warnings };
+  },
+
+  async batchAssign(eventId: string, input: BatchAssignMemberInput) {
+    const event = await eventRepository.findById(eventId);
+    if (!event) {
+      throw AppError.notFound('Không tìm thấy sự kiện');
+    }
+
+    const results: { eventMember: any; warnings: string[] }[] = [];
+    const allWarnings: { memberName?: string; warnings: string[] }[] = [];
+
+    for (const item of input.assignments) {
+      const existing = await eventMemberRepository.findOne(eventId, item.memberId);
+      if (existing) {
+        const updated = await eventMemberRepository.update(eventId, item.memberId, {
+          positionId: item.positionId,
+          note: item.note,
+          status: item.status,
+        });
+        const warnings = await buildWarnings(item.memberId, item.positionId, eventId, event.eventDate);
+        results.push({ eventMember: updated, warnings });
+        if (warnings.length > 0) {
+          allWarnings.push({ memberName: updated.member.fullName, warnings });
+        }
+        continue;
+      }
+
+      const warnings = await buildWarnings(item.memberId, item.positionId, eventId, event.eventDate);
+      const eventMember = await eventMemberRepository.create({
+        eventId,
+        memberId: item.memberId,
+        positionId: item.positionId,
+        status: item.status ?? 'ASSIGNED',
+        note: item.note,
+      });
+
+      results.push({ eventMember, warnings });
+      if (warnings.length > 0) {
+        allWarnings.push({ memberName: eventMember.member.fullName, warnings });
+      }
+    }
+
+    return {
+      count: results.length,
+      items: results.map((r) => r.eventMember),
+      warnings: allWarnings,
+    };
   },
 
   async update(eventId: string, memberId: string, input: UpdateEventMemberInput) {

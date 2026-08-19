@@ -14,6 +14,11 @@ export const eventMemberController = {
     sendSuccess(res, result, 'Phân công thành viên thành công', 201);
   }),
 
+  batchAssign: asyncHandler(async (req: Request, res: Response) => {
+    const result = await eventMemberService.batchAssign(req.params.eventId, req.body);
+    sendSuccess(res, result, `Đã phân công ${result.count} thành viên`, 201);
+  }),
+
   update: asyncHandler(async (req: Request, res: Response) => {
     const result = await eventMemberService.update(req.params.eventId, req.params.memberId, req.body);
     sendSuccess(res, result, 'Cập nhật phân công thành công');

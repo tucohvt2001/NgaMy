@@ -74,6 +74,23 @@ export function useAssignMember(eventId: string) {
   });
 }
 
+export function useBatchAssignMembers(eventId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (assignments: AssignMemberInput[]) => eventMemberService.batchAssign(eventId, assignments),
+    onSuccess: (data) => {
+      toast.success(`Đã phân công thành công ${data.count} thành viên`);
+      if (data.warnings && data.warnings.length > 0) {
+        data.warnings.forEach((w) => {
+          w.warnings.forEach((warn) => toast.warning(`${w.memberName ? `${w.memberName}: ` : ''}${warn}`));
+        });
+      }
+      queryClient.invalidateQueries({ queryKey: ['events', eventId, 'members'] });
+    },
+    onError: (error) => toast.error(getErrorMessage(error)),
+  });
+}
+
 export function useRemoveAssignment(eventId: string) {
   const queryClient = useQueryClient();
   return useMutation({

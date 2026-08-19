@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { LoadingState, EmptyState } from '@/components/tables/States';
 import { ConfirmDialog } from '@/components/forms/ConfirmDialog';
 import { AssignMemberDialog } from '@/components/forms/AssignMemberDialog';
-import { useAssignMember, useEventMembers, useEvents, useRemoveAssignment } from '@/hooks/useEvents';
+import { useBatchAssignMembers, useEventMembers, useEvents, useRemoveAssignment } from '@/hooks/useEvents';
 import { EventMember } from '@/types/models';
 import { STATUS_LABELS } from '@/types/enums';
 import { AssignMemberInput } from '@/services/event.service';
@@ -25,11 +25,11 @@ function AssignmentsContent() {
   const [formOpen, setFormOpen] = useState(false);
   const [confirmAssignment, setConfirmAssignment] = useState<EventMember | null>(null);
 
-  const assignMutation = useAssignMember(eventId ?? '');
+  const batchAssignMutation = useBatchAssignMembers(eventId ?? '');
   const removeMutation = useRemoveAssignment(eventId ?? '');
 
-  const handleSubmit = (values: AssignMemberInput) => {
-    assignMutation.mutate(values, { onSuccess: () => setFormOpen(false) });
+  const handleSubmit = (values: AssignMemberInput[]) => {
+    batchAssignMutation.mutate(values, { onSuccess: () => setFormOpen(false) });
   };
 
   return (
@@ -108,7 +108,8 @@ function AssignmentsContent() {
         open={formOpen}
         onOpenChange={setFormOpen}
         onSubmit={handleSubmit}
-        isLoading={assignMutation.isPending}
+        isLoading={batchAssignMutation.isPending}
+        existingMemberIds={assignments?.map((a) => a.memberId) ?? []}
       />
 
       <ConfirmDialog

@@ -71,6 +71,17 @@ export const eventMemberService = {
     return res.data.data;
   },
 
+  async batchAssign(eventId: string, assignments: AssignMemberInput[]) {
+    const res = await apiClient.post<
+      ApiSuccessResponse<{
+        count: number;
+        items: EventMember[];
+        warnings: { memberName?: string; warnings: string[] }[];
+      }>
+    >(`/events/${eventId}/members/batch`, { assignments });
+    return res.data.data;
+  },
+
   async update(eventId: string, memberId: string, input: Partial<AssignMemberInput>) {
     const res = await apiClient.put<ApiSuccessResponse<EventMember>>(
       `/events/${eventId}/members/${memberId}`,

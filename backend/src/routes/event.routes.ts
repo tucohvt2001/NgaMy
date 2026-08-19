@@ -5,7 +5,11 @@ import { authenticate } from '../middlewares/authenticate';
 import { authorize } from '../middlewares/authorize';
 import { validate } from '../middlewares/validate';
 import { createEventSchema, updateEventSchema } from '../validators/event.validator';
-import { createEventMemberSchema, updateEventMemberSchema } from '../validators/eventMember.validator';
+import {
+  createEventMemberSchema,
+  updateEventMemberSchema,
+  batchAssignMemberSchema,
+} from '../validators/eventMember.validator';
 import { PERMISSIONS } from '../types/enums';
 
 const router = Router();
@@ -83,6 +87,24 @@ router
     authorize(PERMISSIONS.ASSIGNMENT_MANAGE),
     validate({ body: createEventMemberSchema }),
     eventMemberController.assign,
+  );
+
+/**
+ * @openapi
+ * /events/{eventId}/members/batch:
+ *   post:
+ *     summary: Phân công đồng thời nhiều thành viên và vai trò vào sự kiện
+ *     tags: [Assignments]
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       201: { description: Phân công nhiều thành viên thành công }
+ */
+router
+  .route('/events/:eventId/members/batch')
+  .post(
+    authorize(PERMISSIONS.ASSIGNMENT_MANAGE),
+    validate({ body: batchAssignMemberSchema }),
+    eventMemberController.batchAssign,
   );
 
 /**
