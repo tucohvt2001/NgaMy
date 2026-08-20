@@ -5,6 +5,28 @@ import { attendanceService } from '../services/attendance.service';
 import { AppError } from '../utils/AppError';
 
 export const attendanceController = {
+  getEventSheet: asyncHandler(async (req: Request, res: Response) => {
+    const result = await attendanceService.getEventAttendanceSheet(req.params.eventId);
+    sendSuccess(res, result, 'Lấy bảng chấm công sự kiện thành công');
+  }),
+
+  recordByAdmin: asyncHandler(async (req: Request, res: Response) => {
+    if (!req.user) throw AppError.unauthorized('Chưa xác thực');
+    const attendance = await attendanceService.recordByAdmin(req.user.id, req.body);
+    sendSuccess(res, attendance, 'Chấm công thành công');
+  }),
+
+  batchRecordByAdmin: asyncHandler(async (req: Request, res: Response) => {
+    if (!req.user) throw AppError.unauthorized('Chưa xác thực');
+    const results = await attendanceService.batchRecordByAdmin(req.user.id, req.body);
+    sendSuccess(res, results, 'Lưu bảng chấm công thành công');
+  }),
+
+  remove: asyncHandler(async (req: Request, res: Response) => {
+    await attendanceService.delete(req.params.id);
+    sendSuccess(res, null, 'Xóa bản ghi chấm công thành công');
+  }),
+
   checkIn: asyncHandler(async (req: Request, res: Response) => {
     if (!req.user?.memberId) throw AppError.badRequest('Tài khoản chưa liên kết với thành viên');
     const attendance = await attendanceService.checkIn(req.user.memberId, req.body.eventId);

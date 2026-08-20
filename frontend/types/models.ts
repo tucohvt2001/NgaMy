@@ -120,6 +120,8 @@ export interface Attendance {
   note?: string | null;
   confirmedBy?: string | null;
   confirmedAt?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface LeaveRequest {

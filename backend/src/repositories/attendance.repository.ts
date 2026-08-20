@@ -23,7 +23,11 @@ export const attendanceRepository = {
       where: buildWhere(params),
       skip: params.skip,
       take: params.take,
-      include: { event: true, member: true },
+      include: {
+        event: true,
+        member: true,
+        confirmedByUser: { select: { id: true, username: true } },
+      },
       orderBy: { createdAt: 'desc' },
     });
   },
@@ -32,12 +36,38 @@ export const attendanceRepository = {
     return prisma.attendance.count({ where: buildWhere(params) });
   },
 
+  findByEvent(eventId: string) {
+    return prisma.attendance.findMany({
+      where: { eventId },
+      include: {
+        event: true,
+        member: true,
+        confirmedByUser: { select: { id: true, username: true } },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+  },
+
   findByEventAndMember(eventId: string, memberId: string) {
-    return prisma.attendance.findUnique({ where: { eventId_memberId: { eventId, memberId } } });
+    return prisma.attendance.findUnique({
+      where: { eventId_memberId: { eventId, memberId } },
+      include: {
+        event: true,
+        member: true,
+        confirmedByUser: { select: { id: true, username: true } },
+      },
+    });
   },
 
   findById(id: string) {
-    return prisma.attendance.findUnique({ where: { id }, include: { event: true, member: true } });
+    return prisma.attendance.findUnique({
+      where: { id },
+      include: {
+        event: true,
+        member: true,
+        confirmedByUser: { select: { id: true, username: true } },
+      },
+    });
   },
 
   create(data: {
@@ -54,14 +84,71 @@ export const attendanceRepository = {
   update(
     id: string,
     data: Partial<{
-      checkInTime: Date;
-      checkOutTime: Date;
+      checkInTime: Date | null;
+      checkOutTime: Date | null;
       status: string;
       note: string | null;
-      confirmedBy: string;
-      confirmedAt: Date;
+      confirmedBy: string | null;
+      confirmedAt: Date | null;
     }>,
   ) {
-    return prisma.attendance.update({ where: { id }, data, include: { event: true, member: true } });
+    return prisma.attendance.update({
+      where: { id },
+      data,
+      include: {
+        event: true,
+        member: true,
+        confirmedByUser: { select: { id: true, username: true } },
+      },
+    });
+  },
+
+  upsert(data: {
+    eventId: string;
+    memberId: string;
+    status: string;
+    checkInTime?: Date | null;
+    checkOutTime?: Date | null;
+    note?: string | null;
+    confirmedBy?: string | null;
+    confirmedAt?: Date | null;
+  }) {
+    return prisma.attendance.upsert({
+      where: {
+        eventId_memberId: {
+          eventId: data.eventId,
+          memberId: data.memberId,
+        },
+      },
+      create: {
+        eventId: data.eventId,
+        memberId: data.memberId,
+        status: data.status,
+        checkInTime: data.checkInTime,
+        checkOutTime: data.checkOutTime,
+        note: data.note,
+        confirmedBy: data.confirmedBy,
+        confirmedAt: data.confirmedAt,
+      },
+      update: {
+        status: data.status,
+        checkInTime: data.checkInTime,
+        checkOutTime: data.checkOutTime,
+        note: data.note,
+        confirmedBy: data.confirmedBy,
+        confirmedAt: data.confirmedAt,
+      },
+      include: {
+        event: true,
+        member: true,
+        confirmedByUser: { select: { id: true, username: true } },
+      },
+    });
+  },
+
+  delete(id: string) {
+    return prisma.attendance.delete({
+      where: { id },
+    });
   },
 };

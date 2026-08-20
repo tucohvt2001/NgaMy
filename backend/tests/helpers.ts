@@ -3,8 +3,24 @@ import { prisma } from '../src/config/prisma';
 import { signAccessToken } from '../src/utils/jwt';
 import { PERMISSIONS, ROLE_NAMES, ROLE_PERMISSIONS, RoleName } from '../src/types/enums';
 
+let cachedRoleIds: Record<RoleName, string> | null = null;
+
 // Đảm bảo đầy đủ Role/Permission tồn tại trong DB test (idempotent, dùng chung cho mọi test file)
 export async function ensureRolesAndPermissions(): Promise<Record<RoleName, string>> {
+  if (cachedRoleIds) {
+    return cachedRoleIds;
+  }
+
+  const existingRoles = await prisma.role.findMany();
+  if (existingRoles.length === ROLE_NAMES.length) {
+    const map = {} as Record<RoleName, string>;
+    for (const r of existingRoles) {
+      map[r.name as RoleName] = r.id;
+    }
+    cachedRoleIds = map;
+    return map;
+  }
+
   for (const code of Object.values(PERMISSIONS)) {
     await prisma.permission.upsert({ where: { code }, update: {}, create: { code } });
   }
@@ -23,6 +39,7 @@ export async function ensureRolesAndPermissions(): Promise<Record<RoleName, stri
       });
     }
   }
+  cachedRoleIds = roleIds;
   return roleIds;
 }
 
@@ -35,10 +52,11 @@ export async function createTestUser(params: {
   const roleIds = await ensureRolesAndPermissions();
   const passwordHash = await bcrypt.hash(params.password ?? 'Password@123', 10);
 
+  const uniqueSuffix = `${Date.now()}_${Math.floor(Math.random() * 10000)}`;
   const user = await prisma.user.create({
     data: {
-      username: params.username,
-      email: `${params.username}@test.local`,
+      username: `${params.username}_${uniqueSuffix}`,
+      email: `${params.username}_${uniqueSuffix}@test.local`,
       passwordHash,
       roleId: roleIds[params.roleName],
       memberId: params.memberId ?? null,

@@ -4,6 +4,8 @@ import { authenticate } from '../middlewares/authenticate';
 import { authorize } from '../middlewares/authorize';
 import { validate } from '../middlewares/validate';
 import {
+  adminBatchAttendanceSchema,
+  adminRecordAttendanceSchema,
   checkInSchema,
   checkOutSchema,
   confirmAttendanceSchema,
@@ -15,13 +17,69 @@ router.use(authenticate);
 
 /**
  * @openapi
+ * /attendance/event/{eventId}:
+ *   get:
+ *     summary: Lấy bảng chấm công theo sự kiện cho Admin
+ *     tags: [Attendance]
+ *     security: [{ bearerAuth: [] }]
+ */
+router.get(
+  '/attendance/event/:eventId',
+  authorize(PERMISSIONS.ATTENDANCE_READ),
+  attendanceController.getEventSheet,
+);
+
+/**
+ * @openapi
+ * /attendance/record:
+ *   post:
+ *     summary: Admin chấm công lẻ cho một thành viên
+ *     tags: [Attendance]
+ *     security: [{ bearerAuth: [] }]
+ */
+router.post(
+  '/attendance/record',
+  authorize(PERMISSIONS.ATTENDANCE_CONFIRM),
+  validate({ body: adminRecordAttendanceSchema }),
+  attendanceController.recordByAdmin,
+);
+
+/**
+ * @openapi
+ * /attendance/batch:
+ *   post:
+ *     summary: Admin chấm công hàng loạt cho sự kiện
+ *     tags: [Attendance]
+ *     security: [{ bearerAuth: [] }]
+ */
+router.post(
+  '/attendance/batch',
+  authorize(PERMISSIONS.ATTENDANCE_CONFIRM),
+  validate({ body: adminBatchAttendanceSchema }),
+  attendanceController.batchRecordByAdmin,
+);
+
+/**
+ * @openapi
+ * /attendance/{id}:
+ *   delete:
+ *     summary: Xóa bản ghi chấm công
+ *     tags: [Attendance]
+ *     security: [{ bearerAuth: [] }]
+ */
+router.delete(
+  '/attendance/:id',
+  authorize(PERMISSIONS.ATTENDANCE_CONFIRM),
+  attendanceController.remove,
+);
+
+/**
+ * @openapi
  * /attendance/check-in:
  *   post:
  *     summary: Check-in tham gia sự kiện
  *     tags: [Attendance]
  *     security: [{ bearerAuth: [] }]
- *     responses:
- *       201: { description: Check-in thành công }
  */
 router.post(
   '/attendance/check-in',
@@ -37,8 +95,6 @@ router.post(
  *     summary: Check-out kết thúc tham gia sự kiện
  *     tags: [Attendance]
  *     security: [{ bearerAuth: [] }]
- *     responses:
- *       200: { description: Check-out thành công }
  */
 router.post(
   '/attendance/check-out',
@@ -54,8 +110,6 @@ router.post(
  *     summary: Danh sách chấm công
  *     tags: [Attendance]
  *     security: [{ bearerAuth: [] }]
- *     responses:
- *       200: { description: Danh sách chấm công }
  */
 router.get('/attendance', authorize(PERMISSIONS.ATTENDANCE_READ), attendanceController.list);
 
@@ -66,8 +120,6 @@ router.get('/attendance', authorize(PERMISSIONS.ATTENDANCE_READ), attendanceCont
  *     summary: Xác nhận trạng thái chấm công
  *     tags: [Attendance]
  *     security: [{ bearerAuth: [] }]
- *     responses:
- *       200: { description: Xác nhận thành công }
  */
 router.put(
   '/attendance/:id/confirm',
