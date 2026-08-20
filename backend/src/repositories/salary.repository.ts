@@ -25,7 +25,7 @@ export const salaryRepository = {
       where: buildWhere(params),
       skip: params.skip,
       take: params.take,
-      include: { member: true },
+      include: { member: true, details: { include: { event: true, position: true } } },
       orderBy: [{ year: 'desc' }, { month: 'desc' }],
     });
   },
@@ -110,16 +110,31 @@ export const salaryConfigRepository = {
     });
   },
 
-  // Tìm mức lương ưu tiên theo Member > Event > Position (từ cụ thể đến chung)
+  // Tìm mức lương ưu tiên: (Member + Event) > Event > Member > Position (từ cụ thể đến chung)
   async findApplicableAmount(memberId: string, eventId: string, positionId: string | null): Promise<number> {
-    const memberConfig = await prisma.salaryConfig.findFirst({ where: { memberId, isActive: true } });
-    if (memberConfig) return memberConfig.amount;
+    // 1. Mức thù lao phân bổ riêng cho thành viên trong show này (lưu từ Tất toán sự kiện)
+    const memberEventConfig = await prisma.salaryConfig.findFirst({
+      where: { memberId, eventId, isActive: true },
+    });
+    if (memberEventConfig) return memberEventConfig.amount;
 
-    const eventConfig = await prisma.salaryConfig.findFirst({ where: { eventId, isActive: true } });
+    // 2. Mức thù lao chung của sự kiện này
+    const eventConfig = await prisma.salaryConfig.findFirst({
+      where: { eventId, memberId: null, isActive: true },
+    });
     if (eventConfig) return eventConfig.amount;
 
+    // 3. Mức lương cố định riêng của thành viên
+    const memberConfig = await prisma.salaryConfig.findFirst({
+      where: { memberId, eventId: null, isActive: true },
+    });
+    if (memberConfig) return memberConfig.amount;
+
+    // 4. Mức lương theo vị trí biểu diễn
     if (positionId) {
-      const positionConfig = await prisma.salaryConfig.findFirst({ where: { positionId, isActive: true } });
+      const positionConfig = await prisma.salaryConfig.findFirst({
+        where: { positionId, memberId: null, eventId: null, isActive: true },
+      });
       if (positionConfig) return positionConfig.amount;
     }
 

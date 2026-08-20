@@ -20,6 +20,11 @@ export const salaryController = {
     sendSuccess(res, record, 'Tính tiền công thành công', 201);
   }),
 
+  calculateMonth: asyncHandler(async (req: Request, res: Response) => {
+    const results = await salaryService.calculateMonth(Number(req.body.month), Number(req.body.year));
+    sendSuccess(res, results, 'Đồng bộ và tính tiền công tháng thành công', 200);
+  }),
+
   confirm: asyncHandler(async (req: Request, res: Response) => {
     if (!req.user) throw AppError.unauthorized('Chưa xác thực');
     const record = await salaryService.confirm(req.params.id, req.user.id);

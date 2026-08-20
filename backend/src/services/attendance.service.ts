@@ -11,29 +11,29 @@ import {
 
 export const attendanceService = {
   async getEventAttendanceSheet(eventId: string) {
-    const event = await prisma.event.findUnique({
-      where: { id: eventId },
-      include: {
-        creator: { select: { id: true, username: true } },
-      },
-    });
+    const [event, assignedMembers, attendances] = await Promise.all([
+      prisma.event.findUnique({
+        where: { id: eventId },
+        include: {
+          creator: { select: { id: true, username: true } },
+        },
+      }),
+      prisma.eventMember.findMany({
+        where: { eventId },
+        include: {
+          member: true,
+          position: true,
+        },
+        orderBy: { createdAt: 'asc' },
+      }),
+      attendanceRepository.findByEvent(eventId),
+    ]);
 
     if (!event) {
       throw AppError.notFound('Không tìm thấy sự kiện');
     }
 
-    const assignedMembers = await prisma.eventMember.findMany({
-      where: { eventId },
-      include: {
-        member: true,
-        position: true,
-      },
-      orderBy: { createdAt: 'asc' },
-    });
-
-    const attendances = await attendanceRepository.findByEvent(eventId);
     const attendanceMap = new Map(attendances.map((att) => [att.memberId, att]));
-
     const assignedMemberIdSet = new Set<string>();
 
     const mergedList: Array<{

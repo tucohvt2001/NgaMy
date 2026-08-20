@@ -6,6 +6,9 @@ export const dashboardService = {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
 
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
     const [
       totalMembers,
       activeMembers,
@@ -13,6 +16,7 @@ export const dashboardService = {
       eventsThisMonth,
       participantsThisMonth,
       salaryThisMonth,
+      upcomingEventsRaw,
     ] = await Promise.all([
       prisma.member.count(),
       prisma.member.count({ where: { status: 'ACTIVE' } }),
@@ -23,24 +27,21 @@ export const dashboardService = {
         where: { month: now.getMonth() + 1, year: now.getFullYear() },
         _sum: { totalAmount: true },
       }),
+      prisma.event.findMany({
+        where: {
+          eventDate: { gte: startOfToday },
+          status: { not: 'CANCELLED' },
+        },
+        take: 5,
+        orderBy: { eventDate: 'asc' },
+        include: {
+          creator: { select: { id: true, username: true } },
+          _count: { select: { eventMembers: true } },
+        },
+      }),
     ]);
 
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
-
-    let upcomingEvents = await prisma.event.findMany({
-      where: {
-        eventDate: { gte: startOfToday },
-        status: { not: 'CANCELLED' },
-      },
-      take: 5,
-      orderBy: { eventDate: 'asc' },
-      include: {
-        creator: { select: { id: true, username: true } },
-        _count: { select: { eventMembers: true } },
-      },
-    });
-
+    let upcomingEvents = upcomingEventsRaw;
     if (upcomingEvents.length < 5) {
       const remaining = 5 - upcomingEvents.length;
       const recentEvents = await prisma.event.findMany({

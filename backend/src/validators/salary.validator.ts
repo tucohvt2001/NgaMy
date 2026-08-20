@@ -10,11 +10,18 @@ export const calculateSalarySchema = z.object({
 });
 export type CalculateSalaryInput = z.infer<typeof calculateSalarySchema>;
 
+export const calculateMonthSchema = z.object({
+  month: z.coerce.number().min(1).max(12),
+  year: z.coerce.number().min(2000),
+});
+export type CalculateMonthInput = z.infer<typeof calculateMonthSchema>;
+
 export const listSalaryQuerySchema = z.object({
   memberId: z.string().optional(),
   month: z.string().optional(),
   year: z.string().optional(),
   status: z.enum(['DRAFT', 'CONFIRMED']).optional(),
+  autoCalculate: z.enum(['true', 'false']).optional(),
   page: z.string().optional(),
   limit: z.string().optional(),
 });

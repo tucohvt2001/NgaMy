@@ -5,6 +5,7 @@ import { authorize } from '../middlewares/authorize';
 import { validate } from '../middlewares/validate';
 import {
   calculateSalarySchema,
+  calculateMonthSchema,
   createSalaryConfigSchema,
   updateSalaryConfigSchema,
 } from '../validators/salary.validator';
@@ -17,7 +18,7 @@ router.use(authenticate);
  * @openapi
  * /salaries:
  *   get:
- *     summary: Danh sách bảng lương
+ *     summary: Danh sách bảng lương (tự động tính/đồng bộ theo tháng)
  *     tags: [Salaries]
  *     security: [{ bearerAuth: [] }]
  *     responses:
@@ -61,6 +62,21 @@ router
 
 /**
  * @openapi
+ * /salaries/calculate-month:
+ *   post:
+ *     summary: Tự động tính tiền công cho toàn bộ thành viên trong tháng
+ *     tags: [Salaries]
+ *     security: [{ bearerAuth: [] }]
+ */
+router.post(
+  '/salaries/calculate-month',
+  authorize(PERMISSIONS.SALARY_MANAGE),
+  validate({ body: calculateMonthSchema }),
+  salaryController.calculateMonth,
+);
+
+/**
+ * @openapi
  * /salaries/{id}:
  *   get:
  *     summary: Chi tiết bảng lương
@@ -75,7 +91,7 @@ router.get('/salaries/:id', authorize(PERMISSIONS.SALARY_READ), salaryController
  * @openapi
  * /salaries/calculate:
  *   post:
- *     summary: Tính tiền công cho thành viên theo tháng
+ *     summary: Tính tiền công cho 1 thành viên theo tháng
  *     tags: [Salaries]
  *     security: [{ bearerAuth: [] }]
  *     responses:

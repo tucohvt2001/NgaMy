@@ -6,6 +6,7 @@ export interface SalaryListParams {
   month?: number;
   year?: number;
   status?: string;
+  autoCalculate?: 'true' | 'false';
   page?: number;
   limit?: number;
 }
@@ -17,6 +18,11 @@ export interface CalculateSalaryInput {
   allowance?: number;
   bonus?: number;
   deduction?: number;
+}
+
+export interface CalculateMonthInput {
+  month: number;
+  year: number;
 }
 
 export interface SalaryConfigInput {
@@ -44,6 +50,11 @@ export const salaryService = {
     return res.data.data;
   },
 
+  async calculateMonth(input: CalculateMonthInput) {
+    const res = await apiClient.post<ApiSuccessResponse<SalaryRecord[]>>('/salaries/calculate-month', input);
+    return res.data.data;
+  },
+
   async confirm(id: string) {
     const res = await apiClient.post<ApiSuccessResponse<SalaryRecord>>(`/salaries/${id}/confirm`);
     return res.data.data;
@@ -60,6 +71,7 @@ export const salaryService = {
   },
 
   async removeConfig(id: string) {
-    await apiClient.delete(`/salaries/configs/${id}`);
+    const res = await apiClient.delete<ApiSuccessResponse<null>>(`/salaries/configs/${id}`);
+    return res.data.data;
   },
 };

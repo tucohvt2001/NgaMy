@@ -292,6 +292,9 @@ export interface EventSettlementMember {
   positionName: string;
   status: string;
   note?: string | null;
+  payoutAmount?: number;
+  payoutNote?: string;
+  isPaid?: boolean;
 }
 
 export interface EventSettlementOverview {

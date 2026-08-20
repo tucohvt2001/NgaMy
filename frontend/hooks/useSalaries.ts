@@ -3,13 +3,17 @@ import { toast } from 'sonner';
 import {
   salaryService,
   CalculateSalaryInput,
+  CalculateMonthInput,
   SalaryConfigInput,
   SalaryListParams,
 } from '@/services/salary.service';
 import { getErrorMessage } from '@/lib/errors';
 
 export function useSalaries(params: SalaryListParams) {
-  return useQuery({ queryKey: ['salaries', params], queryFn: () => salaryService.list(params) });
+  return useQuery({
+    queryKey: ['salaries', params],
+    queryFn: () => salaryService.list(params),
+  });
 }
 
 export function useSalaryDetail(id: string | undefined) {
@@ -27,6 +31,20 @@ export function useCalculateSalary() {
     onSuccess: () => {
       toast.success('Tính tiền công thành công');
       queryClient.invalidateQueries({ queryKey: ['salaries'] });
+      queryClient.invalidateQueries({ queryKey: ['reports'] });
+    },
+    onError: (error) => toast.error(getErrorMessage(error)),
+  });
+}
+
+export function useCalculateMonth() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CalculateMonthInput) => salaryService.calculateMonth(input),
+    onSuccess: (data) => {
+      toast.success(`Đã tự động tính tiền công cho ${data.length} thành viên trong tháng`);
+      queryClient.invalidateQueries({ queryKey: ['salaries'] });
+      queryClient.invalidateQueries({ queryKey: ['reports'] });
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   });
@@ -39,6 +57,9 @@ export function useConfirmSalary() {
     onSuccess: () => {
       toast.success('Xác nhận bảng lương thành công');
       queryClient.invalidateQueries({ queryKey: ['salaries'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['reports'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   });

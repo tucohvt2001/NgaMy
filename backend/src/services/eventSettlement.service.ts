@@ -5,49 +5,67 @@ import { transactionService } from './transaction.service';
 
 export const eventSettlementService = {
   async getSettlementOverview(eventId: string) {
-    const event = await prisma.event.findUnique({
-      where: { id: eventId },
-      include: {
-        creator: { select: { id: true, username: true } },
-      },
-    });
+    const [event, eventMembers, existingSalaryConfigs, existingTransactions, confirmedSalaryDetails] =
+      await Promise.all([
+        prisma.event.findUnique({
+          where: { id: eventId },
+          include: {
+            creator: { select: { id: true, username: true } },
+          },
+        }),
+        prisma.eventMember.findMany({
+          where: { eventId },
+          include: {
+            member: {
+              select: {
+                id: true,
+                memberCode: true,
+                fullName: true,
+                phone: true,
+                bankAccount: true,
+                bankName: true,
+              },
+            },
+            position: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+          orderBy: { createdAt: 'asc' },
+        }),
+        prisma.salaryConfig.findMany({
+          where: { eventId, isActive: true },
+        }),
+        prisma.transaction.findMany({
+          where: { eventId },
+          include: {
+            member: { select: { id: true, memberCode: true, fullName: true } },
+          },
+          orderBy: { createdAt: 'desc' },
+        }),
+        // Kiểm tra xem thù lao của show này đã được thanh toán (CONFIRMED) trong module Tiền công chưa
+        prisma.salaryDetail.findMany({
+          where: {
+            eventId,
+            salaryRecord: { status: 'CONFIRMED' },
+          },
+          select: {
+            salaryRecord: { select: { memberId: true } },
+          },
+        }),
+      ]);
 
     if (!event) {
       throw AppError.notFound('Không tìm thấy sự kiện');
     }
 
-    // Lấy danh sách thành viên được phân công vào sự kiện
-    const eventMembers = await prisma.eventMember.findMany({
-      where: { eventId },
-      include: {
-        member: {
-          select: {
-            id: true,
-            memberCode: true,
-            fullName: true,
-            phone: true,
-            bankAccount: true,
-            bankName: true,
-          },
-        },
-        position: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
-      orderBy: { createdAt: 'asc' },
-    });
+    const paidMemberIdSet = new Set(confirmedSalaryDetails.map((sd) => sd.salaryRecord.memberId));
 
-    // Lấy danh sách phiếu thu chi đã được lập cho sự kiện này
-    const existingTransactions = await prisma.transaction.findMany({
-      where: { eventId },
-      include: {
-        member: { select: { id: true, memberCode: true, fullName: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+    const salaryConfigMap = new Map(
+      existingSalaryConfigs.filter((sc) => sc.memberId).map((sc) => [sc.memberId!, sc]),
+    );
 
     let settledIncome = 0;
     let settledExpense = 0;
@@ -60,23 +78,30 @@ export const eventSettlementService = {
 
     return {
       event,
-      members: eventMembers.map((em) => ({
-        id: em.id,
-        memberId: em.memberId,
-        memberCode: em.member.memberCode,
-        fullName: em.member.fullName,
-        phone: em.member.phone,
-        bankAccount: em.member.bankAccount,
-        bankName: em.member.bankName,
-        positionId: em.positionId,
-        positionName: em.position?.name || 'Thành viên',
-        status: em.status,
-        note: em.note,
-      })),
+      members: eventMembers.map((em) => {
+        const savedConfig = salaryConfigMap.get(em.memberId);
+        const isPaid = paidMemberIdSet.has(em.memberId);
+        return {
+          id: em.id,
+          memberId: em.memberId,
+          memberCode: em.member.memberCode,
+          fullName: em.member.fullName,
+          phone: em.member.phone,
+          bankAccount: em.member.bankAccount,
+          bankName: em.member.bankName,
+          positionId: em.positionId,
+          positionName: em.position?.name || 'Thành viên',
+          status: em.status,
+          note: em.note,
+          payoutAmount: savedConfig?.amount ?? 0,
+          payoutNote: savedConfig?.note ?? '',
+          isPaid,
+        };
+      }),
       existingTransactions,
       settledIncome,
       settledExpense,
-      isSettled: existingTransactions.length > 0,
+      isSettled: existingTransactions.length > 0 || existingSalaryConfigs.length > 0,
     };
   },
 
@@ -88,6 +113,18 @@ export const eventSettlementService = {
     if (!event) {
       throw AppError.notFound('Không tìm thấy sự kiện');
     }
+
+    // Kiểm tra danh sách thành viên đã được thanh toán thù lao cho sự kiện này
+    const confirmedSalaryDetails = await prisma.salaryDetail.findMany({
+      where: {
+        eventId,
+        salaryRecord: { status: 'CONFIRMED' },
+      },
+      select: {
+        salaryRecord: { select: { memberId: true } },
+      },
+    });
+    const paidMemberIdSet = new Set(confirmedSalaryDetails.map((sd) => sd.salaryRecord.memberId));
 
     const txDate = input.settlementDate ? new Date(input.settlementDate) : new Date();
     const createdTransactions: any[] = [];
@@ -132,7 +169,7 @@ export const eventSettlementService = {
       createdTransactions.push(incomeTx);
     }
 
-    // 3. Tạo các Phiếu Chi phát sinh (Xe cộ, Ăn uống, Hậu cần...)
+    // 3. Tạo các Phiếu Chi phát sinh (Xe cộ, Ăn uống, Hậu cần...) nếu có
     if (input.expenses && input.expenses.length > 0) {
       for (const exp of input.expenses) {
         if (exp.amount > 0) {
@@ -157,40 +194,39 @@ export const eventSettlementService = {
       }
     }
 
-    // 4. Tạo các Phiếu Chi Thù Lao cho từng thành viên đi show
-    if (input.createExpenseVouchers && input.memberPayouts && input.memberPayouts.length > 0) {
-      // Load member details to get full names
-      const memberIds = input.memberPayouts.map((p) => p.memberId);
-      const members = await prisma.member.findMany({
-        where: { id: { in: memberIds } },
-        select: { id: true, memberCode: true, fullName: true },
-      });
-      const memberMap = new Map(members.map((m) => [m.id, m]));
-
+    // 4. Lưu mức Thù Lao Dự Kiến cho từng thành viên tham gia show (không sửa các thành viên đã thanh toán)
+    let totalEstimatedPayout = 0;
+    if (input.memberPayouts && input.memberPayouts.length > 0) {
       for (const payout of input.memberPayouts) {
-        if (payout.amount > 0) {
-          const member = memberMap.get(payout.memberId);
-          const memberName = member ? `${member.memberCode} - ${member.fullName}` : 'Thành viên';
-          const code = await transactionService.generateCode('EXPENSE', txDate);
+        const amount = Number(payout.amount) || 0;
+        totalEstimatedPayout += amount;
 
-          const payoutTx = await prisma.transaction.create({
-            data: {
-              code,
-              type: 'EXPENSE',
-              category: 'SALARY_PAYOUT',
-              amount: payout.amount,
-              transactionDate: txDate,
-              paymentMethod: payout.paymentMethod,
-              status: 'COMPLETED',
-              payerOrReceiver: member?.fullName || memberName,
-              memberId: payout.memberId,
-              eventId: event.id,
-              createdBy: userId,
-              description: `Thù lao biểu diễn show "${event.name}"${payout.positionName ? ' (' + payout.positionName + ')' : ''}`,
-              notes: payout.note || null,
-            },
+        // Nếu thành viên đã được thanh toán thù lao trong bảng lương CONFIRMED thì bỏ qua không sửa
+        if (payout.memberId && !paidMemberIdSet.has(payout.memberId)) {
+          const existing = await prisma.salaryConfig.findFirst({
+            where: { eventId, memberId: payout.memberId },
           });
-          createdTransactions.push(payoutTx);
+
+          if (existing) {
+            await prisma.salaryConfig.update({
+              where: { id: existing.id },
+              data: {
+                amount,
+                note: payout.note || `Thù lao dự kiến show ${event.name}`,
+                isActive: true,
+              },
+            });
+          } else if (amount > 0) {
+            await prisma.salaryConfig.create({
+              data: {
+                eventId,
+                memberId: payout.memberId,
+                amount,
+                note: payout.note || `Thù lao dự kiến show ${event.name}`,
+                isActive: true,
+              },
+            });
+          }
         }
       }
     }
@@ -205,10 +241,11 @@ export const eventSettlementService = {
 
     return {
       success: true,
-      message: `Quyết toán show "${event.name}" thành công, đã tạo ${createdTransactions.length} phiếu thu chi!`,
+      message: `Tất toán show "${event.name}" thành công! Đã lưu thù lao dự kiến cho ${input.memberPayouts?.length || 0} thành viên và chuyển về mục Tiền Công để thanh toán.`,
       createdTransactionsCount: createdTransactions.length,
       totalIncome: createdIncomeTotal,
       totalExpense: createdExpenseTotal,
+      totalEstimatedPayout,
       netBalance: createdIncomeTotal - createdExpenseTotal,
       transactions: createdTransactions,
     };

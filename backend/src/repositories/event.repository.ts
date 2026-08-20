@@ -6,10 +6,12 @@ export interface FindManyEventsParams {
   take: number;
   status?: string;
   search?: string;
+  fromDate?: string;
+  toDate?: string;
 }
 
 function buildWhere(params: Omit<FindManyEventsParams, 'skip' | 'take'>): Prisma.EventWhereInput {
-  return {
+  const where: Prisma.EventWhereInput = {
     ...(params.status ? { status: params.status } : {}),
     ...(params.search
       ? {
@@ -21,6 +23,15 @@ function buildWhere(params: Omit<FindManyEventsParams, 'skip' | 'take'>): Prisma
         }
       : {}),
   };
+
+  if (params.fromDate || params.toDate) {
+    where.eventDate = {
+      ...(params.fromDate ? { gte: new Date(params.fromDate) } : {}),
+      ...(params.toDate ? { lte: new Date(params.toDate) } : {}),
+    };
+  }
+
+  return where;
 }
 
 export const eventRepository = {

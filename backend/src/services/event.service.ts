@@ -41,7 +41,12 @@ export const eventService = {
     const page = Number(query.page) || 1;
     const limit = Number(query.limit) || 20;
     const skip = (page - 1) * limit;
-    const filters = { status: query.status, search: query.search };
+    const filters = {
+      status: query.status,
+      search: query.search,
+      fromDate: query.fromDate,
+      toDate: query.toDate,
+    };
 
     const [items, total] = await Promise.all([
       eventRepository.findMany({ skip, take: limit, ...filters }),

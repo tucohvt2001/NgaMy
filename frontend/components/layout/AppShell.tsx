@@ -11,10 +11,23 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const accessToken = useAuthStore((state) => state.accessToken);
   const [mounted, setMounted] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    const saved = localStorage.getItem('sidebar_collapsed');
+    if (saved === 'true') {
+      setIsCollapsed(true);
+    }
   }, []);
+
+  const toggleCollapse = () => {
+    setIsCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem('sidebar_collapsed', String(next));
+      return next;
+    });
+  };
 
   useEffect(() => {
     if (mounted && !accessToken) {
@@ -28,22 +41,41 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex h-screen overflow-hidden">
-      <aside className="hidden md:block md:w-64 shrink-0">
-        <Sidebar />
+      {/* Sidebar Desktop */}
+      <aside
+        className={`hidden md:block transition-all duration-300 ease-in-out shrink-0 ${
+          isCollapsed ? 'w-20' : 'w-64'
+        }`}
+      >
+        <Sidebar
+          isCollapsed={isCollapsed}
+          onToggleCollapse={toggleCollapse}
+        />
       </aside>
 
+      {/* Sidebar Mobile Drawer */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-40 md:hidden">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
-          <div className="absolute inset-y-0 left-0 w-64">
+        <div className="fixed inset-0 z-40 md:hidden animate-in fade-in duration-200">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-xs"
+            onClick={() => setMobileOpen(false)}
+          />
+          <div className="absolute inset-y-0 left-0 w-64 shadow-2xl animate-in slide-in-from-left duration-300">
             <Sidebar onClose={() => setMobileOpen(false)} />
           </div>
         </div>
       )}
 
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <Header onMenuClick={() => setMobileOpen(true)} />
-        <main className="flex-1 overflow-y-auto bg-muted/20 p-4 md:p-6">{children}</main>
+      {/* Main Content Area */}
+      <div className="flex flex-1 flex-col overflow-hidden bg-gradient-to-br from-amber-500/[0.02] via-background to-orange-500/[0.02]">
+        <Header
+          onMenuClick={() => setMobileOpen(true)}
+          onToggleSidebar={toggleCollapse}
+          isSidebarCollapsed={isCollapsed}
+        />
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+          <div className="mx-auto max-w-7xl">{children}</div>
+        </main>
       </div>
     </div>
   );

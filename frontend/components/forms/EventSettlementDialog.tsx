@@ -12,7 +12,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -42,6 +41,10 @@ import {
   CheckCircle2,
   AlertCircle,
   Sparkles,
+  Info,
+  CalendarCheck,
+  Lock,
+  ShieldCheck,
 } from 'lucide-react';
 
 interface EventSettlementDialogProps {
@@ -49,6 +52,8 @@ interface EventSettlementDialogProps {
   onOpenChange: (open: boolean) => void;
   event: EventItem | null;
 }
+
+type PayoutItemState = MemberPayoutItem & { isPaid?: boolean };
 
 function formatCurrency(val: number) {
   return val.toLocaleString('vi-VN') + ' đ';
@@ -69,12 +74,11 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
   const [payer, setPayer] = useState<string>('');
   const [incomePaymentMethod, setIncomePaymentMethod] = useState<PaymentMethod>('CASH');
   const [createIncomeVoucher, setCreateIncomeVoucher] = useState<boolean>(true);
-  const [createExpenseVouchers, setCreateExpenseVouchers] = useState<boolean>(true);
   const [markCompleted, setMarkCompleted] = useState<boolean>(true);
   const [notes, setNotes] = useState<string>('');
 
-  // State chia thù lao thành viên
-  const [payouts, setPayouts] = useState<MemberPayoutItem[]>([]);
+  // State chia thù lao thành viên (dự kiến)
+  const [payouts, setPayouts] = useState<PayoutItemState[]>([]);
   const [bulkAmount, setBulkAmount] = useState<string>('');
 
   // State chi phí phát sinh
@@ -87,10 +91,10 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
       setPayer(event.customerName || '');
       setIncomePaymentMethod('CASH');
       setCreateIncomeVoucher(true);
-      setCreateExpenseVouchers(true);
       setMarkCompleted(true);
       setNotes('');
       setExpenses([]);
+      setBulkAmount('');
     }
   }, [event, open]);
 
@@ -99,35 +103,47 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
       setPayouts(
         overview.members.map((m) => ({
           memberId: m.memberId,
-          amount: 0,
+          amount: m.payoutAmount ?? 0,
           positionName: m.positionName,
           paymentMethod: 'CASH' as PaymentMethod,
-          note: '',
+          note: m.payoutNote ?? '',
+          isPaid: m.isPaid ?? false,
         }))
       );
     }
   }, [overview]);
 
-  // Cập nhật thù lao 1 thành viên
-  const handlePayoutChange = (memberId: string, field: keyof MemberPayoutItem, value: any) => {
+  // Cập nhật thù lao 1 thành viên (chỉ cho phép nếu chưa thanh toán)
+  const handlePayoutChange = (memberId: string, field: keyof PayoutItemState, value: any) => {
     setPayouts((prev) =>
-      prev.map((p) => (p.memberId === memberId ? { ...p, [field]: value } : p))
+      prev.map((p) => {
+        if (p.memberId === memberId) {
+          if (p.isPaid) return p; // Khóa không cho sửa nếu đã thanh toán
+          return { ...p, [field]: value };
+        }
+        return p;
+      })
     );
   };
 
-  // Chia đều số tiền cho tất cả thành viên
+  // Chia đều số tiền cho các thành viên chưa thanh toán
   const handleEqualSplit = () => {
     const totalToSplit = Number(bulkAmount);
-    if (!totalToSplit || totalToSplit <= 0 || payouts.length === 0) return;
-    const perPerson = Math.floor(totalToSplit / payouts.length);
-    setPayouts((prev) => prev.map((p) => ({ ...p, amount: perPerson })));
+    const unpaidList = payouts.filter((p) => !p.isPaid);
+    if (!totalToSplit || totalToSplit <= 0 || unpaidList.length === 0) return;
+    const perPerson = Math.floor(totalToSplit / unpaidList.length);
+    setPayouts((prev) =>
+      prev.map((p) => (p.isPaid ? p : { ...p, amount: perPerson }))
+    );
   };
 
-  // Đặt cùng 1 số tiền cho mỗi người
+  // Đặt cùng 1 số tiền cho mỗi người chưa thanh toán
   const handleSetAmountEach = () => {
     const amountEach = Number(bulkAmount);
     if (!amountEach || amountEach <= 0 || payouts.length === 0) return;
-    setPayouts((prev) => prev.map((p) => ({ ...p, amount: amountEach })));
+    setPayouts((prev) =>
+      prev.map((p) => (p.isPaid ? p : { ...p, amount: amountEach }))
+    );
   };
 
   // Thêm dòng chi phí phát sinh
@@ -156,12 +172,11 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
     );
   };
 
-  // Tính toán tổng số tiền
+  // Tính toán các tổng số tiền
   const totalIncome = Number(contractAmount) + Number(tipAmount);
-  const totalPayout = payouts.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
   const totalExpenses = expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
-  const totalExpenseSum = totalPayout + totalExpenses;
-  const netFundProfit = totalIncome - totalExpenseSum;
+  const totalEstimatedPayout = payouts.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+  const netClubProfit = totalIncome - totalExpenses - totalEstimatedPayout;
 
   const handleSubmit = () => {
     if (!event) return;
@@ -171,10 +186,16 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
       tipAmount: Number(tipAmount) || 0,
       payer: payer || event.customerName || 'Khách hàng sự kiện',
       paymentMethod: incomePaymentMethod,
-      memberPayouts: payouts.filter((p) => Number(p.amount) > 0),
+      memberPayouts: payouts.map((p) => ({
+        memberId: p.memberId,
+        amount: Number(p.amount) || 0,
+        positionName: p.positionName,
+        paymentMethod: p.paymentMethod,
+        note: p.note,
+      })),
       expenses: expenses.filter((e) => Number(e.amount) > 0),
       createIncomeVoucher,
-      createExpenseVouchers,
+      createExpenseVouchers: true,
       markEventCompleted: markCompleted,
       notes,
     };
@@ -193,11 +214,11 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto rounded-3xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2.5 text-xl font-bold text-amber-700 dark:text-amber-400">
             <Coins className="size-6 text-amber-500" />
-            Quyết Toán Show Diễn
+            Tất Toán & Hoàn Thành Show Diễn
           </DialogTitle>
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground pt-1">
             <span className="font-semibold text-foreground">{event.eventCode} - {event.name}</span>
@@ -216,20 +237,19 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
           <div className="space-y-6 pt-2">
             {/* Cảnh báo nếu show đã có phiếu trước đó */}
             {overview?.isSettled && (
-              <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-start gap-2.5 text-xs text-amber-800 dark:text-amber-300">
+              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-2.5 text-xs text-amber-800 dark:text-amber-300">
                 <AlertCircle className="size-4 shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-semibold">Sự kiện này đã có {overview.existingTransactions.length} phiếu thu chi trong sổ quỹ</p>
+                  <p className="font-semibold">Sự kiện này đã từng được lưu quyết toán hoặc có phiếu thu chi</p>
                   <p className="mt-0.5 text-muted-foreground">
                     Đã thu: <strong>{formatCurrency(overview.settledIncome)}</strong> | Đã chi: <strong>{formatCurrency(overview.settledExpense)}</strong>.
-                    Nếu tiếp tục quyết toán, hệ thống sẽ tạo thêm các phiếu thu/chi mới bổ sung.
                   </p>
                 </div>
               </div>
             )}
 
             {/* PHẦN 1: DOANH THU SHOW DIỄN (THU TIỀN) */}
-            <div className="p-4 rounded-xl border bg-card shadow-2xs space-y-4">
+            <div className="p-4 rounded-2xl border bg-card shadow-2xs space-y-4">
               <div className="flex items-center justify-between border-b pb-2">
                 <h3 className="font-bold text-sm flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
                   <ArrowDownLeft className="size-4" /> 1. Doanh Thu Show Diễn (Thu Tiền)
@@ -241,13 +261,13 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
                     onChange={(e) => setCreateIncomeVoucher(e.target.checked)}
                     className="rounded text-emerald-600 focus:ring-emerald-500"
                   />
-                  <span className="font-medium">Tự động lập Phiếu Thu vào Sổ Quỹ</span>
+                  <span className="font-medium">Lập Phiếu Thu Doanh Thu vào Sổ Quỹ</span>
                 </label>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                 {/* Tiền Hợp Đồng */}
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 md:col-span-1">
                   <Label htmlFor="contractAmount" className="text-xs">Tiền show (Hợp đồng) *</Label>
                   <Input
                     id="contractAmount"
@@ -257,6 +277,7 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
                     value={contractAmount}
                     onChange={(e) => setContractAmount(Number(e.target.value))}
                     placeholder="Nhập giá trị show..."
+                    className="rounded-xl"
                   />
                   {contractAmount > 0 && (
                     <p className="text-[11px] font-semibold text-muted-foreground">
@@ -266,9 +287,9 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
                 </div>
 
                 {/* Tiền Lộc (Tips) */}
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 md:col-span-1">
                   <Label htmlFor="tipAmount" className="text-xs flex items-center gap-1 text-amber-600 dark:text-amber-400 font-semibold">
-                    <Gift className="size-3.5" /> Tiền Lộc (Tips thưởng thêm)
+                    <Gift className="size-3.5" /> Tiền Lộc (Tips thêm)
                   </Label>
                   <Input
                     id="tipAmount"
@@ -277,8 +298,8 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
                     step="10000"
                     value={tipAmount}
                     onChange={(e) => setTipAmount(Number(e.target.value))}
-                    placeholder="Tiền hái lộc / lì xì..."
-                    className="border-amber-500/40"
+                    placeholder="Tiền hái lộc..."
+                    className="border-amber-500/40 rounded-xl"
                   />
                   {tipAmount > 0 && (
                     <p className="text-[11px] font-semibold text-amber-600 dark:text-amber-400">
@@ -288,19 +309,40 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
                 </div>
 
                 {/* Người nộp / Khách hàng */}
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 md:col-span-1">
                   <Label htmlFor="payer" className="text-xs">Khách hàng / Người thanh toán</Label>
                   <Input
                     id="payer"
                     value={payer}
                     onChange={(e) => setPayer(e.target.value)}
-                    placeholder="Tên khách hàng hoặc đối tác..."
+                    placeholder="Tên khách hàng..."
+                    className="rounded-xl"
                   />
+                </div>
+
+                {/* Phương thức thu */}
+                <div className="space-y-1.5 md:col-span-1">
+                  <Label className="text-xs">Hình thức thu</Label>
+                  <Select
+                    value={incomePaymentMethod}
+                    onValueChange={(v: PaymentMethod) => setIncomePaymentMethod(v)}
+                  >
+                    <SelectTrigger className="rounded-xl">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PAYMENT_METHODS.map((pm) => (
+                        <SelectItem key={pm} value={pm}>
+                          {PAYMENT_METHOD_LABELS[pm]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
               {/* Box Tổng Doanh Thu */}
-              <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between">
+              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between">
                 <div>
                   <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300">
                     TỔNG THU SHOW DIỄN:
@@ -315,135 +357,163 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
               </div>
             </div>
 
-            {/* PHẦN 2: CHIA THÙ LAO TỪNG THÀNH VIÊN ĐI SHOW */}
-            <div className="p-4 rounded-xl border bg-card shadow-2xs space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b pb-2">
-                <h3 className="font-bold text-sm flex items-center gap-2 text-rose-700 dark:text-rose-400">
-                  <Users className="size-4" /> 2. Chia Thù Lao Từng Người Đi Show ({overview?.members.length ?? 0} thành viên)
-                </h3>
-                <label className="flex items-center gap-2 text-xs cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={createExpenseVouchers}
-                    onChange={(e) => setCreateExpenseVouchers(e.target.checked)}
-                    className="rounded text-rose-600 focus:ring-rose-500"
-                  />
-                  <span className="font-medium">Tự động lập các Phiếu Chi thù lao</span>
-                </label>
+            {/* PHẦN 2: PHÂN BỔ THÙ LAO DỰ KIẾN CHO THÀNH VIÊN */}
+            <div className="p-4 rounded-2xl border border-amber-500/25 bg-amber-500/[0.03] space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-amber-500/20 pb-2">
+                <div>
+                  <h3 className="font-bold text-sm flex items-center gap-2 text-amber-800 dark:text-amber-300">
+                    <Users className="size-4 text-amber-500" />
+                    2. Phân Bổ Thù Lao Dự Kiến ({payouts.length} thành viên)
+                  </h3>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    Nhập số tiền dự kiến trả cho từng thành viên trong show này (chuyển về Tiền Công tháng để thanh toán)
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-1.5 self-start sm:self-auto">
+                  <Badge variant="outline" className="bg-background text-amber-700 border-amber-500/30 text-xs gap-1 font-medium">
+                    <CalendarCheck className="size-3 text-amber-500" />
+                    Thanh toán tại mục Tiền Công
+                  </Badge>
+                </div>
               </div>
 
-              {/* Công cụ tính nhanh */}
+              {/* Ghi chú hướng dẫn flow */}
+              <div className="flex items-start gap-2 p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs text-blue-800 dark:text-blue-300">
+                <Info className="size-4 shrink-0 mt-0.5 text-blue-500" />
+                <p>
+                  <strong>Lưu ý:</strong> Khi xác nhận tất toán, số tiền thù lao này sẽ được lưu làm <strong>định mức thù lao của show</strong> và tự động cộng dồn khi lập <strong>Bảng lương tháng</strong> của thành viên. <em>Các thành viên đã được thanh toán lương (Đã xác nhận) sẽ bị khóa thù lao để đảm bảo an toàn số liệu kế toán.</em>
+                </p>
+              </div>
+
+              {/* Công cụ chia tiền nhanh */}
               {payouts.length > 0 && (
-                <div className="p-3 rounded-lg bg-muted/60 flex flex-wrap items-center justify-between gap-3 text-xs">
-                  <div className="flex items-center gap-2">
-                    <Calculator className="size-4 text-primary" />
-                    <span className="font-semibold">Công cụ chia nhanh:</span>
-                    <Input
-                      type="number"
-                      placeholder="Nhập số tiền..."
-                      value={bulkAmount}
-                      onChange={(e) => setBulkAmount(e.target.value)}
-                      className="h-8 w-36 text-xs"
-                    />
+                <div className="p-3 rounded-xl bg-background border space-y-2">
+                  <div className="text-xs font-semibold flex items-center gap-1.5 text-muted-foreground">
+                    <Sparkles className="size-3.5 text-amber-500" />
+                    Công cụ chia thù lao nhanh cho thành viên chưa thanh toán:
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="relative w-44">
+                      <Input
+                        type="number"
+                        placeholder="Nhập số tiền..."
+                        value={bulkAmount}
+                        onChange={(e) => setBulkAmount(e.target.value)}
+                        className="h-8 text-xs rounded-xl pr-6 font-semibold"
+                      />
+                      <span className="absolute right-2 top-2 text-[10px] text-muted-foreground">đ</span>
+                    </div>
+
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
                       onClick={handleEqualSplit}
-                      className="h-8 text-xs"
+                      disabled={!bulkAmount || Number(bulkAmount) <= 0}
+                      className="h-8 text-xs gap-1 rounded-xl"
                     >
-                      Chia đều ({payouts.length} người)
+                      <Calculator className="size-3.5" />
+                      Chia đều cho {payouts.filter((p) => !p.isPaid).length} người
                     </Button>
+
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
                       onClick={handleSetAmountEach}
-                      className="h-8 text-xs"
+                      disabled={!bulkAmount || Number(bulkAmount) <= 0}
+                      className="h-8 text-xs gap-1 rounded-xl"
                     >
-                      Đặt cho mỗi người
+                      Đặt {formatCurrency(Number(bulkAmount) || 0)}/người
                     </Button>
                   </div>
                 </div>
               )}
 
-              {/* Bảng danh sách thành viên đi show */}
+              {/* Bảng danh sách thành viên và thù lao */}
               {payouts.length === 0 ? (
-                <div className="py-6 text-center text-xs text-muted-foreground border border-dashed rounded-lg">
-                  Sự kiện này chưa có thành viên nào được phân công trong lịch diễn. Vui lòng phân công nhân sự trước hoặc tạo phiếu chi thù lao thủ công.
+                <div className="py-4 text-center text-xs text-muted-foreground border border-dashed rounded-xl">
+                  Chưa có thành viên nào được phân công trong sự kiện này.
                 </div>
               ) : (
-                <div className="rounded-lg border overflow-hidden">
+                <div className="overflow-hidden rounded-xl border bg-background">
                   <Table>
-                    <TableHeader className="bg-muted/40 text-xs">
+                    <TableHeader className="bg-muted/40">
                       <TableRow>
-                        <TableHead className="w-10 text-center">#</TableHead>
-                        <TableHead>Thành viên đi show</TableHead>
-                        <TableHead>Vị trí</TableHead>
-                        <TableHead className="w-44">Thù lao (VNĐ) *</TableHead>
-                        <TableHead className="w-36">Phương thức</TableHead>
-                        <TableHead>Ghi chú</TableHead>
+                        <TableHead className="w-10 text-center text-xs">STT</TableHead>
+                        <TableHead className="text-xs min-w-[160px]">Thành viên</TableHead>
+                        <TableHead className="text-xs min-w-[110px]">Vai trò</TableHead>
+                        <TableHead className="text-xs min-w-[150px]">Thù lao dự kiến (VNĐ)</TableHead>
+                        <TableHead className="text-xs min-w-[160px]">Ghi chú</TableHead>
                       </TableRow>
                     </TableHeader>
-                    <TableBody className="text-xs">
-                      {overview?.members.map((mem, index) => {
-                        const payout = payouts.find((p) => p.memberId === mem.memberId);
+                    <TableBody>
+                      {payouts.map((p, idx) => {
+                        const memberInfo = overview?.members.find((m) => m.memberId === p.memberId);
+                        const isPaid = p.isPaid;
                         return (
-                          <TableRow key={mem.id} className="hover:bg-muted/30">
-                            <TableCell className="text-center font-medium">{index + 1}</TableCell>
+                          <TableRow key={p.memberId} className={isPaid ? 'bg-muted/20' : ''}>
+                            <TableCell className="text-center font-mono text-xs text-muted-foreground">
+                              {idx + 1}
+                            </TableCell>
                             <TableCell>
-                              <div className="font-semibold text-foreground">{mem.fullName}</div>
-                              <div className="text-[10px] text-muted-foreground">
-                                {mem.memberCode} {mem.phone ? `• ${mem.phone}` : ''}
+                              <div className="flex items-center gap-1.5">
+                                <div>
+                                  <div className="font-semibold text-xs text-foreground flex items-center gap-1.5">
+                                    {memberInfo?.fullName || 'Thành viên'}
+                                    {isPaid && (
+                                      <Badge variant="outline" className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 text-[10px] py-0 h-4 gap-0.5">
+                                        <ShieldCheck className="size-2.5 text-emerald-500" />
+                                        Đã trả
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <div className="font-mono text-[10px] text-muted-foreground">
+                                    {memberInfo?.memberCode}
+                                  </div>
+                                </div>
                               </div>
                             </TableCell>
                             <TableCell>
-                              <Badge variant="secondary" className="text-[10px]">
-                                {mem.positionName}
+                              <Badge variant="secondary" className="text-[11px] font-normal">
+                                {p.positionName || 'Thành viên'}
                               </Badge>
                             </TableCell>
                             <TableCell>
-                              <Input
-                                type="number"
-                                min="0"
-                                step="10000"
-                                value={payout?.amount || ''}
-                                onChange={(e) =>
-                                  handlePayoutChange(mem.memberId, 'amount', Number(e.target.value))
-                                }
-                                placeholder="0"
-                                className="h-8 text-xs font-semibold text-rose-600 dark:text-rose-400"
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Select
-                                value={payout?.paymentMethod || 'CASH'}
-                                onValueChange={(val) =>
-                                  handlePayoutChange(mem.memberId, 'paymentMethod', val)
-                                }
-                              >
-                                <SelectTrigger className="h-8 text-xs">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {PAYMENT_METHODS.map((pm) => (
-                                    <SelectItem key={pm} value={pm} className="text-xs">
-                                      {PAYMENT_METHOD_LABELS[pm]}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                              <div className="relative">
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  step="10000"
+                                  disabled={isPaid}
+                                  value={p.amount || ''}
+                                  onChange={(e) =>
+                                    handlePayoutChange(p.memberId, 'amount', Number(e.target.value))
+                                  }
+                                  placeholder="0"
+                                  className={`h-8 text-xs font-semibold rounded-xl ${
+                                    isPaid
+                                      ? 'bg-muted text-muted-foreground border-dashed cursor-not-allowed opacity-80'
+                                      : 'text-amber-700 dark:text-amber-300'
+                                  }`}
+                                  title={isPaid ? 'Thù lao của thành viên này đã được chi trả ở mục Tiền Công nên không thể chỉnh sửa.' : ''}
+                                />
+                                {isPaid && (
+                                  <Lock className="size-3 text-muted-foreground absolute right-2.5 top-2.5 pointer-events-none" />
+                                )}
+                              </div>
                             </TableCell>
                             <TableCell>
                               <Input
-                                value={payout?.note || ''}
-                                onChange={(e) =>
-                                  handlePayoutChange(mem.memberId, 'note', e.target.value)
-                                }
                                 placeholder="Ghi chú thù lao..."
-                                className="h-8 text-xs"
+                                disabled={isPaid}
+                                value={p.note || ''}
+                                onChange={(e) => handlePayoutChange(p.memberId, 'note', e.target.value)}
+                                className={`h-8 text-xs rounded-xl ${
+                                  isPaid ? 'bg-muted text-muted-foreground cursor-not-allowed opacity-80' : ''
+                                }`}
+                                title={isPaid ? 'Đã thanh toán thù lao' : ''}
                               />
                             </TableCell>
                           </TableRow>
@@ -454,24 +524,24 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
                 </div>
               )}
 
-              {/* Tổng thù lao anh em */}
-              <div className="flex justify-between items-center text-xs px-1">
-                <span className="text-muted-foreground font-medium">
-                  Tổng thù lao chi cho {payouts.filter((p) => Number(p.amount) > 0).length}/{payouts.length} thành viên:
+              {/* Tổng thù lao dự kiến */}
+              <div className="flex justify-between items-center text-xs p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                <span className="font-semibold text-amber-900 dark:text-amber-200">
+                  TỔNG THÙ LAO DỰ KIẾN TRẢ THÀNH VIÊN:
                 </span>
-                <span className="text-sm font-bold text-rose-600 dark:text-rose-400">
-                  {formatCurrency(totalPayout)}
+                <span className="text-base font-black text-amber-600 dark:text-amber-400">
+                  {formatCurrency(totalEstimatedPayout)}
                 </span>
               </div>
             </div>
 
             {/* PHẦN 3: CHI PHÍ PHÁT SINH CỦA SHOW (XE CỘ, ĂN UỐNG...) */}
-            <div className="p-4 rounded-xl border bg-card shadow-2xs space-y-3">
+            <div className="p-4 rounded-2xl border bg-card shadow-2xs space-y-3">
               <div className="flex items-center justify-between border-b pb-2">
                 <h3 className="font-bold text-sm flex items-center gap-2 text-foreground">
                   <ArrowUpRight className="size-4 text-rose-500" /> 3. Chi Phí Phát Sinh Của Show (Xe cộ, Ăn uống, Thuê ngoài...)
                 </h3>
-                <Button type="button" variant="outline" size="sm" onClick={handleAddExpense} className="h-7 text-xs gap-1">
+                <Button type="button" variant="outline" size="sm" onClick={handleAddExpense} className="h-7 text-xs gap-1 rounded-xl">
                   <Plus className="size-3.5" /> Thêm chi phí
                 </Button>
               </div>
@@ -483,13 +553,13 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
               ) : (
                 <div className="space-y-2">
                   {expenses.map((exp, idx) => (
-                    <div key={idx} className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center p-2 rounded-lg bg-muted/40 border text-xs">
+                    <div key={idx} className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center p-2 rounded-xl bg-muted/40 border text-xs">
                       <div className="sm:col-span-3">
                         <Select
                           value={exp.category}
                           onValueChange={(v) => handleExpenseChange(idx, 'category', v)}
                         >
-                          <SelectTrigger className="h-8 text-xs">
+                          <SelectTrigger className="h-8 text-xs rounded-xl">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -503,10 +573,10 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
                       </div>
                       <div className="sm:col-span-3">
                         <Input
-                          placeholder="Nội dung chi..."
+                          placeholder="Mô tả chi..."
                           value={exp.description}
                           onChange={(e) => handleExpenseChange(idx, 'description', e.target.value)}
-                          className="h-8 text-xs"
+                          className="h-8 text-xs rounded-xl"
                         />
                       </div>
                       <div className="sm:col-span-2">
@@ -514,7 +584,7 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
                           placeholder="Người nhận..."
                           value={exp.receiver}
                           onChange={(e) => handleExpenseChange(idx, 'receiver', e.target.value)}
-                          className="h-8 text-xs"
+                          className="h-8 text-xs rounded-xl"
                         />
                       </div>
                       <div className="sm:col-span-3">
@@ -523,7 +593,7 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
                           placeholder="Số tiền..."
                           value={exp.amount || ''}
                           onChange={(e) => handleExpenseChange(idx, 'amount', Number(e.target.value))}
-                          className="h-8 text-xs font-semibold text-rose-600"
+                          className="h-8 text-xs font-semibold text-rose-600 rounded-xl"
                         />
                       </div>
                       <div className="sm:col-span-1 text-center">
@@ -532,7 +602,7 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
                           variant="ghost"
                           size="icon"
                           onClick={() => handleRemoveExpense(idx)}
-                          className="size-7 text-destructive hover:bg-destructive/10"
+                          className="size-7 text-destructive hover:bg-destructive/10 rounded-xl"
                         >
                           <Trash2 className="size-3.5" />
                         </Button>
@@ -548,27 +618,33 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
             </div>
 
             {/* PHẦN 4: BẢNG TỔNG KẾT & CÂN ĐỐI DÒNG TIỀN */}
-            <div className="p-4 rounded-xl bg-linear-to-r from-amber-500/10 via-emerald-500/10 to-primary/10 border border-amber-500/30 space-y-3">
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-emerald-500/10 to-primary/10 border border-amber-500/30 space-y-3">
               <div className="text-xs font-bold text-amber-800 dark:text-amber-300 uppercase tracking-wide">
                 BẢNG TỔNG KẾT CÂN ĐỐI SHOW DIỄN:
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="p-3 rounded-lg bg-card border text-center">
-                  <div className="text-xs text-muted-foreground font-medium">Tổng Thu Show</div>
-                  <div className="text-base font-black text-emerald-600 dark:text-emerald-400 mt-1">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
+                <div className="p-3 rounded-xl bg-card border text-center">
+                  <div className="text-[11px] text-muted-foreground font-medium">1. Tổng Thu Show</div>
+                  <div className="text-sm font-black text-emerald-600 dark:text-emerald-400 mt-1">
                     + {formatCurrency(totalIncome)}
                   </div>
                 </div>
-                <div className="p-3 rounded-lg bg-card border text-center">
-                  <div className="text-xs text-muted-foreground font-medium">Tổng Chi Show (Thù lao + Phí)</div>
-                  <div className="text-base font-black text-rose-600 dark:text-rose-400 mt-1">
-                    - {formatCurrency(totalExpenseSum)}
+                <div className="p-3 rounded-xl bg-card border text-center">
+                  <div className="text-[11px] text-muted-foreground font-medium">2. Chi Phí Phát Sinh</div>
+                  <div className="text-sm font-black text-rose-600 dark:text-rose-400 mt-1">
+                    - {formatCurrency(totalExpenses)}
                   </div>
                 </div>
-                <div className="p-3 rounded-lg bg-card border text-center">
-                  <div className="text-xs text-muted-foreground font-medium">Trích Vào Quỹ CLB</div>
-                  <div className={`text-base font-black mt-1 ${netFundProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                    {netFundProfit >= 0 ? '+' : ''} {formatCurrency(netFundProfit)}
+                <div className="p-3 rounded-xl bg-card border text-center">
+                  <div className="text-[11px] text-muted-foreground font-medium">3. Thù Lao Dự Kiến</div>
+                  <div className="text-sm font-black text-amber-600 dark:text-amber-400 mt-1">
+                    {formatCurrency(totalEstimatedPayout)}
+                  </div>
+                </div>
+                <div className="p-3 rounded-xl bg-card border text-center">
+                  <div className="text-[11px] text-muted-foreground font-medium">4. Lợi Nhuận Quỹ CLB</div>
+                  <div className={`text-sm font-black mt-1 ${netClubProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                    {netClubProfit >= 0 ? '+' : ''} {formatCurrency(netClubProfit)}
                   </div>
                 </div>
               </div>
@@ -590,17 +666,17 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
         )}
 
         <DialogFooter className="pt-4 border-t gap-2 sm:gap-0">
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl text-xs">
             Đóng
           </Button>
           <Button
             type="button"
             onClick={handleSubmit}
             isLoading={settleMutation.isPending}
-            className="bg-amber-600 hover:bg-amber-700 text-white gap-1.5"
+            className="bg-amber-600 hover:bg-amber-700 text-white font-bold gap-1.5 rounded-xl text-xs shadow-md shadow-amber-600/20"
           >
             <CheckCircle2 className="size-4" />
-            Xác Nhận Quyết Toán & Lập Phiếu Thu Chi
+            Xác Nhận Tất Toán Show
           </Button>
         </DialogFooter>
       </DialogContent>

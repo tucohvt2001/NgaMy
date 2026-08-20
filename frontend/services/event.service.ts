@@ -6,6 +6,8 @@ export interface EventListParams {
   limit?: number;
   search?: string;
   status?: EventStatus;
+  fromDate?: string;
+  toDate?: string;
 }
 
 export interface EventInput {

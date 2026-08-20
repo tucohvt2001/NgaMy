@@ -28,5 +28,7 @@ export const listEventQuerySchema = z.object({
   limit: z.string().optional(),
   status: z.enum(EVENT_STATUSES).optional(),
   search: z.string().optional(),
+  fromDate: z.string().optional(),
+  toDate: z.string().optional(),
 });
 export type ListEventQuery = z.infer<typeof listEventQuerySchema>;
