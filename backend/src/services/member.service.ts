@@ -5,18 +5,16 @@ import { CreateMemberInput, ListMemberQuery, UpdateMemberInput } from '../valida
 
 export const memberService = {
   async generateMemberCode(): Promise<string> {
-    const members = await prisma.member.findMany({
+    const latest = await prisma.member.findFirst({
+      orderBy: { memberCode: 'desc' },
       select: { memberCode: true },
     });
 
     let maxNum = 0;
-    for (const m of members) {
-      const match = m.memberCode.match(/(\d+)$/);
+    if (latest?.memberCode) {
+      const match = latest.memberCode.match(/(\d+)$/);
       if (match) {
-        const num = parseInt(match[1], 10);
-        if (!isNaN(num) && num > maxNum) {
-          maxNum = num;
-        }
+        maxNum = parseInt(match[1], 10) || 0;
       }
     }
 
@@ -70,22 +68,26 @@ export const memberService = {
   },
 
   async update(id: string, input: UpdateMemberInput) {
-    await this.getById(id);
-
-    if (input.memberCode) {
-      const existing = await memberRepository.findByCode(input.memberCode);
+    if (input.memberCode?.trim()) {
+      const existing = await memberRepository.findByCode(input.memberCode.trim());
       if (existing && existing.id !== id) {
         throw AppError.conflict('Mã thành viên đã tồn tại');
       }
     }
 
     const { teamIds, positionIds, ...rest } = input;
-    return memberRepository.update(id, {
-      ...rest,
-      // set thay thế toàn bộ danh sách đội/chức vụ hiện tại bằng danh sách mới được gửi lên
-      ...(teamIds !== undefined ? { teams: { set: teamIds.map((id) => ({ id })) } } : {}),
-      ...(positionIds !== undefined ? { positions: { set: positionIds.map((id) => ({ id })) } } : {}),
-    });
+    try {
+      return await memberRepository.update(id, {
+        ...rest,
+        ...(teamIds !== undefined ? { teams: { set: teamIds.map((id) => ({ id })) } } : {}),
+        ...(positionIds !== undefined ? { positions: { set: positionIds.map((id) => ({ id })) } } : {}),
+      });
+    } catch (err: any) {
+      if (err?.code === 'P2025') {
+        throw AppError.notFound('Không tìm thấy thành viên');
+      }
+      throw err;
+    }
   },
 
   // Vô hiệu hóa thành viên (soft-delete) thay vì xóa cứng để bảo toàn dữ liệu lịch sử liên quan

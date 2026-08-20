@@ -11,11 +11,14 @@ export const eventService = {
     const month = String(validDate.getMonth() + 1).padStart(2, '0');
     const prefix = `SK-${year}${month}-`;
 
-    const events = await prisma.event.findMany({
+    const latest = await prisma.event.findFirst({
       where: {
         eventCode: {
           startsWith: prefix,
         },
+      },
+      orderBy: {
+        eventCode: 'desc',
       },
       select: {
         eventCode: true,
@@ -23,13 +26,10 @@ export const eventService = {
     });
 
     let maxNum = 0;
-    for (const ev of events) {
-      const match = ev.eventCode.match(/(\d+)$/);
+    if (latest?.eventCode) {
+      const match = latest.eventCode.match(/(\d+)$/);
       if (match) {
-        const num = parseInt(match[1], 10);
-        if (!isNaN(num) && num > maxNum) {
-          maxNum = num;
-        }
+        maxNum = parseInt(match[1], 10) || 0;
       }
     }
 
