@@ -82,13 +82,37 @@ export const transactionService = {
     const skip = (page - 1) * limit;
 
     const where: Prisma.TransactionWhereInput = {};
+    const andFilters: Prisma.TransactionWhereInput[] = [];
 
-    if (type) where.type = type;
-    if (category) where.category = category;
-    if (paymentMethod) where.paymentMethod = paymentMethod;
-    if (status) where.status = status;
-    if (eventId) where.eventId = eventId;
-    if (memberId) where.memberId = memberId;
+    if (type) andFilters.push({ type });
+    if (category) andFilters.push({ category });
+    if (paymentMethod) andFilters.push({ paymentMethod });
+    if (status) andFilters.push({ status });
+    if (memberId) andFilters.push({ memberId });
+
+    if (eventId) {
+      const salaryDetails = await prisma.salaryDetail.findMany({
+        where: { eventId, salaryRecord: { status: 'CONFIRMED' } },
+        select: { salaryRecord: { select: { memberId: true } } },
+      });
+      const memberIdsInEvent = Array.from(new Set(salaryDetails.map((sd) => sd.salaryRecord.memberId)));
+
+      if (memberIdsInEvent.length > 0) {
+        andFilters.push({
+          OR: [
+            { eventId },
+            {
+              AND: [
+                { category: 'SALARY_PAYOUT' },
+                { memberId: { in: memberIdsInEvent } },
+              ],
+            },
+          ],
+        });
+      } else {
+        andFilters.push({ eventId });
+      }
+    }
 
     if (fromDate || toDate) {
       const dateFilter: Prisma.DateTimeFilter = {};
@@ -98,17 +122,23 @@ export const transactionService = {
         end.setHours(23, 59, 59, 999);
         dateFilter.lte = end;
       }
-      where.transactionDate = dateFilter;
+      andFilters.push({ transactionDate: dateFilter });
     }
 
     if (search && search.trim()) {
       const q = search.trim();
-      where.OR = [
-        { code: { contains: q, mode: 'insensitive' } },
-        { payerOrReceiver: { contains: q, mode: 'insensitive' } },
-        { description: { contains: q, mode: 'insensitive' } },
-        { notes: { contains: q, mode: 'insensitive' } },
-      ];
+      andFilters.push({
+        OR: [
+          { code: { contains: q, mode: 'insensitive' } },
+          { payerOrReceiver: { contains: q, mode: 'insensitive' } },
+          { description: { contains: q, mode: 'insensitive' } },
+          { notes: { contains: q, mode: 'insensitive' } },
+        ],
+      });
+    }
+
+    if (andFilters.length > 0) {
+      where.AND = andFilters;
     }
 
     const [total, items] = await Promise.all([

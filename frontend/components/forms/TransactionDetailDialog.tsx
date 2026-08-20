@@ -118,8 +118,8 @@ export function TransactionDetailDialog({
             {transaction.event && (
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-dashed pb-2">
                 <span className="text-muted-foreground font-medium">Sự kiện / Show diễn liên quan:</span>
-                <span className="font-medium text-primary">
-                  {transaction.event.eventCode} - {transaction.event.name}
+                <span className="font-bold text-amber-700 dark:text-amber-300 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/20 text-xs">
+                  🎪 {transaction.event.eventCode ? `[${transaction.event.eventCode}] ` : ''}{transaction.event.name}
                 </span>
               </div>
             )}

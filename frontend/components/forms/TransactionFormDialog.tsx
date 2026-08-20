@@ -169,19 +169,27 @@ export function TransactionFormDialog({
     if (selectedEventId && selectedEventId !== NONE_VALUE) {
       const selectedEvent = eventsData?.items.find((item) => item.id === selectedEventId);
       if (selectedEvent) {
-        // Tự động binding số tiền show vào 'số tiền'
-        if (selectedEvent.contractValue && selectedEvent.contractValue > 0) {
-          setValue('amount', selectedEvent.contractValue, { shouldValidate: true });
-        }
-        // Tự động điền người nộp nếu chưa nhập
-        const currentPayer = watch('payerOrReceiver') || '';
-        if (selectedEvent.customerName && !currentPayer.trim()) {
-          setValue('payerOrReceiver', selectedEvent.customerName, { shouldValidate: true });
-        }
-        // Tự động điền diễn giải nếu chưa nhập
-        const currentDesc = watch('description') || '';
-        if (!currentDesc.trim()) {
-          setValue('description', `Thu tiền biểu diễn sự kiện: ${selectedEvent.name}`);
+        if (selectedType === 'INCOME') {
+          // Tự động binding số tiền show vào 'số tiền' cho phiếu thu
+          if (selectedEvent.contractValue && selectedEvent.contractValue > 0) {
+            setValue('amount', selectedEvent.contractValue, { shouldValidate: true });
+          }
+          // Tự động điền người nộp nếu chưa nhập
+          const currentPayer = watch('payerOrReceiver') || '';
+          if (selectedEvent.customerName && !currentPayer.trim()) {
+            setValue('payerOrReceiver', selectedEvent.customerName, { shouldValidate: true });
+          }
+          // Tự động điền diễn giải nếu chưa nhập
+          const currentDesc = watch('description') || '';
+          if (!currentDesc.trim()) {
+            setValue('description', `Thu tiền biểu diễn sự kiện: ${selectedEvent.name}`);
+          }
+        } else {
+          // Khi là Phiếu Chi (EXPENSE)
+          const currentDesc = watch('description') || '';
+          if (!currentDesc.trim()) {
+            setValue('description', `Chi phí sự kiện: ${selectedEvent.name}`);
+          }
         }
       }
     }
@@ -245,7 +253,6 @@ export function TransactionFormDialog({
                 onClick={() => {
                   setValue('type', 'EXPENSE');
                   setValue('category', 'EQUIPMENT_PURCHASE');
-                  setValue('eventId', NONE_VALUE);
                   setValue('tipAmount', 0);
                 }}
                 className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all ${

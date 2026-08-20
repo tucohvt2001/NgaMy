@@ -89,9 +89,9 @@ export function SalaryPaymentQrDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md p-0 gap-0 overflow-hidden rounded-3xl border-border/80 shadow-2xl">
+      <DialogContent className="max-w-md p-0 gap-0 overflow-hidden rounded-3xl border-border/80 shadow-2xl flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="p-5 bg-gradient-to-r from-amber-500/15 via-background to-orange-500/10 border-b border-border/70">
+        <div className="p-4 sm:p-5 bg-gradient-to-r from-amber-500/15 via-background to-orange-500/10 border-b border-border/70 shrink-0">
           <DialogHeader className="space-y-1 text-left">
             <DialogTitle className="text-lg font-bold flex items-center gap-2 text-foreground">
               <QrCode className="size-5 text-amber-500" />
@@ -103,7 +103,7 @@ export function SalaryPaymentQrDialog({
           </DialogHeader>
         </div>
 
-        <div className="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
+        <div className="p-4 sm:p-5 space-y-3.5 overflow-y-auto flex-1">
           {/* Thông tin người nhận & Số tiền */}
           <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-between">
             <div>
@@ -145,7 +145,7 @@ export function SalaryPaymentQrDialog({
             <div className="space-y-3">
               <div className="flex flex-col items-center justify-center p-3 bg-white rounded-2xl border shadow-xs">
                 {qrUrl && (
-                  <div className="relative w-full max-w-[280px] aspect-[540/640] rounded-xl overflow-hidden">
+                  <div className="relative w-full max-w-[220px] aspect-[540/640] rounded-xl overflow-hidden">
                     <Image
                       src={qrUrl}
                       alt={`VietQR Thanh toán ${record.member?.fullName}`}
@@ -236,7 +236,7 @@ export function SalaryPaymentQrDialog({
         </div>
 
         {/* Footer */}
-        <DialogFooter className="p-4 bg-muted/10 border-t border-border/80 flex items-center justify-between sm:justify-between">
+        <DialogFooter className="p-3.5 sm:p-4 bg-muted/10 border-t border-border/80 flex flex-row items-center justify-between sm:justify-between shrink-0 gap-2">
           <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} className="rounded-xl text-xs">
             Đóng
           </Button>

@@ -279,7 +279,52 @@ export const salaryService = {
     const updated = await salaryRepository.confirm(id, confirmedBy);
 
     // Tự động tạo Phiếu Chi Tiền Công vào Sổ Quỹ cho kỳ lương tháng này
-    if (record.totalAmount > 0) {
+    if (record.details && record.details.length > 0) {
+      for (const detail of record.details) {
+        if (detail.amount > 0) {
+          const code = await transactionService.generateCode('EXPENSE', new Date());
+          await prisma.transaction.create({
+            data: {
+              code,
+              type: 'EXPENSE',
+              category: 'SALARY_PAYOUT',
+              amount: detail.amount,
+              transactionDate: new Date(),
+              paymentMethod: record.member?.bankAccount ? 'BANK_TRANSFER' : 'CASH',
+              status: 'COMPLETED',
+              payerOrReceiver: record.member?.fullName || 'Thành viên',
+              memberId: record.memberId,
+              eventId: detail.eventId || null,
+              createdBy: confirmedBy,
+              description: `Chi trả thù lao show "${detail.note || detail.event?.name || 'Sự kiện'}" cho ${record.member?.fullName || ''}`,
+              notes: `Bảng lương Tháng ${record.month}/${record.year}. Vị trí: ${detail.position?.name || 'Diễn viên'}`,
+            },
+          });
+        }
+      }
+
+      // Nếu có phụ cấp / thưởng - khấu trừ ngoài tiền show
+      const extraAmount = (record.allowance || 0) + (record.bonus || 0) - (record.deduction || 0);
+      if (extraAmount > 0) {
+        const code = await transactionService.generateCode('EXPENSE', new Date());
+        await prisma.transaction.create({
+          data: {
+            code,
+            type: 'EXPENSE',
+            category: 'SALARY_PAYOUT',
+            amount: extraAmount,
+            transactionDate: new Date(),
+            paymentMethod: record.member?.bankAccount ? 'BANK_TRANSFER' : 'CASH',
+            status: 'COMPLETED',
+            payerOrReceiver: record.member?.fullName || 'Thành viên',
+            memberId: record.memberId,
+            createdBy: confirmedBy,
+            description: `Phụ cấp & thưởng thêm Tháng ${record.month}/${record.year} cho ${record.member?.fullName || ''}`,
+            notes: `Phụ cấp: ${record.allowance}đ, Thưởng: ${record.bonus}đ, Khấu trừ: ${record.deduction}đ`,
+          },
+        });
+      }
+    } else if (record.totalAmount > 0) {
       const code = await transactionService.generateCode('EXPENSE', new Date());
       await prisma.transaction.create({
         data: {
@@ -293,7 +338,7 @@ export const salaryService = {
           payerOrReceiver: record.member?.fullName || 'Thành viên',
           memberId: record.memberId,
           createdBy: confirmedBy,
-          description: `Chi trả tiền công Tháng ${record.month}/${record.year} cho ${record.member?.fullName || ''} (${record.totalSessions} show)`,
+          description: `Chi trả tiền công Tháng ${record.month}/${record.year} cho ${record.member?.fullName || ''}`,
           notes: `Lương cơ bản: ${record.baseAmount}đ, Phụ cấp: ${record.allowance}đ, Thưởng: ${record.bonus}đ, Khấu trừ: ${record.deduction}đ`,
         },
       });

@@ -85,7 +85,7 @@ export function MemberSalaryDetailDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden rounded-3xl border-border/80 shadow-2xl">
         {/* Header Thông tin thành viên & Tháng lương */}
-        <div className="p-5 sm:p-6 bg-gradient-to-r from-amber-500/10 via-background to-amber-500/5 border-b border-border/80">
+        <div className="p-5 sm:p-6 bg-gradient-to-r from-amber-500/10 via-background to-amber-500/5 border-b border-border/80 shrink-0">
           <DialogHeader className="space-y-3 text-left">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-3">
@@ -281,7 +281,7 @@ export function MemberSalaryDetailDialog({
         </div>
 
         {/* Footer actions */}
-        <DialogFooter className="p-4 border-t border-border/80 bg-muted/10 flex items-center justify-between sm:justify-between">
+        <DialogFooter className="p-4 border-t border-border/80 bg-muted/10 flex items-center justify-between sm:justify-between shrink-0">
           <div className="text-xs text-muted-foreground">
             Trạng thái: <strong className="text-foreground">{record.status === 'CONFIRMED' ? 'Đã thanh toán' : 'Chờ thanh toán'}</strong>
           </div>

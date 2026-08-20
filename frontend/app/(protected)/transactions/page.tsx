@@ -506,20 +506,24 @@ export default function TransactionsPage() {
                       </TableCell>
 
                       {/* Danh mục & Diễn giải */}
-                      <TableCell>
-                        <p className="font-medium text-xs text-foreground">
-                          {TRANSACTION_CATEGORY_LABELS[item.category as TransactionCategory] || item.category}
-                        </p>
-                        {item.description && (
-                          <p className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">
-                            {item.description}
+                      <TableCell className="max-w-xs">
+                        <div className="flex flex-col gap-0.5">
+                          <p className="font-bold text-xs text-foreground">
+                            {TRANSACTION_CATEGORY_LABELS[item.category as TransactionCategory] || item.category}
                           </p>
-                        )}
-                        {item.event && (
-                          <p className="text-[10px] text-primary/80 font-medium mt-0.5">
-                            Show: {item.event.name}
-                          </p>
-                        )}
+                          {item.description && (
+                            <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">
+                              {item.description}
+                            </p>
+                          )}
+                          {item.event && (
+                            <div className="flex items-center gap-1 mt-1">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30">
+                                🎪 Show: {item.event.eventCode ? `${item.event.eventCode} - ` : ''}{item.event.name}
+                              </span>
+                            </div>
+                          )}
+                        </div>
                       </TableCell>
 
                       {/* Người nộp/nhận */}
