@@ -7,13 +7,13 @@ RUN apk update && apk add --no-cache openssl libc6-compat
 
 FROM base AS deps
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm ci --omit=optional
 
 FROM base AS build
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npx prisma generate
-RUN npm run build
+RUN npx tsc -p tsconfig.json
 
 FROM base AS runtime
 ENV NODE_ENV=production
@@ -23,4 +23,4 @@ COPY --from=build /app/prisma ./prisma
 COPY package.json ./
 
 EXPOSE 5000
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/server.js"]
+CMD ["node", "dist/server.js"]
