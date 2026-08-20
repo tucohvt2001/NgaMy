@@ -115,7 +115,7 @@ export const transactionService = {
         where,
         skip,
         take: limit,
-        orderBy: { transactionDate: 'desc' },
+        orderBy: [{ transactionDate: 'desc' }, { createdAt: 'desc' }, { code: 'desc' }],
         include: {
           event: {
             select: {

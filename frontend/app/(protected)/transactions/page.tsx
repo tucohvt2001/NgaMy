@@ -49,6 +49,7 @@ import {
   useUpdateTransaction,
   useDeleteTransaction,
 } from '@/hooks/useTransactions';
+import { useEvents } from '@/hooks/useEvents';
 import { transactionService } from '@/services/transaction.service';
 import { useAuthStore } from '@/stores/authStore';
 import {
@@ -83,6 +84,7 @@ export default function TransactionsPage() {
   const [type, setType] = useState<string>(ALL_VALUE);
   const [category, setCategory] = useState<string>(ALL_VALUE);
   const [paymentMethod, setPaymentMethod] = useState<string>(ALL_VALUE);
+  const [eventId, setEventId] = useState<string>(ALL_VALUE);
   const [fromDate, setFromDate] = useState<string>('');
   const [toDate, setToDate] = useState<string>('');
 
@@ -95,6 +97,7 @@ export default function TransactionsPage() {
   const [isExporting, setIsExporting] = useState(false);
 
   // Queries
+  const { data: eventsData } = useEvents({ limit: 100 });
   const { data, isLoading, refetch } = useTransactions({
     page,
     limit: 15,
@@ -102,6 +105,7 @@ export default function TransactionsPage() {
     type: type !== ALL_VALUE ? (type as any) : undefined,
     category: category !== ALL_VALUE ? category : undefined,
     paymentMethod: paymentMethod !== ALL_VALUE ? (paymentMethod as any) : undefined,
+    eventId: eventId !== ALL_VALUE ? eventId : undefined,
     fromDate: fromDate || undefined,
     toDate: toDate || undefined,
   });
@@ -144,6 +148,7 @@ export default function TransactionsPage() {
         type: type !== ALL_VALUE ? (type as any) : undefined,
         category: category !== ALL_VALUE ? category : undefined,
         paymentMethod: paymentMethod !== ALL_VALUE ? (paymentMethod as any) : undefined,
+        eventId: eventId !== ALL_VALUE ? eventId : undefined,
         fromDate: fromDate || undefined,
         toDate: toDate || undefined,
       });
@@ -159,6 +164,7 @@ export default function TransactionsPage() {
     setType(ALL_VALUE);
     setCategory(ALL_VALUE);
     setPaymentMethod(ALL_VALUE);
+    setEventId(ALL_VALUE);
     setFromDate('');
     setToDate('');
     setPage(1);
@@ -302,6 +308,29 @@ export default function TransactionsPage() {
                   setPage(1);
                 }}
               />
+            </div>
+
+            {/* Lọc theo Sự kiện / Show diễn */}
+            <div className="sm:col-span-2">
+              <Select
+                value={eventId}
+                onValueChange={(val) => {
+                  setEventId(val);
+                  setPage(1);
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Tất cả sự kiện / show diễn" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL_VALUE}>Tất cả sự kiện / show diễn</SelectItem>
+                  {eventsData?.items.map((ev) => (
+                    <SelectItem key={ev.id} value={ev.id}>
+                      {ev.eventCode} - {ev.name} ({new Date(ev.eventDate).toLocaleDateString('vi-VN')})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Loại giao dịch */}
