@@ -1,4 +1,5 @@
 import ExcelJS from 'exceljs';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../config/prisma';
 import {
   CreateTransactionInput,
@@ -80,7 +81,7 @@ export const transactionService = {
     } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: Prisma.TransactionWhereInput = {};
 
     if (type) where.type = type;
     if (category) where.category = category;
@@ -90,13 +91,14 @@ export const transactionService = {
     if (memberId) where.memberId = memberId;
 
     if (fromDate || toDate) {
-      where.transactionDate = {};
-      if (fromDate) where.transactionDate.gte = new Date(fromDate);
+      const dateFilter: Prisma.DateTimeFilter = {};
+      if (fromDate) dateFilter.gte = new Date(fromDate);
       if (toDate) {
         const end = new Date(toDate);
         end.setHours(23, 59, 59, 999);
-        where.transactionDate.lte = end;
+        dateFilter.lte = end;
       }
+      where.transactionDate = dateFilter;
     }
 
     if (search && search.trim()) {
@@ -115,7 +117,7 @@ export const transactionService = {
         where,
         skip,
         take: limit,
-        orderBy: [{ transactionDate: 'desc' }, { createdAt: 'desc' }, { code: 'desc' }],
+        orderBy: { createdAt: 'desc' },
         include: {
           event: {
             select: {
