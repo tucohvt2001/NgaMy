@@ -12,6 +12,7 @@ function PopoverContent({
   className,
   align = 'start',
   sideOffset = 4,
+  onWheel,
   ...props
 }: React.ComponentProps<typeof PopoverPrimitive.Content>) {
   return (
@@ -19,8 +20,12 @@ function PopoverContent({
       <PopoverPrimitive.Content
         align={align}
         sideOffset={sideOffset}
+        onWheel={(e) => {
+          e.stopPropagation();
+          onWheel?.(e);
+        }}
         className={cn(
-          'bg-popover text-popover-foreground z-50 w-72 rounded-md border p-2 shadow-md outline-none',
+          'bg-popover text-popover-foreground z-50 w-72 rounded-md border p-2 shadow-md outline-none overscroll-contain',
           className,
         )}
         {...props}

@@ -47,21 +47,24 @@ export function MultiSelect({ options, value, onChange, placeholder = 'Chọn...
           <ChevronsUpDown className="size-4 opacity-50 shrink-0" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="max-h-64 overflow-y-auto">
+      <PopoverContent
+        className="w-[var(--radix-popover-trigger-width)] min-w-52 max-h-56 overflow-y-auto overscroll-contain p-1 shadow-lg"
+        onWheel={(e) => e.stopPropagation()}
+      >
         {options.length === 0 ? (
-          <p className="p-2 text-sm text-muted-foreground">Không có lựa chọn nào</p>
+          <p className="p-2 text-xs text-muted-foreground">Không có lựa chọn nào</p>
         ) : (
-          <div className="space-y-1">
+          <div className="space-y-0.5 p-0.5">
             {options.map((option) => (
               <label
                 key={option.value}
-                className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent"
+                className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-xs sm:text-sm hover:bg-accent transition-colors select-none"
               >
                 <Checkbox
                   checked={value.includes(option.value)}
                   onCheckedChange={() => toggle(option.value)}
                 />
-                {option.label}
+                <span className="truncate">{option.label}</span>
               </label>
             ))}
           </div>
