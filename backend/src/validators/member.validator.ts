@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { GENDERS, MEMBER_STATUSES } from '../types/enums';
 
 export const createMemberSchema = z.object({
-  memberCode: z.string().min(1, 'Vui lòng nhập mã thành viên'),
+  memberCode: z.string().optional(),
   fullName: z.string().min(1, 'Vui lòng nhập họ tên'),
   avatar: z.string().optional().nullable(),
   dateOfBirth: z.coerce.date().optional().nullable(),

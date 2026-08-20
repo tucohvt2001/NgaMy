@@ -34,7 +34,7 @@ export const memberRepository = {
       skip: params.skip,
       take: params.take,
       include: memberInclude,
-      orderBy: { createdAt: 'desc' },
+      orderBy: { memberCode: 'asc' },
     });
   },
 

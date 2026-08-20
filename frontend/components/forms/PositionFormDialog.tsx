@@ -67,7 +67,7 @@ export function PositionFormDialog({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Hủy
             </Button>
-            <Button type="submit" disabled={isLoading}>
+            <Button type="submit" isLoading={isLoading}>
               {isLoading ? 'Đang lưu...' : 'Lưu'}
             </Button>
           </DialogFooter>

@@ -138,7 +138,7 @@ async function main(): Promise<void> {
     },
   });
 
-  await prisma.user.upsert({
+  const adminUser = await prisma.user.upsert({
     where: { username: 'admin' },
     update: {},
     create: {
@@ -348,6 +348,102 @@ async function main(): Promise<void> {
     });
   }
 
+  // Seed giao dịch thu chi demo
+  const sampleTransactions = [
+    {
+      code: 'PT-202608-0001',
+      type: 'INCOME',
+      category: 'EVENT_REVENUE',
+      amount: 15000000,
+      transactionDate: new Date(year, month - 1, 5, 10, 0, 0),
+      paymentMethod: 'BANK_TRANSFER',
+      status: 'COMPLETED',
+      payerOrReceiver: 'Công ty TNHH Bất Động Sản Vạn Thịnh',
+      description: 'Thu tiền biểu diễn khai trương chi nhánh mới',
+      createdBy: adminUser.id,
+    },
+    {
+      code: 'PT-202608-0002',
+      type: 'INCOME',
+      category: 'SPONSORSHIP',
+      amount: 5000000,
+      transactionDate: new Date(year, month - 1, 8, 14, 30, 0),
+      paymentMethod: 'BANK_TRANSFER',
+      status: 'COMPLETED',
+      payerOrReceiver: 'Anh Nguyễn Hoàng Nam (Mạnh thường quân)',
+      description: 'Tài trợ kinh phí mua đồng phục thi đấu giải TP',
+      createdBy: adminUser.id,
+    },
+    {
+      code: 'PT-202608-0003',
+      type: 'INCOME',
+      category: 'MEMBERSHIP_FEE',
+      amount: 1200000,
+      transactionDate: new Date(year, month - 1, 10, 9, 0, 0),
+      paymentMethod: 'CASH',
+      status: 'COMPLETED',
+      payerOrReceiver: 'Đội Trống & Nhạc',
+      description: 'Thu quỹ hội viên tháng 8',
+      createdBy: adminUser.id,
+    },
+    {
+      code: 'PC-202608-0001',
+      type: 'EXPENSE',
+      category: 'EQUIPMENT_PURCHASE',
+      amount: 6500000,
+      transactionDate: new Date(year, month - 1, 12, 15, 0, 0),
+      paymentMethod: 'BANK_TRANSFER',
+      status: 'COMPLETED',
+      payerOrReceiver: 'Cơ sở sản xuất Lân Sư Rồng Hưng Phát',
+      description: 'Mua 01 đầu lân Kim Long dạ quang biểu diễn đêm',
+      createdBy: adminUser.id,
+    },
+    {
+      code: 'PC-202608-0002',
+      type: 'EXPENSE',
+      category: 'EQUIPMENT_MAINTENANCE',
+      amount: 1200000,
+      transactionDate: new Date(year, month - 1, 14, 11, 0, 0),
+      paymentMethod: 'CASH',
+      status: 'COMPLETED',
+      payerOrReceiver: 'Tiệm may da Hùng',
+      description: 'Bọc lại mặt trống da trâu và may đuôi lân đỏ',
+      createdBy: adminUser.id,
+    },
+    {
+      code: 'PC-202608-0003',
+      type: 'EXPENSE',
+      category: 'TRAVEL_FOOD',
+      amount: 1800000,
+      transactionDate: new Date(year, month - 1, 16, 19, 30, 0),
+      paymentMethod: 'CASH',
+      status: 'COMPLETED',
+      payerOrReceiver: 'Nhà xe Minh Quân & Quán ăn Hoa Mai',
+      description: 'Tiền xe và ăn tối cho đoàn 15 anh em sau show diễn',
+      createdBy: adminUser.id,
+    },
+    {
+      code: 'PC-202608-0004',
+      type: 'EXPENSE',
+      category: 'SALARY_PAYOUT',
+      amount: 4500000,
+      transactionDate: new Date(year, month - 1, 18, 16, 0, 0),
+      paymentMethod: 'BANK_TRANSFER',
+      status: 'COMPLETED',
+      payerOrReceiver: 'Chi trả thù lao thành viên đợt 1',
+      description: 'Thanh toán tiền công 3 show đầu tháng',
+      createdBy: adminUser.id,
+    },
+  ];
+
+  for (const tx of sampleTransactions) {
+    await prisma.transaction.upsert({
+      where: { code: tx.code },
+      update: {},
+      create: tx,
+    });
+  }
+
   console.log('Seed dữ liệu hoàn tất.');
   console.log(`Tài khoản demo (mật khẩu: ${DEFAULT_PASSWORD}):`);
   console.log('  - superadmin / SUPER_ADMIN');
@@ -355,6 +451,7 @@ async function main(): Promise<void> {
   console.log('  - doitruong / TEAM_LEADER');
   console.log('  - thanhvien1..5 / MEMBER');
 }
+
 
 main()
   .then(() => process.exit(0))

@@ -1,8 +1,42 @@
+import { prisma } from '../config/prisma';
 import { AppError } from '../utils/AppError';
 import { eventRepository } from '../repositories/event.repository';
 import { CreateEventInput, ListEventQuery, UpdateEventInput } from '../validators/event.validator';
 
 export const eventService = {
+  async generateEventCode(targetDate?: Date): Promise<string> {
+    const d = targetDate ? new Date(targetDate) : new Date();
+    const validDate = isNaN(d.getTime()) ? new Date() : d;
+    const year = validDate.getFullYear();
+    const month = String(validDate.getMonth() + 1).padStart(2, '0');
+    const prefix = `SK-${year}${month}-`;
+
+    const events = await prisma.event.findMany({
+      where: {
+        eventCode: {
+          startsWith: prefix,
+        },
+      },
+      select: {
+        eventCode: true,
+      },
+    });
+
+    let maxNum = 0;
+    for (const ev of events) {
+      const match = ev.eventCode.match(/(\d+)$/);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (!isNaN(num) && num > maxNum) {
+          maxNum = num;
+        }
+      }
+    }
+
+    const nextNumber = maxNum + 1;
+    return `${prefix}${String(nextNumber).padStart(4, '0')}`;
+  },
+
   async list(query: ListEventQuery) {
     const page = Number(query.page) || 1;
     const limit = Number(query.limit) || 20;
@@ -26,25 +60,42 @@ export const eventService = {
   },
 
   async create(input: CreateEventInput, createdBy: string) {
-    const existing = await eventRepository.findByCode(input.eventCode);
-    if (existing) {
-      throw AppError.conflict('Mã sự kiện đã tồn tại');
+    let eventCode = input.eventCode?.trim();
+    if (!eventCode) {
+      eventCode = await this.generateEventCode(input.eventDate ? new Date(input.eventDate) : undefined);
+    } else {
+      const existing = await eventRepository.findByCode(eventCode);
+      if (existing) {
+        throw AppError.conflict('Mã sự kiện đã tồn tại');
+      }
     }
+
+    const { eventCode: _, ...rest } = input;
     return eventRepository.create({
-      ...input,
+      ...rest,
+      eventCode,
+      eventDate: new Date(input.eventDate),
       creator: { connect: { id: createdBy } },
     });
   },
 
   async update(id: string, input: UpdateEventInput) {
     await this.getById(id);
-    if (input.eventCode) {
-      const existing = await eventRepository.findByCode(input.eventCode);
+    if (input.eventCode?.trim()) {
+      const existing = await eventRepository.findByCode(input.eventCode.trim());
       if (existing && existing.id !== id) {
         throw AppError.conflict('Mã sự kiện đã tồn tại');
       }
     }
-    return eventRepository.update(id, input);
+
+    const dataToUpdate: any = { ...input };
+    if (input.eventDate) {
+      dataToUpdate.eventDate = new Date(input.eventDate);
+    }
+    if (!dataToUpdate.eventCode) {
+      delete dataToUpdate.eventCode;
+    }
+    return eventRepository.update(id, dataToUpdate);
   },
 
   // Hủy sự kiện thay vì xóa cứng để giữ lại lịch sử phân công/chấm công/tiền công

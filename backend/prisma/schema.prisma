@@ -67,6 +67,8 @@ model User {
   confirmedAttendances Attendance[]   @relation("AttendanceConfirmedBy")
   approvedLeaves       LeaveRequest[] @relation("LeaveApprovedBy")
   confirmedSalaries    SalaryRecord[] @relation("SalaryConfirmedBy")
+  createdTransactions  Transaction[]  @relation("TransactionCreatedBy")
+  approvedTransactions Transaction[]  @relation("TransactionApprovedBy")
 
   @@index([roleId])
 }
@@ -130,6 +132,7 @@ model Member {
   leaveRequests LeaveRequest[]
   salaryConfigs SalaryConfig[]
   salaryRecords SalaryRecord[]
+  transactions  Transaction[]
 
   @@index([status])
 }
@@ -158,6 +161,7 @@ model Event {
   attendances   Attendance[]
   salaryConfigs SalaryConfig[]
   salaryDetails SalaryDetail[]
+  transactions  Transaction[]
 
   @@index([eventDate])
   @@index([status])
@@ -290,3 +294,41 @@ model SalaryDetail {
   @@index([salaryRecordId])
   @@index([eventId])
 }
+
+// ============ SỔ QUỸ THU CHI ============
+
+model Transaction {
+  id              String    @id @default(cuid())
+  code            String    @unique // vd: PT2026080001, PC2026080001
+  type            String    // INCOME, EXPENSE
+  category        String    // EVENT_REVENUE, SPONSORSHIP, MEMBER_FEE, EQUIPMENT_RENTAL, OTHER_INCOME, SALARY_PAYOUT, EQUIPMENT_PURCHASE, EQUIPMENT_MAINTENANCE, TRAVEL_FOOD, EVENT_OPERATIONS, UNIFORM, OTHER_EXPENSE
+  amount          Float
+  tipAmount       Float     @default(0) // Tiền lộc (tips) cho các show diễn / hái lộc
+  transactionDate DateTime
+  paymentMethod   String    @default("CASH") // CASH, BANK_TRANSFER
+  status          String    @default("COMPLETED") // COMPLETED, PENDING, CANCELLED
+  payerOrReceiver String    // Người nộp tiền hoặc người nhận tiền
+  description     String?
+  eventId         String?
+  memberId        String?
+  createdBy       String
+  approvedBy      String?
+  receiptImage    String?
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  event           Event?    @relation(fields: [eventId], references: [id])
+  member          Member?   @relation(fields: [memberId], references: [id])
+  creator         User      @relation("TransactionCreatedBy", fields: [createdBy], references: [id])
+  approver        User?     @relation("TransactionApprovedBy", fields: [approvedBy], references: [id])
+
+  @@index([type])
+  @@index([category])
+  @@index([transactionDate])
+  @@index([status])
+  @@index([eventId])
+  @@index([memberId])
+  @@index([createdBy])
+}
+

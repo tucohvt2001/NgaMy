@@ -10,7 +10,7 @@ export interface MemberListParams {
 }
 
 export interface MemberInput {
-  memberCode: string;
+  memberCode?: string;
   fullName: string;
   gender?: string | null;
   phone?: string | null;

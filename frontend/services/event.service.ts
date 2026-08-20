@@ -9,7 +9,7 @@ export interface EventListParams {
 }
 
 export interface EventInput {
-  eventCode: string;
+  eventCode?: string;
   name: string;
   eventDate: string;
   startTime?: string | null;
@@ -47,6 +47,21 @@ export const eventService = {
 
   async cancel(id: string) {
     await apiClient.delete(`/events/${id}`);
+  },
+
+  async getSettlement(id: string) {
+    const res = await apiClient.get<ApiSuccessResponse<import('@/types/models').EventSettlementOverview>>(
+      `/events/${id}/settlement`,
+    );
+    return res.data.data;
+  },
+
+  async settle(id: string, input: import('@/types/models').EventSettlementInput) {
+    const res = await apiClient.post<ApiSuccessResponse<import('@/types/models').EventSettlementResult>>(
+      `/events/${id}/settlement`,
+      input,
+    );
+    return res.data.data;
   },
 };
 

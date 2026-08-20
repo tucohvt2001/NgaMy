@@ -40,7 +40,7 @@ export function ConfirmDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Hủy
           </Button>
-          <Button variant="destructive" onClick={onConfirm} disabled={isLoading}>
+          <Button variant="destructive" onClick={onConfirm} isLoading={isLoading}>
             {isLoading ? 'Đang xử lý...' : confirmLabel}
           </Button>
         </DialogFooter>

@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { EVENT_STATUSES } from '../types/enums';
 
 export const createEventSchema = z.object({
-  eventCode: z.string().min(1, 'Vui lòng nhập mã sự kiện'),
+  eventCode: z.string().optional().nullable(),
   name: z.string().min(1, 'Vui lòng nhập tên sự kiện'),
   eventDate: z.coerce.date(),
   startTime: z.coerce.date().optional().nullable(),
@@ -10,7 +10,10 @@ export const createEventSchema = z.object({
   location: z.string().min(1, 'Vui lòng nhập địa điểm'),
   customerName: z.string().optional().nullable(),
   customerPhone: z.string().optional().nullable(),
-  contractValue: z.coerce.number().optional().nullable(),
+  contractValue: z.preprocess(
+    (v) => (v === '' || v === null || v === undefined || isNaN(Number(v)) ? undefined : Number(v)),
+    z.number().optional().nullable()
+  ),
   status: z.enum(EVENT_STATUSES).optional(),
   description: z.string().optional().nullable(),
 });

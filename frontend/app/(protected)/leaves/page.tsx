@@ -168,7 +168,7 @@ export default function LeavesPage() {
               <Button type="button" variant="outline" onClick={() => setFormOpen(false)}>
                 Hủy
               </Button>
-              <Button type="submit" disabled={createMutation.isPending}>
+              <Button type="submit" isLoading={createMutation.isPending}>
                 {createMutation.isPending ? 'Đang gửi...' : 'Gửi đơn'}
               </Button>
             </DialogFooter>

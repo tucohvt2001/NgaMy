@@ -25,6 +25,38 @@ export const dashboardService = {
       }),
     ]);
 
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    let upcomingEvents = await prisma.event.findMany({
+      where: {
+        eventDate: { gte: startOfToday },
+        status: { not: 'CANCELLED' },
+      },
+      take: 5,
+      orderBy: { eventDate: 'asc' },
+      include: {
+        creator: { select: { id: true, username: true } },
+        _count: { select: { eventMembers: true } },
+      },
+    });
+
+    if (upcomingEvents.length < 5) {
+      const remaining = 5 - upcomingEvents.length;
+      const recentEvents = await prisma.event.findMany({
+        where: {
+          eventDate: { lt: startOfToday },
+        },
+        take: remaining,
+        orderBy: { eventDate: 'desc' },
+        include: {
+          creator: { select: { id: true, username: true } },
+          _count: { select: { eventMembers: true } },
+        },
+      });
+      upcomingEvents = [...upcomingEvents, ...recentEvents];
+    }
+
     return {
       totalMembers,
       activeMembers,
@@ -32,6 +64,7 @@ export const dashboardService = {
       eventsThisMonth,
       participantsThisMonth,
       totalSalaryThisMonth: salaryThisMonth._sum.totalAmount ?? 0,
+      upcomingEvents,
     };
   },
 

@@ -29,7 +29,10 @@ export const eventRepository = {
       where: buildWhere(params),
       skip: params.skip,
       take: params.take,
-      include: { creator: { select: { id: true, username: true } }, _count: { select: { eventMembers: true } } },
+      include: {
+        creator: { select: { id: true, username: true } },
+        _count: { select: { eventMembers: true, transactions: true } },
+      },
       orderBy: { eventDate: 'desc' },
     });
   },
@@ -44,6 +47,7 @@ export const eventRepository = {
       include: {
         creator: { select: { id: true, username: true } },
         eventMembers: { include: { member: true, position: true } },
+        _count: { select: { eventMembers: true, transactions: true } },
       },
     });
   },

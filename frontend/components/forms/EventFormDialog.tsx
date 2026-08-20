@@ -15,13 +15,16 @@ import { EVENT_STATUSES, STATUS_LABELS } from '@/types/enums';
 import { EventInput } from '@/services/event.service';
 
 const eventSchema = z.object({
-  eventCode: z.string().min(1, 'Vui lòng nhập mã sự kiện'),
+  eventCode: z.string().optional(),
   name: z.string().min(1, 'Vui lòng nhập tên sự kiện'),
-  eventDate: z.string().min(1, 'Vui lòng chọn ngày diễn'),
+  eventDate: z.string().min(1, 'Vui lòng chọn ngày giờ diễn'),
   location: z.string().min(1, 'Vui lòng nhập địa điểm'),
   customerName: z.string().optional(),
   customerPhone: z.string().optional(),
-  contractValue: z.coerce.number().optional(),
+  contractValue: z.preprocess(
+    (v) => (v === '' || v === null || v === undefined || isNaN(Number(v)) ? undefined : Number(v)),
+    z.number().optional()
+  ),
   status: z.enum(EVENT_STATUSES).optional(),
   description: z.string().optional(),
 });
@@ -34,6 +37,17 @@ interface EventFormDialogProps {
   event?: EventItem | null;
   onSubmit: (values: EventInput) => void;
   isLoading?: boolean;
+}
+
+function formatForDateTimeLocal(dateStr?: string | null) {
+  if (!dateStr) {
+    const now = new Date();
+    const offset = now.getTimezoneOffset() * 60000;
+    return new Date(now.getTime() - offset).toISOString().slice(0, 16);
+  }
+  const d = new Date(dateStr);
+  const offset = d.getTimezoneOffset() * 60000;
+  return new Date(d.getTime() - offset).toISOString().slice(0, 16);
 }
 
 export function EventFormDialog({ open, onOpenChange, event, onSubmit, isLoading }: EventFormDialogProps) {
@@ -50,7 +64,7 @@ export function EventFormDialog({ open, onOpenChange, event, onSubmit, isLoading
       reset({
         eventCode: event?.eventCode ?? '',
         name: event?.name ?? '',
-        eventDate: event?.eventDate ? event.eventDate.slice(0, 10) : '',
+        eventDate: event?.eventDate ? formatForDateTimeLocal(event.eventDate) : formatForDateTimeLocal(),
         location: event?.location ?? '',
         customerName: event?.customerName ?? '',
         customerPhone: event?.customerPhone ?? '',
@@ -62,7 +76,28 @@ export function EventFormDialog({ open, onOpenChange, event, onSubmit, isLoading
   }, [open, event, reset]);
 
   const submitHandler = (values: EventFormValues) => {
-    onSubmit({ ...values, eventDate: new Date(values.eventDate).toISOString() });
+    const dateObj = new Date(values.eventDate);
+    const validDateIso = !isNaN(dateObj.getTime()) ? dateObj.toISOString() : new Date().toISOString();
+
+    const payload: EventInput = {
+      name: values.name.trim(),
+      location: values.location.trim(),
+      eventDate: validDateIso,
+      customerName: values.customerName?.trim() || undefined,
+      customerPhone: values.customerPhone?.trim() || undefined,
+      contractValue:
+        values.contractValue !== undefined && !isNaN(Number(values.contractValue))
+          ? Number(values.contractValue)
+          : undefined,
+      status: values.status || 'DRAFT',
+      description: values.description?.trim() || undefined,
+    };
+
+    if (event?.eventCode) {
+      payload.eventCode = event.eventCode;
+    }
+
+    onSubmit(payload);
   };
 
   return (
@@ -74,13 +109,22 @@ export function EventFormDialog({ open, onOpenChange, event, onSubmit, isLoading
         <form onSubmit={handleSubmit(submitHandler)} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="eventCode">Mã sự kiện</Label>
-              <Input id="eventCode" disabled={!!event} {...register('eventCode')} />
+              <Label htmlFor="eventCode" className="flex items-center justify-between">
+                <span>Mã sự kiện</span>
+                {!event && <span className="text-[11px] text-emerald-600 font-medium">Tự động sinh</span>}
+              </Label>
+              <Input
+                id="eventCode"
+                disabled
+                placeholder={event ? event.eventCode : 'Tự động tạo mã (vd: SK-202608-0001)'}
+                className="bg-muted/50 cursor-not-allowed font-mono text-xs"
+                {...register('eventCode')}
+              />
               {errors.eventCode && <p className="text-sm text-destructive">{errors.eventCode.message}</p>}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="eventDate">Ngày diễn</Label>
-              <Input id="eventDate" type="date" {...register('eventDate')} />
+              <Label htmlFor="eventDate">Ngày giờ biểu diễn *</Label>
+              <Input id="eventDate" type="datetime-local" {...register('eventDate')} />
               {errors.eventDate && <p className="text-sm text-destructive">{errors.eventDate.message}</p>}
             </div>
           </div>
@@ -139,7 +183,7 @@ export function EventFormDialog({ open, onOpenChange, event, onSubmit, isLoading
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Hủy
             </Button>
-            <Button type="submit" disabled={isLoading}>
+            <Button type="submit" isLoading={isLoading}>
               {isLoading ? 'Đang lưu...' : 'Lưu'}
             </Button>
           </DialogFooter>

@@ -1,8 +1,29 @@
+import { prisma } from '../config/prisma';
 import { AppError } from '../utils/AppError';
 import { memberRepository } from '../repositories/member.repository';
 import { CreateMemberInput, ListMemberQuery, UpdateMemberInput } from '../validators/member.validator';
 
 export const memberService = {
+  async generateMemberCode(): Promise<string> {
+    const members = await prisma.member.findMany({
+      select: { memberCode: true },
+    });
+
+    let maxNum = 0;
+    for (const m of members) {
+      const match = m.memberCode.match(/(\d+)$/);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (!isNaN(num) && num > maxNum) {
+          maxNum = num;
+        }
+      }
+    }
+
+    const nextNum = maxNum + 1;
+    return `M${String(nextNum).padStart(3, '0')}`;
+  },
+
   async list(query: ListMemberQuery) {
     const page = Number(query.page) || 1;
     const limit = Number(query.limit) || 20;
@@ -29,14 +50,20 @@ export const memberService = {
   },
 
   async create(input: CreateMemberInput) {
-    const existing = await memberRepository.findByCode(input.memberCode);
-    if (existing) {
-      throw AppError.conflict('Mã thành viên đã tồn tại');
+    let memberCode = input.memberCode?.trim();
+    if (!memberCode) {
+      memberCode = await this.generateMemberCode();
+    } else {
+      const existing = await memberRepository.findByCode(memberCode);
+      if (existing) {
+        throw AppError.conflict('Mã thành viên đã tồn tại');
+      }
     }
 
     const { teamIds, positionIds, ...rest } = input;
     return memberRepository.create({
       ...rest,
+      memberCode,
       ...(teamIds?.length ? { teams: { connect: teamIds.map((id) => ({ id })) } } : {}),
       ...(positionIds?.length ? { positions: { connect: positionIds.map((id) => ({ id })) } } : {}),
     });

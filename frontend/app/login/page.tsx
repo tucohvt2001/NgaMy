@@ -228,7 +228,7 @@ export default function LoginPage() {
             <Button
               type="submit"
               className="w-full h-11 font-semibold text-sm shadow-md hover:shadow-lg transition-all gap-2 mt-2"
-              disabled={submitting}
+              isLoading={submitting}
             >
               {submitting ? (
                 'Đang xác thực...'

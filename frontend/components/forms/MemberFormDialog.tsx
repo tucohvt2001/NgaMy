@@ -24,7 +24,7 @@ import { MEMBER_STATUSES, STATUS_LABELS } from '@/types/enums';
 import { MemberInput } from '@/services/member.service';
 
 const memberSchema = z.object({
-  memberCode: z.string().min(1, 'Vui lòng nhập mã thành viên'),
+  memberCode: z.string().optional(),
   fullName: z.string().min(1, 'Vui lòng nhập họ tên'),
   phone: z.string().optional(),
   address: z.string().optional(),
@@ -76,7 +76,10 @@ export function MemberFormDialog({ open, onOpenChange, member, onSubmit, isLoadi
   }, [open, member, reset]);
 
   const submitHandler = (values: MemberFormValues) => {
-    onSubmit(values);
+    onSubmit({
+      ...values,
+      memberCode: member ? member.memberCode : undefined,
+    });
   };
 
   return (
@@ -88,13 +91,24 @@ export function MemberFormDialog({ open, onOpenChange, member, onSubmit, isLoadi
         <form onSubmit={handleSubmit(submitHandler)} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="memberCode">Mã thành viên</Label>
-              <Input id="memberCode" disabled={!!member} {...register('memberCode')} />
+              <Label htmlFor="memberCode" className="flex items-center justify-between">
+                <span>Mã thành viên</span>
+                {!member && (
+                  <span className="text-[11px] text-emerald-600 font-medium">Tự động sinh</span>
+                )}
+              </Label>
+              <Input
+                id="memberCode"
+                disabled
+                placeholder={member ? member.memberCode : 'Tự động tạo mã (vd: M006)'}
+                className="bg-muted/50 cursor-not-allowed font-mono text-xs"
+                {...register('memberCode')}
+              />
               {errors.memberCode && <p className="text-sm text-destructive">{errors.memberCode.message}</p>}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="fullName">Họ tên</Label>
-              <Input id="fullName" {...register('fullName')} />
+              <Label htmlFor="fullName">Họ tên *</Label>
+              <Input id="fullName" placeholder="Nhập họ và tên..." {...register('fullName')} />
               {errors.fullName && <p className="text-sm text-destructive">{errors.fullName.message}</p>}
             </div>
           </div>
@@ -185,7 +199,7 @@ export function MemberFormDialog({ open, onOpenChange, member, onSubmit, isLoadi
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Hủy
             </Button>
-            <Button type="submit" disabled={isLoading}>
+            <Button type="submit" isLoading={isLoading}>
               {isLoading ? 'Đang lưu...' : 'Lưu'}
             </Button>
           </DialogFooter>

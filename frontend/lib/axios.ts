@@ -1,6 +1,7 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { API_BASE_URL } from '@/constants/config';
 import { useAuthStore } from '@/stores/authStore';
+import { useLoadingStore } from '@/stores/loadingStore';
 
 export interface ApiSuccessResponse<T> {
   success: true;
@@ -23,18 +24,29 @@ export const apiClient = axios.create({
   },
 });
 
-// Đính kèm access token từ auth store vào mỗi request
-apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  const token = useAuthStore.getState().accessToken;
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+// Đính kèm access token và quản lý trạng thái loading toàn cục
+apiClient.interceptors.request.use(
+  (config: InternalAxiosRequestConfig) => {
+    useLoadingStore.getState().startLoading();
+    const token = useAuthStore.getState().accessToken;
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    useLoadingStore.getState().stopLoading();
+    return Promise.reject(error);
   }
-  return config;
-});
+);
 
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    useLoadingStore.getState().stopLoading();
+    return response;
+  },
   (error: AxiosError<ApiErrorResponse>) => {
+    useLoadingStore.getState().stopLoading();
     if (error.response?.status === 401) {
       useAuthStore.getState().clearAuth();
       if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
@@ -44,3 +56,4 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   },
 );
+

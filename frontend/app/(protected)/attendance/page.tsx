@@ -54,13 +54,18 @@ export default function AttendancePage() {
               ))}
             </SelectContent>
           </Select>
-          <Button disabled={!eventId} onClick={() => eventId && checkInMutation.mutate(eventId)}>
+          <Button
+            disabled={!eventId}
+            isLoading={checkInMutation.isPending}
+            onClick={() => eventId && checkInMutation.mutate(eventId)}
+          >
             <LogIn className="mr-2 size-4" />
             Check-in
           </Button>
           <Button
             variant="outline"
             disabled={!eventId}
+            isLoading={checkOutMutation.isPending}
             onClick={() => eventId && checkOutMutation.mutate(eventId)}
           >
             <LogOut className="mr-2 size-4" />

@@ -14,6 +14,7 @@ import {
   CheckSquare,
   FileClock,
   Wallet,
+  ReceiptText,
   BarChart3,
   X,
 } from 'lucide-react';
@@ -54,7 +55,10 @@ const navGroups: NavGroup[] = [
   },
   {
     title: 'Tài chính',
-    items: [{ href: '/salaries', label: 'Tiền công', icon: Wallet, permission: 'salary:read' }],
+    items: [
+      { href: '/transactions', label: 'Sổ quỹ thu chi', icon: ReceiptText, permission: 'finance:read' },
+      { href: '/salaries', label: 'Tiền công', icon: Wallet, permission: 'salary:read' },
+    ],
   },
   {
     title: 'Báo cáo',
@@ -75,7 +79,7 @@ export function Sidebar({ onClose }: SidebarProps) {
       <div className="flex items-center justify-between gap-2 px-4 py-4 border-b">
         <span className="flex items-center gap-2 text-base font-bold leading-tight">
           <Image src="/logo.jpg" alt="Nga My Thượng" width={36} height={36} className="rounded-full" />
-          CLB Lân Sư Rồng Nga My Thượng
+          Thể Thao Nga My
         </span>
         {onClose && (
           <button onClick={onClose} className="md:hidden" aria-label="Đóng menu">

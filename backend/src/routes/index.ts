@@ -9,6 +9,7 @@ import eventRoutes from './event.routes';
 import attendanceRoutes from './attendance.routes';
 import leaveRoutes from './leave.routes';
 import salaryRoutes from './salary.routes';
+import transactionRoutes from './transaction.routes';
 import dashboardRoutes from './dashboard.routes';
 import reportRoutes from './report.routes';
 
@@ -24,7 +25,9 @@ router.use('/', eventRoutes);
 router.use('/', attendanceRoutes);
 router.use('/', leaveRoutes);
 router.use('/', salaryRoutes);
+router.use('/', transactionRoutes);
 router.use('/', dashboardRoutes);
 router.use('/', reportRoutes);
 
 export default router;
+

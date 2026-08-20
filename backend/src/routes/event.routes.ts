@@ -1,10 +1,12 @@
 import { Router } from 'express';
 import { eventController } from '../controllers/event.controller';
 import { eventMemberController } from '../controllers/eventMember.controller';
+import { eventSettlementController } from '../controllers/eventSettlement.controller';
 import { authenticate } from '../middlewares/authenticate';
 import { authorize } from '../middlewares/authorize';
 import { validate } from '../middlewares/validate';
 import { createEventSchema, updateEventSchema } from '../validators/event.validator';
+import { eventSettlementSchema } from '../validators/eventSettlement.validator';
 import {
   createEventMemberSchema,
   updateEventMemberSchema,
@@ -131,5 +133,24 @@ router
     eventMemberController.update,
   )
   .delete(authorize(PERMISSIONS.ASSIGNMENT_MANAGE), eventMemberController.remove);
+
+/**
+ * @openapi
+ * /events/{id}/settlement:
+ *   get:
+ *     summary: Thông tin quyết toán show diễn
+ *     tags: [Events]
+ *   post:
+ *     summary: Quyết toán show và tự động lập phiếu thu chi
+ *     tags: [Events]
+ */
+router
+  .route('/events/:id/settlement')
+  .get(authorize(PERMISSIONS.EVENT_READ), eventSettlementController.getOverview)
+  .post(
+    authorize(PERMISSIONS.EVENT_UPDATE),
+    validate({ body: eventSettlementSchema }),
+    eventSettlementController.settle,
+  );
 
 export default router;

@@ -511,7 +511,13 @@ export function AssignMemberDialog({
             <Button type="button" variant="outline" size="sm" onClick={() => onOpenChange(false)}>
               Hủy
             </Button>
-            <Button type="button" size="sm" onClick={handleSubmit} disabled={isLoading || rows.length === 0}>
+            <Button
+              type="button"
+              size="sm"
+              onClick={handleSubmit}
+              isLoading={isLoading}
+              disabled={rows.length === 0}
+            >
               {isLoading ? 'Đang lưu...' : `Xác nhận phân công (${rows.filter((r) => r.memberId).length})`}
             </Button>
           </div>
