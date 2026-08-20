@@ -4,8 +4,8 @@ import { logger } from './config/logger';
 
 const app = createApp();
 
-const server = app.listen(env.port, () => {
-  logger.info(`Server đang chạy tại http://localhost:${env.port}`);
+const server = app.listen(env.port, '0.0.0.0', () => {
+  logger.info(`Server đang chạy tại http://0.0.0.0:${env.port}`);
   logger.info(`Swagger docs tại http://localhost:${env.port}/api-docs`);
 });
 
