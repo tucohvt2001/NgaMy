@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { MoneyInput } from '@/components/ui/money-input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -277,7 +278,7 @@ export default function SalariesPage() {
                   <TableHead className="w-12 text-center">STT</TableHead>
                   <TableHead>Thành viên</TableHead>
                   <TableHead className="text-center">Số show đi</TableHead>
-                  <TableHead className="text-right">Lương cơ bản</TableHead>
+                  <TableHead className="text-right">Lương</TableHead>
                   <TableHead className="text-right">Phụ cấp</TableHead>
                   <TableHead className="text-right">Thưởng</TableHead>
                   <TableHead className="text-right">Khấu trừ</TableHead>
@@ -335,8 +336,8 @@ export default function SalariesPage() {
                       <Badge
                         variant={record.status === 'CONFIRMED' ? 'default' : 'secondary'}
                         className={`text-[10px] uppercase font-bold ${record.status === 'CONFIRMED'
-                            ? 'bg-emerald-600 text-white hover:bg-emerald-700'
-                            : 'bg-muted text-muted-foreground'
+                          ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                          : 'bg-muted text-muted-foreground'
                           }`}
                       >
                         {record.status === 'CONFIRMED' ? 'ĐÃ THANH TOÁN' : 'CHỜ THANH TOÁN'}
@@ -454,34 +455,49 @@ export default function SalariesPage() {
 
             <div className="space-y-1.5">
               <Label className="text-xs">Phụ cấp thêm (VNĐ)</Label>
-              <Input
-                type="number"
-                step="10000"
-                placeholder="0"
-                {...register('allowance')}
-                className="rounded-xl text-xs"
+              <Controller
+                control={control}
+                name="allowance"
+                render={({ field }) => (
+                  <MoneyInput
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="0"
+                    className="rounded-xl text-xs"
+                  />
+                )}
               />
             </div>
 
             <div className="space-y-1.5">
               <Label className="text-xs">Thưởng thêm (VNĐ)</Label>
-              <Input
-                type="number"
-                step="10000"
-                placeholder="0"
-                {...register('bonus')}
-                className="rounded-xl text-xs"
+              <Controller
+                control={control}
+                name="bonus"
+                render={({ field }) => (
+                  <MoneyInput
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="0"
+                    className="rounded-xl text-xs"
+                  />
+                )}
               />
             </div>
 
             <div className="space-y-1.5">
               <Label className="text-xs">Khấu trừ (VNĐ)</Label>
-              <Input
-                type="number"
-                step="10000"
-                placeholder="0"
-                {...register('deduction')}
-                className="rounded-xl text-xs text-destructive"
+              <Controller
+                control={control}
+                name="deduction"
+                render={({ field }) => (
+                  <MoneyInput
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="0"
+                    className="rounded-xl text-xs text-destructive"
+                  />
+                )}
               />
             </div>
 

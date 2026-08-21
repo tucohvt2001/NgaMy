@@ -40,6 +40,18 @@ router
 
 /**
  * @openapi
+ * /events/stats:
+ *   get:
+ *     summary: Thống kê biểu đồ lịch diễn
+ *     tags: [Events]
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200: { description: Thống kê sự kiện và biểu đồ }
+ */
+router.get('/events/stats', authorize(PERMISSIONS.EVENT_READ), eventController.stats);
+
+/**
+ * @openapi
  * /events/{id}:
  *   get:
  *     summary: Chi tiết sự kiện

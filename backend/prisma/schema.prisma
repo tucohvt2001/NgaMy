@@ -138,6 +138,7 @@ model Member {
   salaryConfigs SalaryConfig[]
   salaryRecords SalaryRecord[]
   transactions  Transaction[]
+  transactionDetails TransactionDetail[]
 
   @@index([status])
   @@index([memberCode])
@@ -333,6 +334,8 @@ model Transaction {
   creator         User      @relation("TransactionCreatedBy", fields: [createdBy], references: [id])
   approver        User?     @relation("TransactionApprovedBy", fields: [approvedBy], references: [id])
 
+  details         TransactionDetail[]
+
   @@index([type])
   @@index([category])
   @@index([transactionDate])
@@ -340,6 +343,22 @@ model Transaction {
   @@index([eventId])
   @@index([memberId])
   @@index([createdBy])
+}
+
+model TransactionDetail {
+  id            String      @id @default(cuid())
+  transactionId String
+  memberId      String?
+  amount        Float
+  description   String?
+  note          String?
+  createdAt     DateTime    @default(now())
+
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  member        Member?     @relation(fields: [memberId], references: [id])
+
+  @@index([transactionId])
+  @@index([memberId])
 }
 
 // ============ DANH MỤC NGÂN HÀNG (MASTER DATA VIETQR) ============

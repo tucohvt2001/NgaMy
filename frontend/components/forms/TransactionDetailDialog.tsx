@@ -159,6 +159,71 @@ export function TransactionDetailDialog({
               </div>
             ) : null}
 
+            {/* BẢNG CHI TIẾT DANH SÁCH THÀNH VIÊN / MÓN TIỀN (MASTER - DETAIL) */}
+            {transaction.details && transaction.details.length > 0 && (
+              <div className="space-y-2 pt-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-xs text-foreground uppercase tracking-wide">
+                    Bảng kê chi tiết ({transaction.details.length} thành viên / mục):
+                  </span>
+                </div>
+                <div className="border rounded-xl overflow-hidden text-xs">
+                  <table className="w-full text-left border-collapse">
+                    <thead className="bg-muted/50 border-b text-[11px] font-bold text-muted-foreground">
+                      <tr>
+                        <th className="p-2 text-center w-10">STT</th>
+                        <th className="p-2">Họ và tên</th>
+                        <th className="p-2">Tài khoản nhận</th>
+                        <th className="p-2">Ghi chú</th>
+                        <th className="p-2 text-right">Số tiền</th>
+                        <th className="p-2 text-center w-24">Ký nhận</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border/60">
+                      {transaction.details.map((d, index) => {
+                        const m = d.member;
+                        const bankInfo = m?.bank?.shortName || m?.bankName;
+                        const accountInfo = m?.bankAccount ? `${bankInfo ? `${bankInfo} - ` : ''}${m.bankAccount}` : 'Tiền mặt';
+
+                        return (
+                          <tr key={d.id || index} className="hover:bg-muted/20">
+                            <td className="p-2 text-center font-mono text-muted-foreground">{index + 1}</td>
+                            <td className="p-2">
+                              <div className="font-bold text-foreground">{m?.fullName || d.description || 'Thành viên'}</div>
+                              {m?.memberCode && (
+                                <span className="font-mono text-[10px] text-muted-foreground">{m.memberCode}</span>
+                              )}
+                            </td>
+                            <td className="p-2 font-mono text-[11px] text-muted-foreground">
+                              {accountInfo}
+                            </td>
+                            <td className="p-2 text-muted-foreground text-[11px]">
+                              {d.note || '-'}
+                            </td>
+                            <td className="p-2 text-right font-mono font-bold text-foreground">
+                              {formatCurrency(d.amount)}
+                            </td>
+                            <td className="p-2 text-center text-muted-foreground/40 text-[10px]">
+                              ..................
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                    <tfoot className="bg-muted/30 border-t font-bold text-xs">
+                      <tr>
+                        <td colSpan={4} className="p-2 text-right uppercase">Tổng cộng:</td>
+                        <td className="p-2 text-right font-mono text-rose-600 font-black">
+                          {formatCurrency(transaction.details.reduce((sum, d) => sum + d.amount, 0))}
+                        </td>
+                        <td></td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+            )}
+
             {/* Số tiền nổi bật */}
             <div className="p-4 rounded-lg bg-muted/50 flex flex-col sm:flex-row items-center justify-between gap-2 border">
               <span className="text-base font-bold">TỔNG SỐ TIỀN:</span>
@@ -177,7 +242,7 @@ export function TransactionDetailDialog({
               </p>
             </div>
             <div className="space-y-12">
-              <p className="font-bold uppercase">{isIncome ? 'Người nộp tiền' : 'Người nhận tiền'}</p>
+              <p className="font-bold uppercase">{isIncome ? 'Người nộp tiền' : 'Đại diện người nhận'}</p>
               <p className="font-medium text-muted-foreground">{transaction.payerOrReceiver}</p>
             </div>
             <div className="space-y-12">

@@ -7,6 +7,13 @@ export function useEvents(params: EventListParams) {
   return useQuery({ queryKey: ['events', params], queryFn: () => eventService.list(params) });
 }
 
+export function useEventStats(year?: number) {
+  return useQuery({
+    queryKey: ['events-stats', year],
+    queryFn: () => eventService.getStats(year),
+  });
+}
+
 export function useEvent(id: string | undefined) {
   return useQuery({
     queryKey: ['events', id],

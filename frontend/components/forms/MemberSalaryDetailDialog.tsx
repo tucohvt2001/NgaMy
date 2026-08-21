@@ -138,7 +138,7 @@ export function MemberSalaryDetailDialog({
               <p className="text-lg font-black text-emerald-600 dark:text-emerald-400">{totalAttended} buổi</p>
             </div>
             <div className="p-3 rounded-2xl bg-muted/30 border border-border/60">
-              <span className="text-[11px] font-medium text-muted-foreground">Lương cơ bản</span>
+              <span className="text-[11px] font-medium text-muted-foreground">Lương</span>
               <p className="text-base font-bold text-foreground">{formatCurrency(record.baseAmount)}</p>
             </div>
             <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20">
@@ -186,8 +186,8 @@ export function MemberSalaryDetailDialog({
                           show.isAttended && show.isSettled
                             ? 'bg-emerald-500/[0.04] hover:bg-emerald-500/[0.08]'
                             : show.isAttended && !show.isSettled
-                            ? 'bg-amber-500/[0.04] hover:bg-amber-500/[0.08]'
-                            : 'hover:bg-muted/30 opacity-70'
+                              ? 'bg-amber-500/[0.04] hover:bg-amber-500/[0.08]'
+                              : 'hover:bg-muted/30 opacity-70'
                         }
                       >
                         <TableCell className="text-center text-xs font-semibold text-muted-foreground">
@@ -252,7 +252,7 @@ export function MemberSalaryDetailDialog({
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 border-t border-border/60">
               <div className="flex justify-between sm:flex-col">
-                <span className="text-muted-foreground">Lương cơ bản ({totalAttended} show đã dự toán):</span>
+                <span className="text-muted-foreground">Lương ({totalAttended} show đã dự toán):</span>
                 <span className="font-semibold text-foreground">{formatCurrency(record.baseAmount)}</span>
               </div>
               <div className="flex justify-between sm:flex-col">

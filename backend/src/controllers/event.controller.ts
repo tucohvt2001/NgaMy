@@ -30,4 +30,10 @@ export const eventController = {
     await eventService.cancel(req.params.id);
     sendSuccess(res, null, 'Hủy sự kiện thành công');
   }),
+
+  stats: asyncHandler(async (req: Request, res: Response) => {
+    const year = req.query.year ? Number(req.query.year) : undefined;
+    const stats = await eventService.getStats(year);
+    sendSuccess(res, stats, 'Lấy thống kê biểu đồ lịch diễn thành công');
+  }),
 };

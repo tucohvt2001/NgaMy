@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { transactionService } from '@/services/transaction.service';
-import { TransactionInput, TransactionQueryParams } from '@/types/models';
+import { TransactionInput, TransactionQueryParams, BulkRewardInput } from '@/types/models';
 import { getErrorMessage } from '@/lib/errors';
 
 const QUERY_KEY = 'transactions';
@@ -45,6 +45,22 @@ export function useCreateTransaction() {
     },
     onError: (error) => {
       toast.error(getErrorMessage(error, 'Không thể tạo phiếu giao dịch'));
+    },
+  });
+}
+
+export function useCreateBulkReward() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: BulkRewardInput) => transactionService.createBulkReward(input),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: [SUMMARY_KEY] });
+      const codeStr = data.transaction?.code ? `[${data.transaction.code}] ` : '';
+      toast.success(`Đã lập phiếu chi khen thưởng ${codeStr}cho ${data.memberCount} thành viên thành công!`);
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error, 'Không thể lập phiếu khen thưởng'));
     },
   });
 }

@@ -35,6 +35,7 @@ export const TRANSACTION_CATEGORIES = [
   'EQUIPMENT_RENTAL',
   'OTHER_INCOME',
   'SALARY_PAYOUT',
+  'BONUS_REWARD',
   'EQUIPMENT_PURCHASE',
   'EQUIPMENT_MAINTENANCE',
   'TRAVEL_FOOD',
@@ -54,6 +55,7 @@ export const INCOME_CATEGORIES: TransactionCategory[] = [
 
 export const EXPENSE_CATEGORIES: TransactionCategory[] = [
   'SALARY_PAYOUT',
+  'BONUS_REWARD',
   'EQUIPMENT_PURCHASE',
   'EQUIPMENT_MAINTENANCE',
   'TRAVEL_FOOD',
@@ -75,6 +77,7 @@ export const TRANSACTION_CATEGORY_LABELS: Record<TransactionCategory, string> = 
   EQUIPMENT_RENTAL: 'Cho thuê đạo cụ / Đầu lân',
   OTHER_INCOME: 'Thu khác',
   SALARY_PAYOUT: 'Chi trả tiền công',
+  BONUS_REWARD: 'Chi khen thưởng, lì xì, thưởng nóng',
   EQUIPMENT_PURCHASE: 'Mua sắm đầu lân / Đạo cụ / Trống',
   EQUIPMENT_MAINTENANCE: 'Bảo dưỡng / Sửa chữa đạo cụ',
   TRAVEL_FOOD: 'Ăn uống / Đi lại lưu diễn',

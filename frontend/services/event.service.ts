@@ -51,6 +51,13 @@ export const eventService = {
     await apiClient.delete(`/events/${id}`);
   },
 
+  async getStats(year?: number) {
+    const res = await apiClient.get<ApiSuccessResponse<import('@/types/models').EventStats>>('/events/stats', {
+      params: { year },
+    });
+    return res.data.data;
+  },
+
   async getSettlement(id: string) {
     const res = await apiClient.get<ApiSuccessResponse<import('@/types/models').EventSettlementOverview>>(
       `/events/${id}/settlement`,

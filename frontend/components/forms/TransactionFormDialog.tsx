@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { MoneyInput } from '@/components/ui/money-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -361,19 +362,18 @@ export function TransactionFormDialog({
                   ? 'Số tiền thu *'
                   : 'Số tiền chi *'}
               </Label>
-              <Input
-                id="amount"
-                type="number"
-                min="1000"
-                step="1000"
-                placeholder="Nhập số tiền..."
-                {...register('amount')}
+              <Controller
+                control={control}
+                name="amount"
+                render={({ field }) => (
+                  <MoneyInput
+                    id="amount"
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Nhập số tiền..."
+                  />
+                )}
               />
-              {watchedAmount > 0 && (
-                <p className="text-xs font-semibold text-muted-foreground">
-                  ≈ {watchedAmount.toLocaleString('vi-VN')} đ
-                </p>
-              )}
               {errors.amount && <p className="text-xs text-destructive">{errors.amount.message}</p>}
             </div>
 
@@ -389,19 +389,23 @@ export function TransactionFormDialog({
                   <Gift className="size-4" />
                   Tiền Lộc (Tips / Thưởng lộc)
                 </Label>
-                <Input
-                  id="tipAmount"
-                  type="number"
-                  min="0"
-                  step="1000"
-                  disabled={!isEventRevenue}
-                  placeholder={isEventRevenue ? 'Nhập tiền lộc biểu diễn (nếu có)...' : 'Chỉ áp dụng khi thu biểu diễn'}
-                  className={
-                    isEventRevenue
-                      ? 'border-amber-500/40 focus:ring-amber-500/20'
-                      : 'opacity-60 bg-muted/50 cursor-not-allowed'
-                  }
-                  {...register('tipAmount')}
+                <Controller
+                  control={control}
+                  name="tipAmount"
+                  render={({ field }) => (
+                    <MoneyInput
+                      id="tipAmount"
+                      value={field.value}
+                      onChange={field.onChange}
+                      disabled={!isEventRevenue}
+                      placeholder={isEventRevenue ? 'Nhập tiền lộc (nếu có)...' : 'Chỉ khi thu show'}
+                      className={
+                        isEventRevenue
+                          ? 'border-amber-500/40 focus:ring-amber-500/20'
+                          : 'opacity-60 bg-muted/50 cursor-not-allowed'
+                      }
+                    />
+                  )}
                 />
                 {isEventRevenue && watchedTipAmount > 0 ? (
                   <p className="text-xs font-semibold text-amber-600 dark:text-amber-400">

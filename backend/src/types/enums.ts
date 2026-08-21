@@ -43,6 +43,7 @@ export const TRANSACTION_CATEGORIES = [
 
   // Chi (EXPENSE)
   'SALARY_PAYOUT', // Chi trả tiền công biểu diễn
+  'BONUS_REWARD', // Chi khen thưởng, lì xì, thưởng nóng
   'EQUIPMENT_PURCHASE', // Mua sắm đầu lân, rồng, trống, lò, cờ
   'EQUIPMENT_MAINTENANCE', // Sửa chữa, may vá, bảo dưỡng đạo cụ
   'TRAVEL_FOOD', // Chi phí ăn uống, xăng xe khi lưu diễn

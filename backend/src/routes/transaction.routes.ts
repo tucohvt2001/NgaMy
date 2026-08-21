@@ -7,6 +7,7 @@ import {
   createTransactionSchema,
   queryTransactionSchema,
   updateTransactionSchema,
+  bulkRewardSchema,
 } from '../validators/transaction.validator';
 import { PERMISSIONS } from '../types/enums';
 
@@ -41,6 +42,23 @@ router
     validate({ body: createTransactionSchema }),
     transactionController.create,
   );
+
+/**
+ * @openapi
+ * /transactions/bulk-reward:
+ *   post:
+ *     summary: Lập phiếu chi khen thưởng hàng loạt cho nhiều thành viên
+ *     tags: [Transactions]
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       201: { description: Tạo phiếu khen thưởng hàng loạt thành công }
+ */
+router.post(
+  '/transactions/bulk-reward',
+  authorize(PERMISSIONS.FINANCE_MANAGE),
+  validate({ body: bulkRewardSchema }),
+  transactionController.createBulkReward,
+);
 
 /**
  * @openapi

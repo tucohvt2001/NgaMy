@@ -108,4 +108,98 @@ export const eventService = {
     await this.getById(id);
     return eventRepository.update(id, { status: 'CANCELLED' });
   },
+
+  async getStats(targetYear?: number) {
+    const year = targetYear || new Date().getFullYear();
+    const startDate = new Date(year, 0, 1);
+    const endDate = new Date(year, 11, 31, 23, 59, 59, 999);
+
+    const events = await prisma.event.findMany({
+      where: {
+        eventDate: {
+          gte: startDate,
+          lte: endDate,
+        },
+      },
+      include: {
+        _count: {
+          select: {
+            eventMembers: true,
+            transactions: true,
+          },
+        },
+      },
+      orderBy: { eventDate: 'asc' },
+    });
+
+    let totalContractValue = 0;
+    let completedEvents = 0;
+    let upcomingEvents = 0;
+    let cancelledEvents = 0;
+    let settledEvents = 0;
+    let unsettledEvents = 0;
+
+    const monthlyMap = Array.from({ length: 12 }, (_, i) => ({
+      month: i + 1,
+      monthLabel: `T${i + 1}`,
+      eventsCount: 0,
+      completedCount: 0,
+      contractValue: 0,
+      participantsCount: 0,
+    }));
+
+    const statusCounts: Record<string, number> = {
+      COMPLETED: 0,
+      CONFIRMED: 0,
+      IN_PROGRESS: 0,
+      DRAFT: 0,
+      CANCELLED: 0,
+    };
+
+    events.forEach((ev) => {
+      const monthIdx = new Date(ev.eventDate).getMonth();
+      const val = ev.contractValue || 0;
+      totalContractValue += val;
+
+      const isSettled = ev._count.transactions > 0;
+      if (isSettled) settledEvents++;
+      else unsettledEvents++;
+
+      if (ev.status === 'COMPLETED') completedEvents++;
+      else if (ev.status === 'CANCELLED') cancelledEvents++;
+      else upcomingEvents++;
+
+      statusCounts[ev.status] = (statusCounts[ev.status] || 0) + 1;
+
+      if (monthlyMap[monthIdx]) {
+        monthlyMap[monthIdx].eventsCount += 1;
+        if (ev.status === 'COMPLETED') monthlyMap[monthIdx].completedCount += 1;
+        monthlyMap[monthIdx].contractValue += val;
+        monthlyMap[monthIdx].participantsCount += ev._count.eventMembers;
+      }
+    });
+
+    return {
+      year,
+      totalEvents: events.length,
+      completedEvents,
+      upcomingEvents,
+      cancelledEvents,
+      settledEvents,
+      unsettledEvents,
+      totalContractValue,
+      monthlyStats: monthlyMap,
+      statusDistribution: [
+        { name: 'Đã hoàn thành', status: 'COMPLETED', value: statusCounts.COMPLETED || 0, color: '#10b981' },
+        { name: 'Đã xác nhận', status: 'CONFIRMED', value: statusCounts.CONFIRMED || 0, color: '#f59e0b' },
+        { name: 'Đang diễn ra', status: 'IN_PROGRESS', value: statusCounts.IN_PROGRESS || 0, color: '#3b82f6' },
+        { name: 'Dự thảo / Nháp', status: 'DRAFT', value: statusCounts.DRAFT || 0, color: '#8b5cf6' },
+        { name: 'Đã hủy', status: 'CANCELLED', value: statusCounts.CANCELLED || 0, color: '#ef4444' },
+      ].filter((s) => s.value > 0),
+      settlementDistribution: [
+        { name: 'Đã dự toán thu chi', value: settledEvents, color: '#10b981' },
+        { name: 'Chưa dự toán', value: unsettledEvents, color: '#f59e0b' },
+      ],
+    };
+  },
 };

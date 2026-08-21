@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { MoneyInput } from '@/components/ui/money-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -148,7 +149,18 @@ export function EventFormDialog({ open, onOpenChange, event, onSubmit, isLoading
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="contractValue">Giá trị hợp đồng</Label>
-              <Input id="contractValue" type="number" {...register('contractValue')} />
+              <Controller
+                control={control}
+                name="contractValue"
+                render={({ field }) => (
+                  <MoneyInput
+                    id="contractValue"
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="0"
+                  />
+                )}
+              />
             </div>
             <div className="space-y-2">
               <Label>Trạng thái</Label>

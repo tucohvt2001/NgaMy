@@ -29,6 +29,12 @@ export const transactionController = {
     sendSuccess(res, transaction, 'Tạo phiếu giao dịch thu chi thành công', 201);
   }),
 
+  createBulkReward: asyncHandler(async (req: Request, res: Response) => {
+    const userId = (req as any).user.id;
+    const result = await transactionService.createBulkReward(req.body, userId);
+    sendSuccess(res, result, `Đã tạo thành công ${result.createdCount} phiếu chi khen thưởng`, 201);
+  }),
+
   update: asyncHandler(async (req: Request, res: Response) => {
     const transaction = await transactionService.update(req.params.id, req.body);
     sendSuccess(res, transaction, 'Cập nhật phiếu giao dịch thành công');

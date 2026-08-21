@@ -115,6 +115,29 @@ export interface EventItem {
   _count?: { eventMembers?: number; transactions?: number };
 }
 
+export interface EventMonthlyStat {
+  month: number;
+  monthLabel: string;
+  eventsCount: number;
+  completedCount: number;
+  contractValue: number;
+  participantsCount: number;
+}
+
+export interface EventStats {
+  year: number;
+  totalEvents: number;
+  completedEvents: number;
+  upcomingEvents: number;
+  cancelledEvents: number;
+  settledEvents: number;
+  unsettledEvents: number;
+  totalContractValue: number;
+  monthlyStats: EventMonthlyStat[];
+  statusDistribution: Array<{ name: string; status: string; value: number; color: string }>;
+  settlementDistribution: Array<{ name: string; value: number; color: string }>;
+}
+
 export interface EventMember {
   id: string;
   eventId: string;
@@ -203,6 +226,17 @@ export interface DashboardSummary {
   upcomingEvents?: EventItem[];
 }
 
+export interface TransactionDetail {
+  id: string;
+  transactionId: string;
+  memberId?: string | null;
+  amount: number;
+  description?: string | null;
+  note?: string | null;
+  createdAt: string;
+  member?: Member | null;
+}
+
 export interface Transaction {
   id: string;
   code: string;
@@ -234,6 +268,7 @@ export interface Transaction {
   notes?: string | null;
   createdAt: string;
   updatedAt: string;
+  details?: TransactionDetail[];
 }
 
 export interface TransactionCategorySummary {
@@ -294,6 +329,44 @@ export interface TransactionInput {
   memberId?: string | null;
   receiptImage?: string | null;
   notes?: string | null;
+}
+
+export interface BulkRewardItemInput {
+  memberId: string;
+  amount: number;
+  note?: string;
+}
+
+export interface BulkRewardInput {
+  title: string;
+  transactionDate: string;
+  paymentMethod: 'CASH' | 'BANK_TRANSFER';
+  notes?: string | null;
+  items: BulkRewardItemInput[];
+}
+
+export interface BulkRewardPaymentItem {
+  transactionId: string;
+  code: string;
+  memberId: string;
+  memberName: string;
+  memberCode: string;
+  amount: number;
+  bankAccount?: string | null;
+  bankName?: string | null;
+  bankCode?: string | null;
+  bankBin?: string | null;
+  bankLogo?: string | null;
+  description: string;
+}
+
+export interface BulkRewardResult {
+  createdCount: number;
+  memberCount: number;
+  totalAmount: number;
+  transaction?: Transaction;
+  transactions?: Transaction[];
+  paymentItems: BulkRewardPaymentItem[];
 }
 
 // ============ DỰ TOÁN SHOW DIỄN ============

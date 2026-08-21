@@ -5,6 +5,7 @@ import {
   CreateTransactionInput,
   QueryTransactionInput,
   UpdateTransactionInput,
+  BulkRewardInput,
 } from '../validators/transaction.validator';
 import { AppError } from '../utils/AppError';
 
@@ -15,6 +16,7 @@ const CATEGORY_NAMES: Record<string, string> = {
   EQUIPMENT_RENTAL: 'Cho thuê đạo cụ / Đầu lân',
   OTHER_INCOME: 'Thu khác',
   SALARY_PAYOUT: 'Chi trả tiền công',
+  BONUS_REWARD: 'Chi khen thưởng, lì xì, thưởng nóng',
   EQUIPMENT_PURCHASE: 'Mua sắm đầu lân / Đạo cụ / Trống',
   EQUIPMENT_MAINTENANCE: 'Bảo dưỡng / Sửa chữa đạo cụ',
   TRAVEL_FOOD: 'Ăn uống / Đi lại lưu diễn',
@@ -162,6 +164,16 @@ export const transactionService = {
           member: { select: { id: true, memberCode: true, fullName: true, phone: true } },
           creator: { select: { id: true, username: true } },
           approver: { select: { id: true, username: true } },
+          details: {
+            include: {
+              member: {
+                include: {
+                  bank: true,
+                },
+              },
+            },
+            orderBy: { createdAt: 'asc' },
+          },
         },
       }),
     ]);
@@ -319,6 +331,16 @@ export const transactionService = {
         member: { select: { id: true, memberCode: true, fullName: true, phone: true } },
         creator: { select: { id: true, username: true } },
         approver: { select: { id: true, username: true } },
+        details: {
+          include: {
+            member: {
+              include: {
+                bank: true,
+              },
+            },
+          },
+          orderBy: { createdAt: 'asc' },
+        },
       },
     });
 
@@ -490,5 +512,133 @@ export const transactionService = {
     summaryRow3.getCell('amount').numFmt = '#,##0 "đ"';
 
     return workbook;
+  },
+
+  async createBulkReward(input: BulkRewardInput, userId: string) {
+    if (!input.items || input.items.length === 0) {
+      throw AppError.badRequest('Vui lòng chọn ít nhất 1 thành viên nhận khen thưởng');
+    }
+
+    const memberIds = input.items.map((i) => i.memberId);
+    const members = await prisma.member.findMany({
+      where: { id: { in: memberIds } },
+      include: {
+        bank: true,
+      },
+    });
+
+    const memberMap = new Map(members.map((m) => [m.id, m]));
+
+    const date = new Date(input.transactionDate);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const prefix = 'PC';
+    const pattern = `${prefix}-${year}${month}-`;
+
+    const totalAmount = input.items.reduce((sum, item) => sum + item.amount, 0);
+    const memberCount = input.items.length;
+    const payerOrReceiver = memberCount === 1 && members[0]
+      ? members[0].fullName
+      : `Nhiều thành viên (${memberCount} người)`;
+
+    const result = await prisma.$transaction(
+      async (tx) => {
+        // Tìm số thứ tự lớn nhất hiện tại
+        const lastTransaction = await tx.transaction.findFirst({
+          where: {
+            code: { startsWith: pattern },
+          },
+          orderBy: { code: 'desc' },
+          select: { code: true },
+        });
+
+        let currentSeq = 0;
+        if (lastTransaction?.code) {
+          const parts = lastTransaction.code.split('-');
+          if (parts.length === 3) {
+            const parsed = parseInt(parts[2], 10);
+            if (!isNaN(parsed)) currentSeq = parsed;
+          }
+        }
+
+        currentSeq++;
+        const code = `${pattern}${String(currentSeq).padStart(4, '0')}`;
+
+        // 1. Tạo 1 Phiếu Chi Duy Nhất (Header)
+        const headerTransaction = await tx.transaction.create({
+          data: {
+            code,
+            type: 'EXPENSE',
+            category: 'BONUS_REWARD',
+            amount: totalAmount,
+            tipAmount: 0,
+            transactionDate: date,
+            paymentMethod: input.paymentMethod,
+            status: 'COMPLETED',
+            payerOrReceiver,
+            description: input.title,
+            memberId: memberCount === 1 ? input.items[0].memberId : null,
+            notes: input.notes || null,
+            createdBy: userId,
+          },
+        });
+
+        // 2. Tạo các dòng chi tiết (TransactionDetails)
+        const detailRecords = [];
+        const paymentItems = [];
+
+        for (const item of input.items) {
+          const member = memberMap.get(item.memberId);
+          if (!member) continue;
+
+          const itemDesc = item.note?.trim()
+            ? `${input.title} - ${member.fullName} (${item.note.trim()})`
+            : `${input.title} - ${member.fullName}`;
+
+          detailRecords.push({
+            transactionId: headerTransaction.id,
+            memberId: member.id,
+            amount: item.amount,
+            description: itemDesc,
+            note: item.note || null,
+          });
+
+          paymentItems.push({
+            transactionId: headerTransaction.id,
+            code: headerTransaction.code,
+            memberId: member.id,
+            memberName: member.fullName,
+            memberCode: member.memberCode,
+            amount: item.amount,
+            bankAccount: member.bankAccount,
+            bankName: member.bank?.shortName || member.bankName,
+            bankCode: member.bank?.code || member.bankCode,
+            bankBin: member.bank?.bin || member.bankBin,
+            bankLogo: member.bank?.logo,
+            description: `Khen thuong ${member.fullName}`,
+          });
+        }
+
+        if (detailRecords.length > 0) {
+          await tx.transactionDetail.createMany({
+            data: detailRecords,
+          });
+        }
+
+        return {
+          createdCount: 1,
+          memberCount: detailRecords.length,
+          totalAmount,
+          transaction: headerTransaction,
+          paymentItems,
+        };
+      },
+      {
+        timeout: 30000,
+        maxWait: 10000,
+      }
+    );
+
+    return result;
   },
 };

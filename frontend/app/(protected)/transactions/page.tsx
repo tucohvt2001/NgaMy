@@ -17,6 +17,8 @@ import {
   Coins,
   TrendingUp,
   TrendingDown,
+  Award,
+  Users,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -42,6 +44,7 @@ import { LoadingState, EmptyState } from '@/components/tables/States';
 import { ConfirmDialog } from '@/components/forms/ConfirmDialog';
 import { TransactionFormDialog } from '@/components/forms/TransactionFormDialog';
 import { TransactionDetailDialog } from '@/components/forms/TransactionDetailDialog';
+import { BulkRewardDialog } from '@/components/forms/BulkRewardDialog';
 import {
   useTransactions,
   useTransactionSummary,
@@ -90,6 +93,7 @@ export default function TransactionsPage() {
 
   // Dialog States
   const [formOpen, setFormOpen] = useState(false);
+  const [bulkRewardOpen, setBulkRewardOpen] = useState(false);
   const [formDefaultType, setFormDefaultType] = useState<'INCOME' | 'EXPENSE'>('INCOME');
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [detailTransaction, setDetailTransaction] = useState<Transaction | null>(null);
@@ -194,6 +198,14 @@ export default function TransactionsPage() {
 
           {canManage && (
             <>
+              <Button
+                onClick={() => setBulkRewardOpen(true)}
+                className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white gap-1.5 shadow-md font-semibold"
+              >
+                <Award className="size-4" />
+                Chi Khen Thưởng
+              </Button>
+
               <Button
                 onClick={() => {
                   setEditingTransaction(null);
@@ -521,6 +533,18 @@ export default function TransactionsPage() {
                               </span>
                             </div>
                           )}
+                          {item.details && item.details.length > 0 && (
+                            <div className="flex items-center gap-1 mt-1">
+                              <button
+                                type="button"
+                                onClick={() => setDetailTransaction(item)}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-500/30 hover:bg-purple-500/25 transition-colors"
+                                title="Nhấp để xem bảng kê chi tiết từng thành viên"
+                              >
+                                <Users className="size-3" /> Bảng kê: {item.details.length} thành viên
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </TableCell>
 
@@ -656,6 +680,12 @@ export default function TransactionsPage() {
           }
         }}
         isLoading={deleteMutation.isPending}
+      />
+
+      {/* Modal Lập Phiếu Chi Khen Thưởng Hàng Loạt */}
+      <BulkRewardDialog
+        open={bulkRewardOpen}
+        onOpenChange={setBulkRewardOpen}
       />
     </div>
   );

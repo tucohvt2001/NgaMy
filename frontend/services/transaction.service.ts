@@ -5,6 +5,8 @@ import {
   TransactionInput,
   TransactionQueryParams,
   TransactionSummary,
+  BulkRewardInput,
+  BulkRewardResult,
 } from '@/types/models';
 
 export const transactionService = {
@@ -30,6 +32,14 @@ export const transactionService = {
 
   async create(input: TransactionInput) {
     const res = await apiClient.post<ApiSuccessResponse<Transaction>>('/transactions', input);
+    return res.data.data;
+  },
+
+  async createBulkReward(input: BulkRewardInput) {
+    const res = await apiClient.post<ApiSuccessResponse<BulkRewardResult>>(
+      '/transactions/bulk-reward',
+      input,
+    );
     return res.data.data;
   },
 

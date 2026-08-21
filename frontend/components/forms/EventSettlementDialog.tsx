@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { MoneyInput } from '@/components/ui/money-input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -280,21 +281,13 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
                 {/* Tiền Hợp Đồng */}
                 <div className="space-y-1.5 md:col-span-1">
                   <Label htmlFor="contractAmount" className="text-xs">Tiền show (Hợp đồng) *</Label>
-                  <Input
+                  <MoneyInput
                     id="contractAmount"
-                    type="number"
-                    min="0"
-                    step="10000"
                     value={contractAmount}
-                    onChange={(e) => setContractAmount(Number(e.target.value))}
+                    onChange={(val) => setContractAmount(val)}
                     placeholder="Nhập giá trị show..."
                     className="rounded-xl"
                   />
-                  {contractAmount > 0 && (
-                    <p className="text-[11px] font-semibold text-muted-foreground">
-                      ≈ {formatCurrency(contractAmount)}
-                    </p>
-                  )}
                 </div>
 
                 {/* Tiền Lộc (Tips) */}
@@ -302,21 +295,13 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
                   <Label htmlFor="tipAmount" className="text-xs flex items-center gap-1 text-amber-600 dark:text-amber-400 font-semibold">
                     <Gift className="size-3.5" /> Tiền Lộc (Tips thêm)
                   </Label>
-                  <Input
+                  <MoneyInput
                     id="tipAmount"
-                    type="number"
-                    min="0"
-                    step="10000"
                     value={tipAmount}
-                    onChange={(e) => setTipAmount(Number(e.target.value))}
+                    onChange={(val) => setTipAmount(val)}
                     placeholder="Tiền hái lộc..."
                     className="border-amber-500/40 rounded-xl"
                   />
-                  {tipAmount > 0 && (
-                    <p className="text-[11px] font-semibold text-amber-600 dark:text-amber-400">
-                      + {formatCurrency(tipAmount)}
-                    </p>
-                  )}
                 </div>
 
                 {/* Người nộp / Khách hàng */}
@@ -405,15 +390,13 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
                     Công cụ chia tiền công nhanh cho thành viên chưa thanh toán:
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <div className="relative w-44">
-                      <Input
-                        type="number"
+                    <div className="w-44">
+                      <MoneyInput
                         placeholder="Nhập số tiền..."
-                        value={bulkAmount}
-                        onChange={(e) => setBulkAmount(e.target.value)}
-                        className="h-8 text-xs rounded-xl pr-6 font-semibold"
+                        value={bulkAmount ? Number(bulkAmount) : ''}
+                        onChange={(val) => setBulkAmount(String(val))}
+                        className="h-8 text-xs rounded-xl font-semibold"
                       />
-                      <span className="absolute right-2 top-2 text-[10px] text-muted-foreground">đ</span>
                     </div>
 
                     <Button
@@ -493,14 +476,11 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
                             </TableCell>
                             <TableCell>
                               <div className="relative">
-                                <Input
-                                  type="number"
-                                  min="0"
-                                  step="10000"
+                                <MoneyInput
                                   disabled={isPaid}
                                   value={p.amount || ''}
-                                  onChange={(e) =>
-                                    handlePayoutChange(p.memberId, 'amount', Number(e.target.value))
+                                  onChange={(val) =>
+                                    handlePayoutChange(p.memberId, 'amount', val)
                                   }
                                   placeholder="0"
                                   className={`h-8 text-xs font-semibold rounded-xl ${
@@ -583,15 +563,13 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
                         </Select>
                       </div>
 
-                      <div className="w-full sm:w-56 relative">
-                        <Input
-                          type="number"
+                      <div className="w-full sm:w-56">
+                        <MoneyInput
                           placeholder="Số tiền chi..."
                           value={exp.amount || ''}
-                          onChange={(e) => handleExpenseChange(idx, 'amount', Number(e.target.value))}
-                          className="h-9 text-xs font-semibold text-rose-600 dark:text-rose-400 bg-background rounded-xl pr-7"
+                          onChange={(val) => handleExpenseChange(idx, 'amount', val)}
+                          className="h-9 text-xs font-semibold text-rose-600 dark:text-rose-400 bg-background rounded-xl"
                         />
-                        <span className="absolute right-2.5 top-2.5 text-[10px] text-muted-foreground font-medium pointer-events-none">đ</span>
                       </div>
 
                       <div className="text-right sm:text-center shrink-0">
