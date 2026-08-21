@@ -67,13 +67,13 @@ function formatDisplayDate(dateStr?: string | Date | null) {
   return isNaN(d.getTime())
     ? '-'
     : d.toLocaleDateString('vi-VN', {
-        weekday: 'short',
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      });
+      weekday: 'short',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
 }
 
 export default function AttendancePage() {
@@ -345,7 +345,7 @@ export default function AttendancePage() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Quản lý Chấm công Sự kiện</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Quản lý chấm công sự kiện</h1>
           <p className="text-muted-foreground text-sm">
             Admin trực tiếp điểm danh trạng thái có mặt / vắng của thành viên tham gia sự kiện
           </p>
@@ -652,11 +652,10 @@ export default function AttendancePage() {
                               <button
                                 type="button"
                                 onClick={() => handleSelectStatus(row.memberId, 'PRESENT')}
-                                className={`px-2.5 py-1.5 text-xs rounded-md font-medium transition-all ${
-                                  row.status === 'PRESENT'
-                                    ? 'bg-emerald-600 text-white shadow-xs font-semibold'
-                                    : 'bg-muted/60 text-muted-foreground hover:bg-emerald-500/15 hover:text-emerald-700 dark:hover:text-emerald-400'
-                                }`}
+                                className={`px-2.5 py-1.5 text-xs rounded-md font-medium transition-all ${row.status === 'PRESENT'
+                                  ? 'bg-emerald-600 text-white shadow-xs font-semibold'
+                                  : 'bg-muted/60 text-muted-foreground hover:bg-emerald-500/15 hover:text-emerald-700 dark:hover:text-emerald-400'
+                                  }`}
                               >
                                 Có mặt
                               </button>
@@ -664,11 +663,10 @@ export default function AttendancePage() {
                               <button
                                 type="button"
                                 onClick={() => handleSelectStatus(row.memberId, 'LATE')}
-                                className={`px-2.5 py-1.5 text-xs rounded-md font-medium transition-all ${
-                                  row.status === 'LATE'
-                                    ? 'bg-amber-600 text-white shadow-xs font-semibold'
-                                    : 'bg-muted/60 text-muted-foreground hover:bg-amber-500/15 hover:text-amber-700 dark:hover:text-amber-400'
-                                }`}
+                                className={`px-2.5 py-1.5 text-xs rounded-md font-medium transition-all ${row.status === 'LATE'
+                                  ? 'bg-amber-600 text-white shadow-xs font-semibold'
+                                  : 'bg-muted/60 text-muted-foreground hover:bg-amber-500/15 hover:text-amber-700 dark:hover:text-amber-400'
+                                  }`}
                               >
                                 Đi trễ
                               </button>
@@ -676,11 +674,10 @@ export default function AttendancePage() {
                               <button
                                 type="button"
                                 onClick={() => handleSelectStatus(row.memberId, 'ABSENT_WITH_PERMISSION')}
-                                className={`px-2.5 py-1.5 text-xs rounded-md font-medium transition-all ${
-                                  row.status === 'ABSENT_WITH_PERMISSION'
-                                    ? 'bg-blue-600 text-white shadow-xs font-semibold'
-                                    : 'bg-muted/60 text-muted-foreground hover:bg-blue-500/15 hover:text-blue-700 dark:hover:text-blue-400'
-                                }`}
+                                className={`px-2.5 py-1.5 text-xs rounded-md font-medium transition-all ${row.status === 'ABSENT_WITH_PERMISSION'
+                                  ? 'bg-blue-600 text-white shadow-xs font-semibold'
+                                  : 'bg-muted/60 text-muted-foreground hover:bg-blue-500/15 hover:text-blue-700 dark:hover:text-blue-400'
+                                  }`}
                               >
                                 Vắng phép
                               </button>
@@ -688,11 +685,10 @@ export default function AttendancePage() {
                               <button
                                 type="button"
                                 onClick={() => handleSelectStatus(row.memberId, 'ABSENT_WITHOUT_PERMISSION')}
-                                className={`px-2.5 py-1.5 text-xs rounded-md font-medium transition-all ${
-                                  row.status === 'ABSENT_WITHOUT_PERMISSION'
-                                    ? 'bg-rose-600 text-white shadow-xs font-semibold'
-                                    : 'bg-muted/60 text-muted-foreground hover:bg-rose-500/15 hover:text-rose-700 dark:hover:text-rose-400'
-                                }`}
+                                className={`px-2.5 py-1.5 text-xs rounded-md font-medium transition-all ${row.status === 'ABSENT_WITHOUT_PERMISSION'
+                                  ? 'bg-rose-600 text-white shadow-xs font-semibold'
+                                  : 'bg-muted/60 text-muted-foreground hover:bg-rose-500/15 hover:text-rose-700 dark:hover:text-rose-400'
+                                  }`}
                               >
                                 Vắng K.Phép
                               </button>
@@ -700,11 +696,10 @@ export default function AttendancePage() {
                               <button
                                 type="button"
                                 onClick={() => handleSelectStatus(row.memberId, 'REPLACED')}
-                                className={`px-2.5 py-1.5 text-xs rounded-md font-medium transition-all ${
-                                  row.status === 'REPLACED'
-                                    ? 'bg-purple-600 text-white shadow-xs font-semibold'
-                                    : 'bg-muted/60 text-muted-foreground hover:bg-purple-500/15 hover:text-purple-700 dark:hover:text-purple-400'
-                                }`}
+                                className={`px-2.5 py-1.5 text-xs rounded-md font-medium transition-all ${row.status === 'REPLACED'
+                                  ? 'bg-purple-600 text-white shadow-xs font-semibold'
+                                  : 'bg-muted/60 text-muted-foreground hover:bg-purple-500/15 hover:text-purple-700 dark:hover:text-purple-400'
+                                  }`}
                               >
                                 Thay thế
                               </button>

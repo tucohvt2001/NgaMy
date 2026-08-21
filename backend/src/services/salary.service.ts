@@ -23,13 +23,13 @@ export const salaryService = {
     });
     const existingMap = new Map(existingRecords.map((r) => [r.memberId, r]));
 
-    // 2. Lấy tất cả điểm danh PRESENT/LATE của các SHOW ĐÃ TẤT TOÁN (status = COMPLETED) trong tháng
+    // 2. Lấy tất cả điểm danh PRESENT/LATE của các SHOW ĐÃ DỰ TOÁN (status = COMPLETED) trong tháng
     const attendances = await prisma.attendance.findMany({
       where: {
         status: { in: ['PRESENT', 'LATE'] },
         event: {
           eventDate: { gte: startDate, lte: endDate },
-          status: 'COMPLETED', // Show chưa tất toán sẽ KHÔNG được tính vào tiền công
+          status: 'COMPLETED', // Show chưa dự toán sẽ KHÔNG được tính vào tiền công
         },
       },
       include: {
@@ -83,16 +83,16 @@ export const salaryService = {
     }
 
     const findAmountInMemory = (memberId: string, eventId: string, positionId: string | null): number => {
-      // 1. Mức phân bổ riêng cho show này (lưu từ Tất toán sự kiện)
+      // 1. Mức phân bổ riêng cho show này (lưu từ Dự toán sự kiện)
       const me = memberEventConfigMap.get(`${memberId}_${eventId}`);
       if (me !== undefined) return me;
-      // 2. Mức thù lao chung của sự kiện
+      // 2. Mức tiền công chung của sự kiện
       const ev = eventConfigMap.get(eventId);
       if (ev !== undefined) return ev;
-      // 3. Mức thù lao cố định của thành viên
+      // 3. Mức tiền công cố định của thành viên
       const mem = memberConfigMap.get(memberId);
       if (mem !== undefined) return mem;
-      // 4. Mức thù lao theo vị trí biểu diễn
+      // 4. Mức tiền công theo vị trí biểu diễn
       if (positionId) {
         const pos = positionConfigMap.get(positionId);
         if (pos !== undefined) return pos;
@@ -226,7 +226,7 @@ export const salaryService = {
         status: { in: ['PRESENT', 'LATE'] },
         event: {
           eventDate: { gte: startDate, lte: endDate },
-          status: 'COMPLETED', // Chỉ tính show đã tất toán / hoàn thành
+          status: 'COMPLETED', // Chỉ tính show đã dự toán / hoàn thành
         },
       },
       include: { event: true },
@@ -296,7 +296,7 @@ export const salaryService = {
               memberId: record.memberId,
               eventId: detail.eventId || null,
               createdBy: confirmedBy,
-              description: `Chi trả thù lao show "${detail.note || detail.event?.name || 'Sự kiện'}" cho ${record.member?.fullName || ''}`,
+              description: `Chi trả tiền công show "${detail.note || detail.event?.name || 'Sự kiện'}" cho ${record.member?.fullName || ''}`,
               notes: `Bảng lương Tháng ${record.month}/${record.year}. Vị trí: ${detail.position?.name || 'Diễn viên'}`,
             },
           });

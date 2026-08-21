@@ -7,47 +7,13 @@ import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { SalaryRecord } from '@/types/models';
+import { useBanks } from '@/hooks/useBanks';
 
 interface SalaryPaymentQrDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   record: SalaryRecord | null;
   onConfirm?: (recordId: string) => void;
-}
-
-// Danh sách ngân hàng phổ biến tại Việt Nam cho VietQR
-export const POPULAR_BANKS = [
-  { code: 'MB', name: 'MBBank (Ngân hàng Quân Đội)' },
-  { code: 'VCB', name: 'Vietcombank' },
-  { code: 'ICB', name: 'VietinBank' },
-  { code: 'BIDV', name: 'BIDV' },
-  { code: 'VBA', name: 'Agribank' },
-  { code: 'TCB', name: 'Techcombank' },
-  { code: 'ACB', name: 'ACB' },
-  { code: 'VPB', name: 'VPBank' },
-  { code: 'TPB', name: 'TPBank' },
-  { code: 'STB', name: 'Sacombank' },
-  { code: 'HDB', name: 'HDBank' },
-  { code: 'VIB', name: 'VIB' },
-  { code: 'SHB', name: 'SHB' },
-  { code: 'MSB', name: 'MSB' },
-  { code: 'OCB', name: 'OCB' },
-  { code: 'LPB', name: 'LPBank (Bưu Điện Liên Việt)' },
-  { code: 'SEAB', name: 'SeABank' },
-  { code: 'EIB', name: 'Eximbank' },
-  { code: 'TIMO', name: 'Timo' },
-  { code: 'CAKE', name: 'Cake by VPBank' },
-];
-
-function normalizeBankCode(rawBank: string | null | undefined): string {
-  if (!rawBank) return 'MB';
-  const clean = rawBank.trim().toUpperCase();
-  const matched = POPULAR_BANKS.find(
-    (b) => b.code.toUpperCase() === clean || clean.includes(b.code.toUpperCase()) || clean.includes(b.name.toUpperCase())
-  );
-  if (matched) return matched.code;
-  // Bỏ khoảng trắng và ký tự đặc biệt
-  return clean.replace(/[^A-Z0-9]/g, '') || 'MB';
 }
 
 function formatCurrency(val: number) {
@@ -61,21 +27,44 @@ export function SalaryPaymentQrDialog({
   onConfirm,
 }: SalaryPaymentQrDialogProps) {
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const { data: banks } = useBanks();
 
   if (!record) return null;
 
   const rawBankName = record.member?.bankName?.trim();
   const rawBankAccount = record.member?.bankAccount?.trim();
-  const hasBankInfo = Boolean(rawBankName && rawBankAccount);
+  const bankCodeDirect = record.member?.bankCode?.trim();
+  const bankBinDirect = record.member?.bankBin?.trim();
+  const hasBankInfo = Boolean((rawBankName || bankCodeDirect || bankBinDirect) && rawBankAccount);
 
-  const bankCode = normalizeBankCode(rawBankName);
+  // Tìm bank trong master data
+  const matchedBank = banks?.find((b) => {
+    if (bankCodeDirect && b.code.toUpperCase() === bankCodeDirect.toUpperCase()) return true;
+    if (bankBinDirect && b.bin === bankBinDirect) return true;
+    if (rawBankName) {
+      const clean = rawBankName.toUpperCase();
+      return (
+        b.code.toUpperCase() === clean ||
+        b.shortName.toUpperCase() === clean ||
+        b.name.toUpperCase().includes(clean) ||
+        clean.includes(b.shortName.toUpperCase()) ||
+        clean.includes(b.code.toUpperCase())
+      );
+    }
+    return false;
+  });
+
+  const finalBankCodeOrBin = matchedBank?.bin || matchedBank?.code || bankBinDirect || bankCodeDirect || rawBankName || 'MB';
+  const displayBankName = matchedBank?.shortName || rawBankName || 'Ngân hàng';
+  const bankLogo = matchedBank?.logo || null;
+
   const accountNumber = rawBankAccount || '';
   const amount = Math.max(0, record.totalAmount);
   const accountName = record.member?.fullName || '';
   const transferContent = `Tien cong T${record.month}-${record.year} ${record.member?.fullName || ''}`.trim();
 
   const qrUrl = hasBankInfo
-    ? `https://img.vietqr.io/image/${bankCode}-${accountNumber}-compact2.png?amount=${amount}&addInfo=${encodeURIComponent(
+    ? `https://img.vietqr.io/image/${finalBankCodeOrBin}-${accountNumber}-compact2.png?amount=${amount}&addInfo=${encodeURIComponent(
       transferContent
     )}&accountName=${encodeURIComponent(accountName)}`
     : null;
@@ -166,9 +155,24 @@ export function SalaryPaymentQrDialog({
                   <span className="text-muted-foreground flex items-center gap-1.5">
                     <Building2 className="size-3.5 text-amber-500" /> Ngân hàng:
                   </span>
-                  <span className="font-bold text-foreground">
-                    {rawBankName}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    {bankLogo && (
+                      <div className="relative size-4.5 rounded overflow-hidden bg-white p-0.5 border">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={bankLogo}
+                          alt={displayBankName}
+                          className="w-full h-full object-contain"
+                          onError={(e) => {
+                            (e.target as any).style.display = 'none';
+                          }}
+                        />
+                      </div>
+                    )}
+                    <span className="font-bold text-foreground">
+                      {displayBankName}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="flex items-center justify-between py-1.5">

@@ -49,7 +49,7 @@ async function main() {
         const firstEventName = record.details.find((d) => Boolean(d.eventId))?.event?.name || showNames;
 
         const newDesc = record.details.length === 1
-          ? `Chi trả thù lao show: ${firstEventName} cho ${tx.member?.fullName || 'thành viên'}`
+          ? `Chi trả tiền công show: ${firstEventName} cho ${tx.member?.fullName || 'thành viên'}`
           : `Chi trả tiền công Tháng ${record.month}/${record.year} cho ${tx.member?.fullName || 'thành viên'} (Show: ${showNames})`;
 
         await prisma.transaction.update({

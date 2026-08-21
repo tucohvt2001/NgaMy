@@ -125,10 +125,10 @@ export default function SalariesPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
             <Wallet className="size-6 text-amber-500" />
-            Quản Lý Tiền Công & Thù Lao
+            Quản lý tiền công
           </h1>
           <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-            Tự động tính thù lao từ các show diễn đã tất toán trong tháng và thanh toán qua QR
+            Tự động tính tiền công từ các show diễn đã dự toán trong tháng và thanh toán qua QR
           </p>
         </div>
 
@@ -168,7 +168,7 @@ export default function SalariesPage() {
                 onClick={handleSyncAllMonth}
                 isLoading={calculateMonthMutation.isPending}
                 className="h-10 rounded-2xl border-amber-500/30 text-amber-700 dark:text-amber-300 hover:bg-amber-500/10 text-xs gap-1.5 font-semibold"
-                title="Tự động tính lại thù lao từ các show diễn đã tất toán cho tất cả thành viên"
+                title="Tự động tính lại tiền công từ các show diễn đã dự toán cho tất cả thành viên"
               >
                 <RefreshCw className="size-3.5" />
                 <span>Đồng bộ / Tính lại tháng</span>
@@ -237,7 +237,7 @@ export default function SalariesPage() {
         <Card className="border-border/70 bg-gradient-to-br from-blue-500/[0.05] via-card to-card shadow-xs">
           <CardContent className="p-4 flex items-center justify-between">
             <div>
-              <p className="text-xs font-semibold text-muted-foreground">Show đã tất toán</p>
+              <p className="text-xs font-semibold text-muted-foreground">Show đã dự toán</p>
               <p className="text-lg sm:text-xl font-black text-foreground mt-0.5">
                 {totalSettledShows}/{totalMonthShows} show ({totalPaidMembers} người)
               </p>
@@ -253,7 +253,7 @@ export default function SalariesPage() {
       <div className="rounded-3xl border border-border/80 bg-card overflow-hidden shadow-xs">
         <div className="p-4 bg-muted/20 border-b border-border/60 flex items-center justify-between">
           <div className="space-y-0.5">
-            <h2 className="text-sm font-bold text-foreground">Bảng Thù Lao Chi Tiết Tháng {month}/{year}</h2>
+            <h2 className="text-sm font-bold text-foreground">Bảng Tiền Công Chi Tiết Tháng {month}/{year}</h2>
             <p className="text-xs text-muted-foreground">
               Nhấp vào thành viên để xem danh sách show đã đi. Bấm biểu tượng QR để chuyển khoản và xác nhận thanh toán.
             </p>
@@ -268,7 +268,7 @@ export default function SalariesPage() {
         {isLoading ? (
           <LoadingState />
         ) : !data || data.items.length === 0 ? (
-          <EmptyState label={`Chưa có dữ liệu thù lao cho Tháng ${month}/${year}. Hãy kiểm tra điểm danh show hoặc bấm "Đồng bộ / Tính lại tháng".`} />
+          <EmptyState label={`Chưa có dữ liệu tiền công cho Tháng ${month}/${year}. Hãy kiểm tra điểm danh show hoặc bấm "Đồng bộ / Tính lại tháng".`} />
         ) : (
           <div className="overflow-x-auto">
             <Table>
@@ -334,11 +334,10 @@ export default function SalariesPage() {
                     <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
                       <Badge
                         variant={record.status === 'CONFIRMED' ? 'default' : 'secondary'}
-                        className={`text-[10px] uppercase font-bold ${
-                          record.status === 'CONFIRMED'
+                        className={`text-[10px] uppercase font-bold ${record.status === 'CONFIRMED'
                             ? 'bg-emerald-600 text-white hover:bg-emerald-700'
                             : 'bg-muted text-muted-foreground'
-                        }`}
+                          }`}
                       >
                         {record.status === 'CONFIRMED' ? 'ĐÃ THANH TOÁN' : 'CHỜ THANH TOÁN'}
                       </Badge>

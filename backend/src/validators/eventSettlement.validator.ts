@@ -3,7 +3,7 @@ import { PAYMENT_METHODS } from '../types/enums';
 
 export const memberPayoutSchema = z.object({
   memberId: z.string().min(1, 'Thành viên không hợp lệ'),
-  amount: z.number().nonnegative('Số tiền thù lao không được âm'),
+  amount: z.number().nonnegative('Số tiền công không được âm'),
   positionName: z.string().optional(),
   paymentMethod: z.enum(PAYMENT_METHODS).default('CASH'),
   note: z.string().optional(),
@@ -12,8 +12,8 @@ export const memberPayoutSchema = z.object({
 export const eventExpenseSchema = z.object({
   category: z.string().min(1, 'Danh mục chi phí là bắt buộc'),
   amount: z.number().positive('Số tiền chi phải lớn hơn 0'),
-  description: z.string().min(1, 'Vui lòng nhập nội dung chi'),
-  receiver: z.string().min(1, 'Vui lòng nhập người nhận tiền / đối tác'),
+  description: z.string().optional(),
+  receiver: z.string().optional(),
   paymentMethod: z.enum(PAYMENT_METHODS).default('CASH'),
 });
 

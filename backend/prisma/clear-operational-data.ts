@@ -22,7 +22,7 @@ async function main() {
     prisma.salaryDetail.deleteMany({}),
     // 3. Bảng lương tháng
     prisma.salaryRecord.deleteMany({}),
-    // 4. Cấu hình tiền công gắn với sự kiện hoặc cấu hình thù lao show
+    // 4. Cấu hình tiền công gắn với sự kiện hoặc cấu hình tiền công show
     prisma.salaryConfig.deleteMany({
       where: { eventId: { not: null } },
     }),
@@ -40,7 +40,7 @@ async function main() {
   console.log(` - Sổ quỹ thu chi: ${deletedTransactions.count} phiếu`);
   console.log(` - Chi tiết tiền công: ${deletedSalaryDetails.count} dòng`);
   console.log(` - Bảng lương tháng: ${deletedSalaryRecords.count} bản ghi`);
-  console.log(` - Cấu hình thù lao show: ${deletedSalaryConfigs.count} mục`);
+  console.log(` - Cấu hình tiền công show: ${deletedSalaryConfigs.count} mục`);
   console.log(` - Điểm danh / Chấm công: ${deletedAttendances.count} bản ghi`);
   console.log(` - Phân công sự kiện: ${deletedEventMembers.count} lượt`);
   console.log(` - Lịch diễn / Sự kiện: ${deletedEvents.count} show`);

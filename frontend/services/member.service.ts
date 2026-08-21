@@ -22,6 +22,9 @@ export interface MemberInput {
   status?: MemberStatus;
   bankAccount?: string | null;
   bankName?: string | null;
+  bankCode?: string | null;
+  bankBin?: string | null;
+  bankId?: string | null;
   note?: string | null;
 }
 

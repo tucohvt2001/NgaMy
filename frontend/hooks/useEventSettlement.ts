@@ -18,7 +18,7 @@ export function useSettleEvent() {
     mutationFn: ({ id, input }: { id: string; input: EventSettlementInput }) =>
       eventService.settle(id, input),
     onSuccess: (data, variables) => {
-      toast.success(data.message || 'Quyết toán show và lập phiếu thu chi thành công');
+      toast.success(data.message || 'Dự toán show và lập phiếu thu chi thành công');
       queryClient.invalidateQueries({ queryKey: ['events'] });
       queryClient.invalidateQueries({ queryKey: ['event', variables.id] });
       queryClient.invalidateQueries({ queryKey: ['event-settlement', variables.id] });
@@ -27,7 +27,7 @@ export function useSettleEvent() {
       queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Quyết toán thất bại');
+      toast.error(error.response?.data?.message || 'Dự toán thất bại');
     },
   });
 }

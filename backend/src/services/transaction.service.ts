@@ -14,7 +14,7 @@ const CATEGORY_NAMES: Record<string, string> = {
   MEMBERSHIP_FEE: 'Quỹ hội viên / Đoàn phí',
   EQUIPMENT_RENTAL: 'Cho thuê đạo cụ / Đầu lân',
   OTHER_INCOME: 'Thu khác',
-  SALARY_PAYOUT: 'Chi trả tiền công / Thù lao',
+  SALARY_PAYOUT: 'Chi trả tiền công',
   EQUIPMENT_PURCHASE: 'Mua sắm đầu lân / Đạo cụ / Trống',
   EQUIPMENT_MAINTENANCE: 'Bảo dưỡng / Sửa chữa đạo cụ',
   TRAVEL_FOOD: 'Ăn uống / Đi lại lưu diễn',

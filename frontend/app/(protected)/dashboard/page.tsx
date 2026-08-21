@@ -233,7 +233,7 @@ export default function DashboardPage() {
                 {isLoading ? '...' : formatCurrency(summary?.totalSalaryThisMonth ?? 0)}
               </p>
               <p className="text-[11px] text-muted-foreground mt-0.5">
-                Chi thù lao diễn viên
+                Chi tiền công diễn viên
               </p>
             </div>
           </CardContent>
@@ -307,7 +307,7 @@ export default function DashboardPage() {
               </CardTitle>
             </div>
             <CardDescription className="text-xs">
-              Ngân sách thù lao biểu diễn đã phân bổ và chi trả cho thành viên
+              Ngân sách tiền công biểu diễn đã phân bổ và chi trả cho thành viên
             </CardDescription>
           </CardHeader>
           <CardContent className="h-72 pt-2">
@@ -391,7 +391,7 @@ export default function DashboardPage() {
                 </CardTitle>
               </div>
               <CardDescription className="text-xs">
-                So sánh tổng số tiền thu vào (doanh thu/show) và chi ra (thù lao/mua sắm) theo tháng
+                So sánh tổng số tiền thu vào (doanh thu/show) và chi ra (tiền công/mua sắm) theo tháng
               </CardDescription>
             </CardHeader>
             <CardContent className="h-72 pt-2">

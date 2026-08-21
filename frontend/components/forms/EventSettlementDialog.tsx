@@ -68,7 +68,7 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
   const { data: overview, isLoading: isOverviewLoading } = useEventSettlement(eventId);
   const settleMutation = useSettleEvent();
 
-  // State quyết toán
+  // State dự toán
   const [contractAmount, setContractAmount] = useState<number>(0);
   const [tipAmount, setTipAmount] = useState<number>(0);
   const [payer, setPayer] = useState<string>('');
@@ -77,7 +77,7 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
   const [markCompleted, setMarkCompleted] = useState<boolean>(true);
   const [notes, setNotes] = useState<string>('');
 
-  // State chia thù lao thành viên (dự kiến)
+  // State chia tiền công thành viên (dự kiến)
   const [payouts, setPayouts] = useState<PayoutItemState[]>([]);
   const [bulkAmount, setBulkAmount] = useState<string>('');
 
@@ -113,7 +113,7 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
     }
   }, [overview]);
 
-  // Cập nhật thù lao 1 thành viên (chỉ cho phép nếu chưa thanh toán)
+  // Cập nhật tiền công 1 thành viên (chỉ cho phép nếu chưa thanh toán)
   const handlePayoutChange = (memberId: string, field: keyof PayoutItemState, value: any) => {
     setPayouts((prev) =>
       prev.map((p) => {
@@ -153,8 +153,8 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
       {
         category: 'TRAVEL_FOOD',
         amount: 0,
-        description: 'Chi phí xe / ăn uống lưu diễn',
-        receiver: 'Nhà xe / Quán ăn',
+        description: '',
+        receiver: '',
         paymentMethod: 'CASH',
       },
     ]);
@@ -165,10 +165,10 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
     setExpenses((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // Cập nhật chi phí phát sinh
+  // Cập nhật thông tin chi phí
   const handleExpenseChange = (index: number, field: keyof EventExpenseItem, value: any) => {
     setExpenses((prev) =>
-      prev.map((exp, i) => (i === index ? { ...exp, [field]: value } : exp))
+      prev.map((item, idx) => (idx === index ? { ...item, [field]: value } : item))
     );
   };
 
@@ -193,7 +193,18 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
         paymentMethod: p.paymentMethod,
         note: p.note,
       })),
-      expenses: expenses.filter((e) => Number(e.amount) > 0),
+      expenses: expenses
+        .filter((e) => Number(e.amount) > 0)
+        .map((e) => {
+          const catLabel = (TRANSACTION_CATEGORY_LABELS as Record<string, string>)[e.category] || 'Chi phí sự kiện';
+          return {
+            category: e.category,
+            amount: Number(e.amount),
+            description: catLabel,
+            receiver: catLabel,
+            paymentMethod: e.paymentMethod || 'CASH',
+          };
+        }),
       createIncomeVoucher,
       createExpenseVouchers: true,
       markEventCompleted: markCompleted,
@@ -218,7 +229,7 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2.5 text-xl font-bold text-amber-700 dark:text-amber-400">
             <Coins className="size-6 text-amber-500" />
-            Tất Toán & Hoàn Thành Show Diễn
+            Dự Toán & Hoàn Thành Show Diễn
           </DialogTitle>
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground pt-1">
             <span className="font-semibold text-foreground">{event.eventCode} - {event.name}</span>
@@ -240,7 +251,7 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
               <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-2.5 text-xs text-amber-800 dark:text-amber-300">
                 <AlertCircle className="size-4 shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-semibold">Sự kiện này đã từng được lưu quyết toán hoặc có phiếu thu chi</p>
+                  <p className="font-semibold">Sự kiện này đã từng được lưu dự toán hoặc có phiếu thu chi</p>
                   <p className="mt-0.5 text-muted-foreground">
                     Đã thu: <strong>{formatCurrency(overview.settledIncome)}</strong> | Đã chi: <strong>{formatCurrency(overview.settledExpense)}</strong>.
                   </p>
@@ -357,13 +368,13 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
               </div>
             </div>
 
-            {/* PHẦN 2: PHÂN BỔ THÙ LAO DỰ KIẾN CHO THÀNH VIÊN */}
+            {/* PHẦN 2: PHÂN BỔ TIỀN CÔNG DỰ KIẾN CHO THÀNH VIÊN */}
             <div className="p-4 rounded-2xl border border-amber-500/25 bg-amber-500/[0.03] space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-amber-500/20 pb-2">
                 <div>
                   <h3 className="font-bold text-sm flex items-center gap-2 text-amber-800 dark:text-amber-300">
                     <Users className="size-4 text-amber-500" />
-                    2. Phân Bổ Thù Lao Dự Kiến ({payouts.length} thành viên)
+                    2. Phân Bổ Tiền Công Dự Kiến ({payouts.length} thành viên)
                   </h3>
                   <p className="text-[11px] text-muted-foreground mt-0.5">
                     Nhập số tiền dự kiến trả cho từng thành viên trong show này (chuyển về Tiền Công tháng để thanh toán)
@@ -382,7 +393,7 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
               <div className="flex items-start gap-2 p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs text-blue-800 dark:text-blue-300">
                 <Info className="size-4 shrink-0 mt-0.5 text-blue-500" />
                 <p>
-                  <strong>Lưu ý:</strong> Khi xác nhận tất toán, số tiền thù lao này sẽ được lưu làm <strong>định mức thù lao của show</strong> và tự động cộng dồn khi lập <strong>Bảng lương tháng</strong> của thành viên. <em>Các thành viên đã được thanh toán lương (Đã xác nhận) sẽ bị khóa thù lao để đảm bảo an toàn số liệu kế toán.</em>
+                  <strong>Lưu ý:</strong> Khi xác nhận dự toán, số tiền này sẽ được lưu làm <strong>định mức tiền công của show</strong> và tự động cộng dồn khi lập <strong>Bảng lương tháng</strong> của thành viên. <em>Các thành viên đã được thanh toán lương (Đã xác nhận) sẽ bị khóa để đảm bảo an toàn số liệu kế toán.</em>
                 </p>
               </div>
 
@@ -391,7 +402,7 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
                 <div className="p-3 rounded-xl bg-background border space-y-2">
                   <div className="text-xs font-semibold flex items-center gap-1.5 text-muted-foreground">
                     <Sparkles className="size-3.5 text-amber-500" />
-                    Công cụ chia thù lao nhanh cho thành viên chưa thanh toán:
+                    Công cụ chia tiền công nhanh cho thành viên chưa thanh toán:
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     <div className="relative w-44">
@@ -431,7 +442,7 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
                 </div>
               )}
 
-              {/* Bảng danh sách thành viên và thù lao */}
+              {/* Bảng danh sách thành viên và tiền công */}
               {payouts.length === 0 ? (
                 <div className="py-4 text-center text-xs text-muted-foreground border border-dashed rounded-xl">
                   Chưa có thành viên nào được phân công trong sự kiện này.
@@ -444,7 +455,7 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
                         <TableHead className="w-10 text-center text-xs">STT</TableHead>
                         <TableHead className="text-xs min-w-[160px]">Thành viên</TableHead>
                         <TableHead className="text-xs min-w-[110px]">Vai trò</TableHead>
-                        <TableHead className="text-xs min-w-[150px]">Thù lao dự kiến (VNĐ)</TableHead>
+                        <TableHead className="text-xs min-w-[150px]">Tiền công dự kiến (VNĐ)</TableHead>
                         <TableHead className="text-xs min-w-[160px]">Ghi chú</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -497,7 +508,7 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
                                       ? 'bg-muted text-muted-foreground border-dashed cursor-not-allowed opacity-80'
                                       : 'text-amber-700 dark:text-amber-300'
                                   }`}
-                                  title={isPaid ? 'Thù lao của thành viên này đã được chi trả ở mục Tiền Công nên không thể chỉnh sửa.' : ''}
+                                  title={isPaid ? 'Tiền công của thành viên này đã được chi trả ở mục Tiền Công nên không thể chỉnh sửa.' : ''}
                                 />
                                 {isPaid && (
                                   <Lock className="size-3 text-muted-foreground absolute right-2.5 top-2.5 pointer-events-none" />
@@ -506,14 +517,14 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
                             </TableCell>
                             <TableCell>
                               <Input
-                                placeholder="Ghi chú thù lao..."
+                                placeholder="Ghi chú tiền công..."
                                 disabled={isPaid}
                                 value={p.note || ''}
                                 onChange={(e) => handlePayoutChange(p.memberId, 'note', e.target.value)}
                                 className={`h-8 text-xs rounded-xl ${
                                   isPaid ? 'bg-muted text-muted-foreground cursor-not-allowed opacity-80' : ''
                                 }`}
-                                title={isPaid ? 'Đã thanh toán thù lao' : ''}
+                                title={isPaid ? 'Đã thanh toán tiền công' : ''}
                               />
                             </TableCell>
                           </TableRow>
@@ -524,10 +535,10 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
                 </div>
               )}
 
-              {/* Tổng thù lao dự kiến */}
+              {/* Tổng tiền công dự kiến */}
               <div className="flex justify-between items-center text-xs p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
                 <span className="font-semibold text-amber-900 dark:text-amber-200">
-                  TỔNG THÙ LAO DỰ KIẾN TRẢ THÀNH VIÊN:
+                  TỔNG TIỀN CÔNG DỰ KIẾN TRẢ THÀNH VIÊN:
                 </span>
                 <span className="text-base font-black text-amber-600 dark:text-amber-400">
                   {formatCurrency(totalEstimatedPayout)}
@@ -553,14 +564,14 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
               ) : (
                 <div className="space-y-2">
                   {expenses.map((exp, idx) => (
-                    <div key={idx} className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center p-2 rounded-xl bg-muted/40 border text-xs">
-                      <div className="sm:col-span-3">
+                    <div key={idx} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-2.5 rounded-xl bg-muted/40 border text-xs">
+                      <div className="flex-1">
                         <Select
                           value={exp.category}
                           onValueChange={(v) => handleExpenseChange(idx, 'category', v)}
                         >
-                          <SelectTrigger className="h-8 text-xs rounded-xl">
-                            <SelectValue />
+                          <SelectTrigger className="h-9 text-xs rounded-xl bg-background">
+                            <SelectValue placeholder="Chọn lý do chi..." />
                           </SelectTrigger>
                           <SelectContent>
                             {EXPENSE_CATEGORIES.map((cat) => (
@@ -571,47 +582,35 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="sm:col-span-3">
-                        <Input
-                          placeholder="Mô tả chi..."
-                          value={exp.description}
-                          onChange={(e) => handleExpenseChange(idx, 'description', e.target.value)}
-                          className="h-8 text-xs rounded-xl"
-                        />
-                      </div>
-                      <div className="sm:col-span-2">
-                        <Input
-                          placeholder="Người nhận..."
-                          value={exp.receiver}
-                          onChange={(e) => handleExpenseChange(idx, 'receiver', e.target.value)}
-                          className="h-8 text-xs rounded-xl"
-                        />
-                      </div>
-                      <div className="sm:col-span-3">
+
+                      <div className="w-full sm:w-56 relative">
                         <Input
                           type="number"
-                          placeholder="Số tiền..."
+                          placeholder="Số tiền chi..."
                           value={exp.amount || ''}
                           onChange={(e) => handleExpenseChange(idx, 'amount', Number(e.target.value))}
-                          className="h-8 text-xs font-semibold text-rose-600 rounded-xl"
+                          className="h-9 text-xs font-semibold text-rose-600 dark:text-rose-400 bg-background rounded-xl pr-7"
                         />
+                        <span className="absolute right-2.5 top-2.5 text-[10px] text-muted-foreground font-medium pointer-events-none">đ</span>
                       </div>
-                      <div className="sm:col-span-1 text-center">
+
+                      <div className="text-right sm:text-center shrink-0">
                         <Button
                           type="button"
                           variant="ghost"
                           size="icon"
                           onClick={() => handleRemoveExpense(idx)}
-                          className="size-7 text-destructive hover:bg-destructive/10 rounded-xl"
+                          className="size-8 text-destructive hover:bg-destructive/10 rounded-xl"
+                          title="Xóa dòng chi phí này"
                         >
-                          <Trash2 className="size-3.5" />
+                          <Trash2 className="size-4" />
                         </Button>
                       </div>
                     </div>
                   ))}
                   <div className="flex justify-between items-center text-xs px-1 pt-1">
                     <span className="text-muted-foreground font-medium">Tổng chi phí phát sinh:</span>
-                    <span className="font-bold text-rose-600">{formatCurrency(totalExpenses)}</span>
+                    <span className="font-bold text-rose-600 dark:text-rose-400 text-sm">{formatCurrency(totalExpenses)}</span>
                   </div>
                 </div>
               )}
@@ -636,7 +635,7 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
                   </div>
                 </div>
                 <div className="p-3 rounded-xl bg-card border text-center">
-                  <div className="text-[11px] text-muted-foreground font-medium">3. Thù Lao Dự Kiến</div>
+                  <div className="text-[11px] text-muted-foreground font-medium">3. Tiền Công Dự Kiến</div>
                   <div className="text-sm font-black text-amber-600 dark:text-amber-400 mt-1">
                     {formatCurrency(totalEstimatedPayout)}
                   </div>
@@ -676,7 +675,7 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
             className="bg-amber-600 hover:bg-amber-700 text-white font-bold gap-1.5 rounded-xl text-xs shadow-md shadow-amber-600/20"
           >
             <CheckCircle2 className="size-4" />
-            Xác Nhận Tất Toán Show
+            Xác Nhận Dự Toán Show
           </Button>
         </DialogFooter>
       </DialogContent>

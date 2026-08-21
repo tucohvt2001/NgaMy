@@ -45,7 +45,7 @@ export const eventSettlementService = {
           },
           orderBy: { createdAt: 'desc' },
         }),
-        // Kiểm tra xem thù lao của show này đã được thanh toán (CONFIRMED) trong module Tiền công chưa
+        // Kiểm tra xem tiền công của show này đã được thanh toán (CONFIRMED) trong module Tiền công chưa
         prisma.salaryDetail.findMany({
           where: {
             eventId,
@@ -114,7 +114,7 @@ export const eventSettlementService = {
       throw AppError.notFound('Không tìm thấy sự kiện');
     }
 
-    // Kiểm tra danh sách thành viên đã được thanh toán thù lao cho sự kiện này
+    // Kiểm tra danh sách thành viên đã được thanh toán tiền công cho sự kiện này
     const confirmedSalaryDetails = await prisma.salaryDetail.findMany({
       where: {
         eventId,
@@ -171,9 +171,25 @@ export const eventSettlementService = {
 
     // 3. Tạo các Phiếu Chi phát sinh (Xe cộ, Ăn uống, Hậu cần...) nếu có
     if (input.expenses && input.expenses.length > 0) {
+      const CATEGORY_EXPENSE_LABELS: Record<string, string> = {
+        EQUIPMENT_PURCHASE: 'Mua sắm đầu lân / Đạo cụ / Trống',
+        EQUIPMENT_MAINTENANCE: 'Bảo dưỡng / Sửa chữa đạo cụ',
+        TRAVEL_FOOD: 'Ăn uống / Đi lại lưu diễn',
+        EVENT_OPERATIONS: 'Chi phí tổ chức sự kiện',
+        UNIFORM: 'Đồng phục CLB',
+        SALARY_PAYOUT: 'Chi trả tiền công',
+        OTHER_EXPENSE: 'Chi khác',
+      };
+
       for (const exp of input.expenses) {
         if (exp.amount > 0) {
           const code = await transactionService.generateCode('EXPENSE', txDate);
+          const catLabel = CATEGORY_EXPENSE_LABELS[exp.category] || 'Chi phí show';
+          const finalDesc = exp.description?.trim()
+            ? `${exp.description.trim()} (Show: ${event.name})`
+            : `${catLabel} (Show: ${event.name})`;
+          const finalReceiver = exp.receiver?.trim() || catLabel;
+
           const expenseTx = await prisma.transaction.create({
             data: {
               code,
@@ -183,8 +199,8 @@ export const eventSettlementService = {
               transactionDate: txDate,
               paymentMethod: exp.paymentMethod,
               status: 'COMPLETED',
-              payerOrReceiver: exp.receiver,
-              description: `${exp.description} (Show: ${event.name})`,
+              payerOrReceiver: finalReceiver,
+              description: finalDesc,
               eventId: event.id,
               createdBy: userId,
             },
@@ -194,14 +210,14 @@ export const eventSettlementService = {
       }
     }
 
-    // 4. Lưu mức Thù Lao Dự Kiến cho từng thành viên tham gia show (không sửa các thành viên đã thanh toán)
+    // 4. Lưu mức Tiền Công Dự Kiến cho từng thành viên tham gia show (không sửa các thành viên đã thanh toán)
     let totalEstimatedPayout = 0;
     if (input.memberPayouts && input.memberPayouts.length > 0) {
       for (const payout of input.memberPayouts) {
         const amount = Number(payout.amount) || 0;
         totalEstimatedPayout += amount;
 
-        // Nếu thành viên đã được thanh toán thù lao trong bảng lương CONFIRMED thì bỏ qua không sửa
+        // Nếu thành viên đã được thanh toán tiền công trong bảng lương CONFIRMED thì bỏ qua không sửa
         if (payout.memberId && !paidMemberIdSet.has(payout.memberId)) {
           const existing = await prisma.salaryConfig.findFirst({
             where: { eventId, memberId: payout.memberId },
@@ -212,7 +228,7 @@ export const eventSettlementService = {
               where: { id: existing.id },
               data: {
                 amount,
-                note: payout.note || `Thù lao dự kiến show ${event.name}`,
+                note: payout.note || `Tiền công dự kiến show ${event.name}`,
                 isActive: true,
               },
             });
@@ -222,7 +238,7 @@ export const eventSettlementService = {
                 eventId,
                 memberId: payout.memberId,
                 amount,
-                note: payout.note || `Thù lao dự kiến show ${event.name}`,
+                note: payout.note || `Tiền công dự kiến show ${event.name}`,
                 isActive: true,
               },
             });
@@ -241,7 +257,7 @@ export const eventSettlementService = {
 
     return {
       success: true,
-      message: `Tất toán show "${event.name}" thành công! Đã lưu thù lao dự kiến cho ${input.memberPayouts?.length || 0} thành viên và chuyển về mục Tiền Công để thanh toán.`,
+      message: `Dự toán show "${event.name}" thành công! Đã lưu tiền công dự kiến cho ${input.memberPayouts?.length || 0} thành viên và chuyển về mục Tiền Công để thanh toán.`,
       createdTransactionsCount: createdTransactions.length,
       totalIncome: createdIncomeTotal,
       totalExpense: createdExpenseTotal,

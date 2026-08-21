@@ -1,7 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '../config/prisma';
 
-const memberInclude = { teams: true, positions: true } as const;
+const memberInclude = { teams: true, positions: true, bank: true } as const;
 
 export interface FindManyMembersParams {
   skip: number;

@@ -15,6 +15,9 @@ export const createMemberSchema = z.object({
   status: z.enum(MEMBER_STATUSES).optional(),
   bankAccount: z.string().optional().nullable(),
   bankName: z.string().optional().nullable(),
+  bankCode: z.string().optional().nullable(),
+  bankBin: z.string().optional().nullable(),
+  bankId: z.string().optional().nullable(),
   note: z.string().optional().nullable(),
 });
 

@@ -42,7 +42,7 @@ export const TRANSACTION_CATEGORIES = [
   'OTHER_INCOME', // Thu khác
 
   // Chi (EXPENSE)
-  'SALARY_PAYOUT', // Chi trả tiền công / thù lao biểu diễn
+  'SALARY_PAYOUT', // Chi trả tiền công biểu diễn
   'EQUIPMENT_PURCHASE', // Mua sắm đầu lân, rồng, trống, lò, cờ
   'EQUIPMENT_MAINTENANCE', // Sửa chữa, may vá, bảo dưỡng đạo cụ
   'TRAVEL_FOOD', // Chi phí ăn uống, xăng xe khi lưu diễn

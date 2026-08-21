@@ -134,7 +134,7 @@ export function MemberSalaryDetailDialog({
               <p className="text-lg font-black text-foreground">{totalMonthShows} show</p>
             </div>
             <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
-              <span className="text-[11px] font-medium text-emerald-700 dark:text-emerald-400">Show đã tất toán</span>
+              <span className="text-[11px] font-medium text-emerald-700 dark:text-emerald-400">Show đã dự toán</span>
               <p className="text-lg font-black text-emerald-600 dark:text-emerald-400">{totalAttended} buổi</p>
             </div>
             <div className="p-3 rounded-2xl bg-muted/30 border border-border/60">
@@ -152,10 +152,10 @@ export function MemberSalaryDetailDialog({
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-bold flex items-center gap-2 text-foreground">
                 <CalendarDays className="size-4 text-amber-500" />
-                Bảng Show Trong Tháng ({totalAttended}/{totalMonthShows} buổi đã tất toán)
+                Bảng Show Trong Tháng ({totalAttended}/{totalMonthShows} buổi đã dự toán)
               </h3>
               <span className="text-[11px] text-muted-foreground">
-                Chỉ những show <strong>Đã tất toán</strong> mới được cộng vào bảng lương
+                Chỉ những show <strong>Đã dự toán</strong> mới được cộng vào bảng lương
               </span>
             </div>
 
@@ -168,7 +168,7 @@ export function MemberSalaryDetailDialog({
                     <TableHead>Mã & Tên show diễn</TableHead>
                     <TableHead className="w-36 text-center">Trạng thái show</TableHead>
                     <TableHead className="w-32">Chức vụ / Vai</TableHead>
-                    <TableHead className="w-28 text-right">Thù lao</TableHead>
+                    <TableHead className="w-28 text-right">Tiền công</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -205,12 +205,12 @@ export function MemberSalaryDetailDialog({
                           {show.isAttended && show.isSettled ? (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-400 font-bold text-[11px]">
                               <CheckCircle2 className="size-3.5 text-emerald-600 dark:text-emerald-400 shrink-0 stroke-[2.5]" />
-                              Đã tất toán
+                              Đã dự toán
                             </span>
                           ) : show.isAttended && !show.isSettled ? (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-400 font-semibold text-[11px]" title="Show này chưa được tất toán nên chưa cộng tiền công">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-400 font-semibold text-[11px]" title="Show này chưa được dự toán nên chưa cộng tiền công">
                               <Clock className="size-3 text-amber-500 shrink-0" />
-                              Chờ tất toán
+                              Chờ dự toán
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-muted-foreground text-[11px]">
@@ -228,8 +228,8 @@ export function MemberSalaryDetailDialog({
                               {formatCurrency(show.amount)}
                             </span>
                           ) : show.isAttended && !show.isSettled ? (
-                            <span className="text-muted-foreground text-[11px] italic font-normal" title="Chờ tất toán show">
-                              Chờ tất toán
+                            <span className="text-muted-foreground text-[11px] italic font-normal" title="Chờ dự toán show">
+                              Chờ dự toán
                             </span>
                           ) : (
                             <span className="text-muted-foreground font-normal">-</span>
@@ -252,7 +252,7 @@ export function MemberSalaryDetailDialog({
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 border-t border-border/60">
               <div className="flex justify-between sm:flex-col">
-                <span className="text-muted-foreground">Lương cơ bản ({totalAttended} show đã tất toán):</span>
+                <span className="text-muted-foreground">Lương cơ bản ({totalAttended} show đã dự toán):</span>
                 <span className="font-semibold text-foreground">{formatCurrency(record.baseAmount)}</span>
               </div>
               <div className="flex justify-between sm:flex-col">

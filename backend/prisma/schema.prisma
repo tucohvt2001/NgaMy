@@ -117,9 +117,14 @@ model Member {
   status      String    @default("ACTIVE") // ACTIVE, INACTIVE, ON_LEAVE
   bankAccount String?
   bankName    String?
+  bankCode    String?
+  bankBin     String?
+  bankId      String?
   note        String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+
+  bank        Bank?      @relation(fields: [bankId], references: [id])
 
   // Một thành viên có thể thuộc nhiều đội/nhóm và đảm nhiệm nhiều chức vụ cùng lúc
   teams     Team[]     @relation("MemberTeams")
@@ -331,4 +336,30 @@ model Transaction {
   @@index([memberId])
   @@index([createdBy])
 }
+
+// ============ DANH MỤC NGÂN HÀNG (MASTER DATA VIETQR) ============
+
+model Bank {
+  id                String   @id @default(cuid())
+  code              String   @unique // vd: ICB, VCB, MB, TCB, etc.
+  name              String   // Tên đầy đủ: Ngân hàng TMCP Ngoại Thương Việt Nam
+  shortName         String   // Tên viết tắt: Vietcombank
+  bin               String   // Mã BIN Napas: 970436
+  logo              String?  // Logo URL từ VietQR CDN
+  transferSupported Boolean  @default(true)
+  lookupSupported   Boolean  @default(true)
+  swiftCode         String?
+  isActive          Boolean  @default(true)
+  displayOrder      Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  members           Member[]
+
+  @@index([code])
+  @@index([bin])
+  @@index([shortName])
+  @@index([isActive])
+}
+
 

@@ -138,6 +138,7 @@ export default function MembersPage() {
                   <TableHead>Đội</TableHead>
                   <TableHead>Chức vụ</TableHead>
                   <TableHead>SĐT</TableHead>
+                  <TableHead>Tài khoản ngân hàng</TableHead>
                   <TableHead>Trạng thái</TableHead>
                   <TableHead className="text-right">Thao tác</TableHead>
                 </TableRow>
@@ -174,6 +175,35 @@ export default function MembersPage() {
                       )}
                     </TableCell>
                     <TableCell>{member.phone ?? '-'}</TableCell>
+                    <TableCell>
+                      {member.bankAccount ? (
+                        <div className="flex items-center gap-2">
+                          {member.bank?.logo ? (
+                            <div className="relative size-5 shrink-0 rounded overflow-hidden bg-white p-0.5 border">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={member.bank.logo}
+                                alt={member.bank.shortName}
+                                className="w-full h-full object-contain"
+                                onError={(e) => {
+                                  (e.target as any).style.display = 'none';
+                                }}
+                              />
+                            </div>
+                          ) : null}
+                          <div className="text-xs">
+                            <div className="font-mono font-semibold text-foreground">
+                              {member.bankAccount}
+                            </div>
+                            <div className="text-[10px] text-muted-foreground">
+                              {member.bank?.shortName || member.bankName || 'Ngân hàng'}
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground italic">Chưa có</span>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <Badge variant={member.status === 'ACTIVE' ? 'success' : 'secondary'}>
                         {STATUS_LABELS[member.status]}

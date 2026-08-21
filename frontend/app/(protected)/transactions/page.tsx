@@ -175,7 +175,7 @@ export default function TransactionsPage() {
       {/* Header & Main Actions */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Quản lý Thu Chi & Sổ Quỹ</h1>
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Quản lý thu chi / sổ quỹ</h1>
           <p className="text-sm text-muted-foreground">
             Theo dõi dòng tiền thu chi, quản lý kinh phí show diễn, mua sắm đạo cụ và quỹ CLB
           </p>
@@ -261,7 +261,7 @@ export default function TransactionsPage() {
             </div>
             <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
               <ArrowUpRight className="size-3.5 text-rose-500" />
-              Chi thù lao, mua lân, bảo dưỡng, ăn uống...
+              Chi tiền công, mua lân, bảo dưỡng, ăn uống...
             </p>
           </CardContent>
         </Card>
@@ -278,9 +278,8 @@ export default function TransactionsPage() {
           </CardHeader>
           <CardContent>
             <div
-              className={`text-2xl font-black tracking-tight ${
-                (summary?.netBalance ?? 0) >= 0 ? 'text-primary' : 'text-rose-600'
-              }`}
+              className={`text-2xl font-black tracking-tight ${(summary?.netBalance ?? 0) >= 0 ? 'text-primary' : 'text-rose-600'
+                }`}
             >
               {loadingSummary ? '...' : formatCurrency(summary?.netBalance ?? 0)}
             </div>
@@ -490,11 +489,10 @@ export default function TransactionsPage() {
                       <TableCell>
                         <Badge
                           variant={isIncome ? 'default' : 'destructive'}
-                          className={`text-[11px] font-semibold gap-1 ${
-                            isIncome
+                          className={`text-[11px] font-semibold gap-1 ${isIncome
                               ? 'bg-emerald-500/15 text-emerald-700 border-emerald-500/30 dark:text-emerald-400'
                               : 'bg-rose-500/15 text-rose-700 border-rose-500/30 dark:text-rose-400'
-                          }`}
+                            }`}
                         >
                           {isIncome ? (
                             <ArrowDownLeft className="size-3" />
@@ -545,9 +543,8 @@ export default function TransactionsPage() {
                       <TableCell className="text-right">
                         <div className="flex flex-col items-end">
                           <span
-                            className={`font-bold text-sm ${
-                              isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
-                            }`}
+                            className={`font-bold text-sm ${isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                              }`}
                           >
                             {isIncome ? '+' : '-'} {formatCurrency(item.amount)}
                           </span>
@@ -648,9 +645,8 @@ export default function TransactionsPage() {
         open={!!deletingTransaction}
         onOpenChange={(open) => !open && setDeletingTransaction(null)}
         title="Xóa phiếu giao dịch"
-        description={`Bạn có chắc muốn xóa phiếu "${deletingTransaction?.code}" với số tiền ${
-          deletingTransaction ? formatCurrency(deletingTransaction.amount) : ''
-        }? Hành động này không thể hoàn tác.`}
+        description={`Bạn có chắc muốn xóa phiếu "${deletingTransaction?.code}" với số tiền ${deletingTransaction ? formatCurrency(deletingTransaction.amount) : ''
+          }? Hành động này không thể hoàn tác.`}
         confirmLabel="Xóa phiếu"
         onConfirm={() => {
           if (deletingTransaction) {

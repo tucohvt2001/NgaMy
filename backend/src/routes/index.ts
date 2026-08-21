@@ -12,6 +12,7 @@ import salaryRoutes from './salary.routes';
 import transactionRoutes from './transaction.routes';
 import dashboardRoutes from './dashboard.routes';
 import reportRoutes from './report.routes';
+import { bankRouter } from './bank.routes';
 
 const router = Router();
 
@@ -28,6 +29,7 @@ router.use('/', salaryRoutes);
 router.use('/', transactionRoutes);
 router.use('/', dashboardRoutes);
 router.use('/', reportRoutes);
+router.use('/', bankRouter);
 
 export default router;
 

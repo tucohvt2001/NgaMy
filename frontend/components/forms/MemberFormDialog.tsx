@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { MultiSelect } from '@/components/forms/MultiSelect';
+import { BankSelect } from '@/components/ui/bank-select';
 import {
   Dialog,
   DialogContent,
@@ -33,6 +34,9 @@ const memberSchema = z.object({
   status: z.enum(MEMBER_STATUSES).optional(),
   bankAccount: z.string().optional(),
   bankName: z.string().optional(),
+  bankCode: z.string().optional(),
+  bankBin: z.string().optional(),
+  bankId: z.string().optional(),
   note: z.string().optional(),
 });
 
@@ -70,6 +74,9 @@ export function MemberFormDialog({ open, onOpenChange, member, onSubmit, isLoadi
         status: (member?.status as MemberFormValues['status']) ?? 'ACTIVE',
         bankAccount: member?.bankAccount ?? '',
         bankName: member?.bankName ?? '',
+        bankCode: member?.bankCode ?? '',
+        bankBin: member?.bankBin ?? '',
+        bankId: member?.bankId ?? '',
         note: member?.note ?? '',
       });
     }
@@ -179,14 +186,37 @@ export function MemberFormDialog({ open, onOpenChange, member, onSubmit, isLoadi
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="bankAccount">Số tài khoản ngân hàng</Label>
-              <Input id="bankAccount" {...register('bankAccount')} />
+              <Label htmlFor="bankName">Ngân hàng (VietQR)</Label>
+              <Controller
+                control={control}
+                name="bankCode"
+                render={({ field }) => (
+                  <BankSelect
+                    value={field.value || member?.bankCode || member?.bankName}
+                    onChange={(bank) => {
+                      field.onChange(bank?.code ?? '');
+                      reset((prev) => ({
+                        ...prev,
+                        bankCode: bank?.code ?? '',
+                        bankName: bank?.shortName ?? '',
+                        bankBin: bank?.bin ?? '',
+                        bankId: bank?.id ?? '',
+                      }));
+                    }}
+                  />
+                )}
+              />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="bankName">Ngân hàng</Label>
-              <Input id="bankName" {...register('bankName')} />
+              <Label htmlFor="bankAccount">Số tài khoản</Label>
+              <Input
+                id="bankAccount"
+                placeholder="Nhập số tài khoản..."
+                className="font-mono text-sm"
+                {...register('bankAccount')}
+              />
             </div>
           </div>
 

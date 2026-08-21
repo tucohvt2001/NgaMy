@@ -31,6 +31,20 @@ export interface Team {
   _count?: { members: number };
 }
 
+export interface Bank {
+  id: string;
+  code: string;
+  name: string;
+  shortName: string;
+  bin: string;
+  logo?: string | null;
+  transferSupported: boolean;
+  lookupSupported: boolean;
+  swiftCode?: string | null;
+  isActive: boolean;
+  displayOrder: number;
+}
+
 export interface Member {
   id: string;
   memberCode: string;
@@ -46,6 +60,10 @@ export interface Member {
   status: MemberStatus;
   bankAccount?: string | null;
   bankName?: string | null;
+  bankCode?: string | null;
+  bankBin?: string | null;
+  bankId?: string | null;
+  bank?: Bank | null;
   note?: string | null;
   createdAt: string;
 }
@@ -278,7 +296,7 @@ export interface TransactionInput {
   notes?: string | null;
 }
 
-// ============ QUYẾT TOÁN SHOW DIỄN ============
+// ============ DỰ TOÁN SHOW DIỄN ============
 
 export interface EventSettlementMember {
   id: string;
@@ -317,8 +335,8 @@ export interface MemberPayoutItem {
 export interface EventExpenseItem {
   category: string;
   amount: number;
-  description: string;
-  receiver: string;
+  description?: string;
+  receiver?: string;
   paymentMethod: 'CASH' | 'BANK_TRANSFER';
 }
 

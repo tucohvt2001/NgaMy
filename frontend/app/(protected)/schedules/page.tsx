@@ -119,12 +119,12 @@ export default function SchedulesPage() {
           }}
         >
           <SelectTrigger className="sm:w-48">
-            <SelectValue placeholder="Tất cả quyết toán" />
+            <SelectValue placeholder="Tất cả dự toán" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={ALL_VALUE}>Tất cả quyết toán</SelectItem>
-            <SelectItem value="UNSETTLED">🟡 Chưa quyết toán</SelectItem>
-            <SelectItem value="SETTLED">🟢 Đã quyết toán</SelectItem>
+            <SelectItem value={ALL_VALUE}>Tất cả dự toán</SelectItem>
+            <SelectItem value="UNSETTLED">🟡 Chưa dự toán</SelectItem>
+            <SelectItem value="SETTLED">🟢 Đã dự toán</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -149,10 +149,10 @@ export default function SchedulesPage() {
         <div className="flex items-center gap-3">
           <span className="font-semibold text-foreground">Sổ quỹ:</span>
           <span className="flex items-center gap-1 text-emerald-700 dark:text-emerald-400 font-medium">
-            <CheckCircle2 className="size-3.5" /> Đã quyết toán
+            <CheckCircle2 className="size-3.5" /> Đã dự toán
           </span>
           <span className="flex items-center gap-1 text-amber-700 dark:text-amber-400 font-medium">
-            <AlertCircle className="size-3.5" /> Chưa quyết toán
+            <AlertCircle className="size-3.5" /> Chưa dự toán
           </span>
         </div>
       </div>
@@ -172,7 +172,7 @@ export default function SchedulesPage() {
                   <TableHead className="w-44">Ngày giờ diễn</TableHead>
                   <TableHead>Địa điểm</TableHead>
                   <TableHead className="w-28">Số người</TableHead>
-                  <TableHead className="w-36">Quyết toán thu chi</TableHead>
+                  <TableHead className="w-36">Dự toán thu chi</TableHead>
                   <TableHead className="w-28">Trạng thái</TableHead>
                   <TableHead className="text-right w-40">Thao tác</TableHead>
                 </TableRow>
@@ -242,12 +242,12 @@ export default function SchedulesPage() {
                         {isSettled ? (
                           <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 text-[10px] gap-1 font-semibold">
                             <CheckCircle2 className="size-3 text-emerald-600 dark:text-emerald-400" />
-                            Đã quyết toán ({event._count?.transactions} phiếu)
+                            Đã dự toán ({event._count?.transactions} phiếu)
                           </Badge>
                         ) : (
                           <Badge variant="outline" className="text-amber-700 dark:text-amber-400 border-amber-500/30 text-[10px] gap-1 font-medium bg-amber-50/60 dark:bg-amber-950/20">
                             <AlertCircle className="size-3 text-amber-600 dark:text-amber-400" />
-                            Chưa quyết toán
+                            Chưa dự toán
                           </Badge>
                         )}
                       </TableCell>
@@ -269,7 +269,7 @@ export default function SchedulesPage() {
                             ? 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/30'
                             : 'text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/30'
                         }
-                        title={isSettled ? 'Xem / Lập thêm quyết toán show' : 'Quyết toán show & chia tiền thù lao'}
+                        title={isSettled ? 'Xem / Lập thêm dự toán show' : 'Dự toán show & chia tiền công'}
                       >
                         <Coins className="size-4" />
                       </Button>

@@ -112,13 +112,13 @@ export const salaryConfigRepository = {
 
   // Tìm mức lương ưu tiên: (Member + Event) > Event > Member > Position (từ cụ thể đến chung)
   async findApplicableAmount(memberId: string, eventId: string, positionId: string | null): Promise<number> {
-    // 1. Mức thù lao phân bổ riêng cho thành viên trong show này (lưu từ Tất toán sự kiện)
+    // 1. Mức tiền công phân bổ riêng cho thành viên trong show này (lưu từ Dự toán sự kiện)
     const memberEventConfig = await prisma.salaryConfig.findFirst({
       where: { memberId, eventId, isActive: true },
     });
     if (memberEventConfig) return memberEventConfig.amount;
 
-    // 2. Mức thù lao chung của sự kiện này
+    // 2. Mức tiền công chung của sự kiện này
     const eventConfig = await prisma.salaryConfig.findFirst({
       where: { eventId, memberId: null, isActive: true },
     });

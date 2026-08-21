@@ -138,10 +138,10 @@ router
  * @openapi
  * /events/{id}/settlement:
  *   get:
- *     summary: Thông tin quyết toán show diễn
+ *     summary: Thông tin dự toán show diễn
  *     tags: [Events]
  *   post:
- *     summary: Quyết toán show và tự động lập phiếu thu chi
+ *     summary: Dự toán show và tự động lập phiếu thu chi
  *     tags: [Events]
  */
 router

@@ -430,7 +430,7 @@ async function main(): Promise<void> {
       transactionDate: new Date(year, month - 1, 18, 16, 0, 0),
       paymentMethod: 'BANK_TRANSFER',
       status: 'COMPLETED',
-      payerOrReceiver: 'Chi trả thù lao thành viên đợt 1',
+      payerOrReceiver: 'Chi trả tiền công thành viên đợt 1',
       description: 'Thanh toán tiền công 3 show đầu tháng',
       createdBy: adminUser.id,
     },
