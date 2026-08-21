@@ -34,6 +34,17 @@ export const memberService = {
     return res.data.data;
   },
 
+  async getStats() {
+    const res = await apiClient.get<ApiSuccessResponse<{
+      total: number;
+      active: number;
+      onLeave: number;
+      inactive: number;
+      withBank: number;
+    }>>('/members/stats');
+    return res.data.data;
+  },
+
   async getById(id: string) {
     const res = await apiClient.get<ApiSuccessResponse<Member>>(`/members/${id}`);
     return res.data.data;

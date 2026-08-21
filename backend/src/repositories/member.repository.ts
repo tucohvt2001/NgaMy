@@ -1,7 +1,30 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '../config/prisma';
 
-const memberInclude = { teams: true, positions: true, bank: true } as const;
+const memberInclude = {
+  teams: {
+    select: {
+      id: true,
+      name: true,
+    },
+  },
+  positions: {
+    select: {
+      id: true,
+      name: true,
+    },
+  },
+  bank: {
+    select: {
+      id: true,
+      code: true,
+      shortName: true,
+      name: true,
+      bin: true,
+      logo: true,
+    },
+  },
+} as const;
 
 export interface FindManyMembersParams {
   skip: number;
@@ -12,19 +35,27 @@ export interface FindManyMembersParams {
 }
 
 function buildWhere(params: Omit<FindManyMembersParams, 'skip' | 'take'>): Prisma.MemberWhereInput {
-  return {
-    ...(params.teamId ? { teams: { some: { id: params.teamId } } } : {}),
-    ...(params.status ? { status: params.status } : {}),
-    ...(params.search
-      ? {
-          OR: [
-            { fullName: { contains: params.search } },
-            { memberCode: { contains: params.search } },
-            { phone: { contains: params.search } },
-          ],
-        }
-      : {}),
-  };
+  const where: Prisma.MemberWhereInput = {};
+
+  if (params.teamId) {
+    where.teams = { some: { id: params.teamId } };
+  }
+
+  if (params.status) {
+    where.status = params.status;
+  }
+
+  if (params.search) {
+    const q = params.search.trim();
+    where.OR = [
+      { fullName: { contains: q, mode: 'insensitive' } },
+      { memberCode: { contains: q, mode: 'insensitive' } },
+      { phone: { contains: q, mode: 'insensitive' } },
+      { bankAccount: { contains: q, mode: 'insensitive' } },
+    ];
+  }
+
+  return where;
 }
 
 export const memberRepository = {
@@ -40,6 +71,31 @@ export const memberRepository = {
 
   count(params: Omit<FindManyMembersParams, 'skip' | 'take'>) {
     return prisma.member.count({ where: buildWhere(params) });
+  },
+
+  async getStats() {
+    const [total, active, onLeave, inactive, withBank] = await Promise.all([
+      prisma.member.count(),
+      prisma.member.count({ where: { status: 'ACTIVE' } }),
+      prisma.member.count({ where: { status: 'ON_LEAVE' } }),
+      prisma.member.count({ where: { status: 'INACTIVE' } }),
+      prisma.member.count({
+        where: {
+          AND: [
+            { bankAccount: { not: null } },
+            { bankAccount: { not: '' } },
+          ],
+        },
+      }),
+    ]);
+
+    return {
+      total,
+      active,
+      onLeave,
+      inactive,
+      withBank,
+    };
   },
 
   findById(id: string) {

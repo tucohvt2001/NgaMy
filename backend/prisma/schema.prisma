@@ -140,6 +140,11 @@ model Member {
   transactions  Transaction[]
 
   @@index([status])
+  @@index([memberCode])
+  @@index([fullName])
+  @@index([phone])
+  @@index([bankId])
+  @@index([createdAt])
 }
 
 // ============ HOẠT ĐỘNG ============

@@ -46,6 +46,8 @@ router
   .get(authorize(PERMISSIONS.MEMBER_READ), memberController.list)
   .post(authorize(PERMISSIONS.MEMBER_CREATE), validate({ body: createMemberSchema }), memberController.create);
 
+router.get('/members/stats', authorize(PERMISSIONS.MEMBER_READ), memberController.stats);
+
 /**
  * @openapi
  * /members/{id}:

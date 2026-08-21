@@ -9,6 +9,11 @@ export const memberController = {
     sendSuccess(res, result);
   }),
 
+  stats: asyncHandler(async (_req: Request, res: Response) => {
+    const stats = await memberService.getStats();
+    sendSuccess(res, stats);
+  }),
+
   getById: asyncHandler(async (req: Request, res: Response) => {
     const member = await memberService.getById(req.params.id);
     sendSuccess(res, member);

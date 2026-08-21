@@ -39,6 +39,10 @@ export const memberService = {
     };
   },
 
+  async getStats() {
+    return memberRepository.getStats();
+  },
+
   async getById(id: string) {
     const member = await memberRepository.findById(id);
     if (!member) {
@@ -59,8 +63,35 @@ export const memberService = {
     }
 
     const { teamIds, positionIds, ...rest } = input;
+    const cleanData: any = { ...rest };
+
+    if (cleanData.bankId !== undefined) {
+      cleanData.bankId = cleanData.bankId?.trim() ? cleanData.bankId.trim() : null;
+    }
+    if (cleanData.bankCode !== undefined) {
+      cleanData.bankCode = cleanData.bankCode?.trim() ? cleanData.bankCode.trim() : null;
+    }
+    if (cleanData.bankBin !== undefined) {
+      cleanData.bankBin = cleanData.bankBin?.trim() ? cleanData.bankBin.trim() : null;
+    }
+    if (cleanData.bankName !== undefined) {
+      cleanData.bankName = cleanData.bankName?.trim() ? cleanData.bankName.trim() : null;
+    }
+    if (cleanData.bankAccount !== undefined) {
+      cleanData.bankAccount = cleanData.bankAccount?.trim() ? cleanData.bankAccount.trim() : null;
+    }
+    if (cleanData.phone !== undefined) {
+      cleanData.phone = cleanData.phone?.trim() ? cleanData.phone.trim() : null;
+    }
+    if (cleanData.address !== undefined) {
+      cleanData.address = cleanData.address?.trim() ? cleanData.address.trim() : null;
+    }
+    if (cleanData.note !== undefined) {
+      cleanData.note = cleanData.note?.trim() ? cleanData.note.trim() : null;
+    }
+
     return memberRepository.create({
-      ...rest,
+      ...cleanData,
       memberCode,
       ...(teamIds?.length ? { teams: { connect: teamIds.map((id) => ({ id })) } } : {}),
       ...(positionIds?.length ? { positions: { connect: positionIds.map((id) => ({ id })) } } : {}),
@@ -76,9 +107,36 @@ export const memberService = {
     }
 
     const { teamIds, positionIds, ...rest } = input;
+    const cleanData: any = { ...rest };
+
+    if (cleanData.bankId !== undefined) {
+      cleanData.bankId = cleanData.bankId?.trim() ? cleanData.bankId.trim() : null;
+    }
+    if (cleanData.bankCode !== undefined) {
+      cleanData.bankCode = cleanData.bankCode?.trim() ? cleanData.bankCode.trim() : null;
+    }
+    if (cleanData.bankBin !== undefined) {
+      cleanData.bankBin = cleanData.bankBin?.trim() ? cleanData.bankBin.trim() : null;
+    }
+    if (cleanData.bankName !== undefined) {
+      cleanData.bankName = cleanData.bankName?.trim() ? cleanData.bankName.trim() : null;
+    }
+    if (cleanData.bankAccount !== undefined) {
+      cleanData.bankAccount = cleanData.bankAccount?.trim() ? cleanData.bankAccount.trim() : null;
+    }
+    if (cleanData.phone !== undefined) {
+      cleanData.phone = cleanData.phone?.trim() ? cleanData.phone.trim() : null;
+    }
+    if (cleanData.address !== undefined) {
+      cleanData.address = cleanData.address?.trim() ? cleanData.address.trim() : null;
+    }
+    if (cleanData.note !== undefined) {
+      cleanData.note = cleanData.note?.trim() ? cleanData.note.trim() : null;
+    }
+
     try {
       return await memberRepository.update(id, {
-        ...rest,
+        ...cleanData,
         ...(teamIds !== undefined ? { teams: { set: teamIds.map((id) => ({ id })) } } : {}),
         ...(positionIds !== undefined ? { positions: { set: positionIds.map((id) => ({ id })) } } : {}),
       });

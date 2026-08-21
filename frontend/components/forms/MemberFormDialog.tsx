@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, useWatch } from 'react-hook-form';
+import Image from 'next/image';
+import { QrCode, Sparkles } from 'lucide-react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -59,6 +61,7 @@ export function MemberFormDialog({ open, onOpenChange, member, onSubmit, isLoadi
     handleSubmit,
     control,
     reset,
+    setValue,
     formState: { errors },
   } = useForm<MemberFormValues>({ resolver: zodResolver(memberSchema) });
 
@@ -89,9 +92,20 @@ export function MemberFormDialog({ open, onOpenChange, member, onSubmit, isLoadi
     });
   };
 
+  const watchedBankCode = useWatch({ control, name: 'bankCode' }) || member?.bankCode || member?.bankName;
+  const watchedBankAccount = useWatch({ control, name: 'bankAccount' });
+  const watchedFullName = useWatch({ control, name: 'fullName' });
+
+  const previewQrUrl =
+    watchedBankCode && watchedBankAccount && watchedBankAccount.trim().length >= 4
+      ? `https://img.vietqr.io/image/${watchedBankCode.trim()}-${watchedBankAccount.trim()}-compact2.png?accountName=${encodeURIComponent(
+          watchedFullName || member?.fullName || ''
+        )}`
+      : null;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{member ? 'Cập nhật thành viên' : 'Thêm thành viên'}</DialogTitle>
         </DialogHeader>
@@ -186,38 +200,63 @@ export function MemberFormDialog({ open, onOpenChange, member, onSubmit, isLoadi
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="bankName">Ngân hàng (VietQR)</Label>
-              <Controller
-                control={control}
-                name="bankCode"
-                render={({ field }) => (
-                  <BankSelect
-                    value={field.value || member?.bankCode || member?.bankName}
-                    onChange={(bank) => {
-                      field.onChange(bank?.code ?? '');
-                      reset((prev) => ({
-                        ...prev,
-                        bankCode: bank?.code ?? '',
-                        bankName: bank?.shortName ?? '',
-                        bankBin: bank?.bin ?? '',
-                        bankId: bank?.id ?? '',
-                      }));
-                    }}
+          <div className="p-3.5 rounded-2xl bg-muted/20 border border-border/80 space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="bankName" className="text-xs">Ngân hàng (VietQR)</Label>
+                <Controller
+                  control={control}
+                  name="bankCode"
+                  render={({ field }) => (
+                    <BankSelect
+                      value={field.value || member?.bankCode || member?.bankName}
+                      onChange={(bank) => {
+                        field.onChange(bank?.code ?? '');
+                        setValue('bankCode', bank?.code ?? '', { shouldDirty: true });
+                        setValue('bankName', bank?.shortName ?? '', { shouldDirty: true });
+                        setValue('bankBin', bank?.bin ?? '', { shouldDirty: true });
+                        setValue('bankId', bank?.id ?? '', { shouldDirty: true });
+                      }}
+                    />
+                  )}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="bankAccount" className="text-xs">Số tài khoản</Label>
+                <Input
+                  id="bankAccount"
+                  placeholder="Nhập số tài khoản..."
+                  className="font-mono text-xs h-10 rounded-xl"
+                  {...register('bankAccount')}
+                />
+              </div>
+            </div>
+
+            {/* Live Preview VietQR */}
+            {previewQrUrl && (
+              <div className="pt-2 border-t flex items-center gap-3 bg-white dark:bg-zinc-950 p-2.5 rounded-xl border">
+                <div className="relative size-16 shrink-0 rounded-lg overflow-hidden bg-white p-0.5 border">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={previewQrUrl}
+                    alt="VietQR Preview"
+                    className="w-full h-full object-contain"
                   />
-                )}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="bankAccount">Số tài khoản</Label>
-              <Input
-                id="bankAccount"
-                placeholder="Nhập số tài khoản..."
-                className="font-mono text-sm"
-                {...register('bankAccount')}
-              />
-            </div>
+                </div>
+                <div className="text-xs space-y-0.5 min-w-0">
+                  <div className="font-bold text-foreground flex items-center gap-1">
+                    <QrCode className="size-3.5 text-amber-500" />
+                    Mã VietQR đã sẵn sàng
+                  </div>
+                  <p className="text-[11px] text-muted-foreground truncate">
+                    Ngân hàng: <strong>{watchedBankCode}</strong> - STK: <strong>{watchedBankAccount}</strong>
+                  </p>
+                  <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                    Tự động tạo mã QR quét chuyển khoản khi chi trả tiền công
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
