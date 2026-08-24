@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
+import { PwaInstallPrompt } from './PwaInstallPrompt';
 import { useAuthStore } from '@/stores/authStore';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -77,6 +78,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="mx-auto max-w-7xl">{children}</div>
         </main>
       </div>
+
+      {/* PWA Mobile App Install Prompt */}
+      <PwaInstallPrompt />
     </div>
   );
 }
