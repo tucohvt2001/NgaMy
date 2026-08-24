@@ -101,7 +101,12 @@ export function useBatchAssignMembers(eventId: string) {
 export function useRemoveAssignment(eventId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (memberId: string) => eventMemberService.remove(eventId, memberId),
+    mutationFn: (param: string | { memberId: string; positionId?: string; assignmentId?: string }) => {
+      if (typeof param === 'string') {
+        return eventMemberService.remove(eventId, param);
+      }
+      return eventMemberService.remove(eventId, param.memberId, param.positionId, param.assignmentId);
+    },
     onSuccess: () => {
       toast.success('Hủy phân công thành công');
       queryClient.invalidateQueries({ queryKey: ['events', eventId, 'members'] });

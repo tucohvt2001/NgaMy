@@ -33,20 +33,46 @@ export const attendanceService = {
       throw AppError.notFound('Không tìm thấy sự kiện');
     }
 
+    // Gom các phân công theo thành viên (hỗ trợ 1 người làm nhiều vai trò)
+    const assignedMemberMap = new Map<
+      string,
+      {
+        member: (typeof assignedMembers)[number]['member'];
+        positions: Array<(typeof assignedMembers)[number]['position']>;
+      }
+    >();
+
+    for (const em of assignedMembers) {
+      if (!assignedMemberMap.has(em.memberId)) {
+        assignedMemberMap.set(em.memberId, {
+          member: em.member,
+          positions: [],
+        });
+      }
+      if (em.position) {
+        assignedMemberMap.get(em.memberId)!.positions.push(em.position);
+      }
+    }
+
     const attendanceMap = new Map(attendances.map((att) => [att.memberId, att]));
     const assignedMemberIdSet = new Set<string>();
 
     const mergedList: Array<{
       member: (typeof assignedMembers)[number]['member'];
       position: (typeof assignedMembers)[number]['position'] | null;
+      positions?: Array<(typeof assignedMembers)[number]['position']>;
+      positionName?: string;
       attendance: (typeof attendances)[number] | null;
       isAssigned: boolean;
-    }> = assignedMembers.map((em) => {
-      assignedMemberIdSet.add(em.memberId);
-      const att = attendanceMap.get(em.memberId) || null;
+    }> = Array.from(assignedMemberMap.entries()).map(([memberId, data]) => {
+      assignedMemberIdSet.add(memberId);
+      const att = attendanceMap.get(memberId) || null;
+      const positionName = data.positions.map((p) => p?.name).filter(Boolean).join(', ') || 'Thành viên';
       return {
-        member: em.member,
-        position: em.position,
+        member: data.member,
+        position: data.positions[0] || null,
+        positions: data.positions,
+        positionName,
         attendance: att,
         isAssigned: true,
       };
@@ -58,13 +84,15 @@ export const attendanceService = {
         mergedList.push({
           member: att.member,
           position: null,
+          positions: [],
+          positionName: 'Vãng lai',
           attendance: att,
           isAssigned: false,
         });
       }
     }
 
-    const totalAssigned = assignedMembers.length;
+    const totalAssigned = assignedMemberMap.size;
     const totalRecords = attendances.length;
     const present = attendances.filter((a) => a.status === 'PRESENT').length;
     const late = attendances.filter((a) => a.status === 'LATE').length;

@@ -16,16 +16,30 @@ export const eventMemberController = {
 
   batchAssign: asyncHandler(async (req: Request, res: Response) => {
     const result = await eventMemberService.batchAssign(req.params.eventId, req.body);
-    sendSuccess(res, result, `Đã phân công ${result.count} thành viên`, 201);
+    sendSuccess(res, result, `Đã phân công ${result.count} lượt vai trò thành viên`, 201);
   }),
 
   update: asyncHandler(async (req: Request, res: Response) => {
-    const result = await eventMemberService.update(req.params.eventId, req.params.memberId, req.body);
+    const positionId = req.query.positionId as string | undefined;
+    const result = await eventMemberService.update(
+      req.params.eventId,
+      req.params.memberId,
+      req.body,
+      positionId,
+    );
     sendSuccess(res, result, 'Cập nhật phân công thành công');
   }),
 
   remove: asyncHandler(async (req: Request, res: Response) => {
-    await eventMemberService.remove(req.params.eventId, req.params.memberId);
+    const { eventId, memberId } = req.params;
+    const positionId = req.query.positionId as string | undefined;
+    const assignmentId = req.query.assignmentId as string | undefined;
+
+    if (assignmentId) {
+      await eventMemberService.removeById(assignmentId);
+    } else {
+      await eventMemberService.remove(eventId, memberId, positionId);
+    }
     sendSuccess(res, null, 'Hủy phân công thành công');
   }),
 };

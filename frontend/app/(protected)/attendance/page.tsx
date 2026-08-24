@@ -138,10 +138,16 @@ export default function AttendancePage() {
     const initialRows: Record<string, AttendanceRowState> = {};
     for (const item of sheetData.members) {
       const att = item.attendance;
+      const posName =
+        (item as any).positionName ||
+        (item as any).positions?.map((p: any) => p.name).join(', ') ||
+        item.position?.name ||
+        (item.isAssigned ? 'Thành viên' : 'Bổ sung');
+
       initialRows[item.member.id] = {
         memberId: item.member.id,
         member: item.member,
-        positionName: item.position?.name ?? (item.isAssigned ? 'Thành viên' : 'Bổ sung'),
+        positionName: posName,
         isAssigned: item.isAssigned,
         attendanceId: att?.id,
         status: att?.status ?? 'PRESENT', // Mặc định có mặt nếu chưa chấm
@@ -641,9 +647,17 @@ export default function AttendancePage() {
                           </TableCell>
 
                           <TableCell>
-                            <Badge variant="secondary" className="font-normal text-xs">
-                              {row.positionName}
-                            </Badge>
+                            <div className="flex flex-wrap gap-1">
+                              {row.positionName.split(', ').map((pos, pIdx) => (
+                                <Badge
+                                  key={pIdx}
+                                  variant="secondary"
+                                  className="text-xs font-semibold px-2 py-0.5 bg-amber-500/10 text-amber-900 dark:text-amber-200 border border-amber-500/30"
+                                >
+                                  {pos}
+                                </Badge>
+                              ))}
+                            </div>
                           </TableCell>
 
                           {/* Quick 1-click status selector buttons */}

@@ -76,28 +76,59 @@ export const eventSettlementService = {
       }
     });
 
+    // Gom danh sách phân công theo thành viên (1 người có thể nhiều vai trò)
+    const assignedMemberMap = new Map<
+      string,
+      {
+        member: (typeof eventMembers)[number]['member'];
+        positions: Array<(typeof eventMembers)[number]['position']>;
+        statuses: string[];
+        notes: string[];
+        id: string;
+      }
+    >();
+
+    for (const em of eventMembers) {
+      if (!assignedMemberMap.has(em.memberId)) {
+        assignedMemberMap.set(em.memberId, {
+          id: em.id,
+          member: em.member,
+          positions: [],
+          statuses: [],
+          notes: [],
+        });
+      }
+      const item = assignedMemberMap.get(em.memberId)!;
+      if (em.position) item.positions.push(em.position);
+      if (em.status) item.statuses.push(em.status);
+      if (em.note) item.notes.push(em.note);
+    }
+
+    const memberOverviewList = Array.from(assignedMemberMap.entries()).map(([memberId, data]) => {
+      const savedConfig = salaryConfigMap.get(memberId);
+      const isPaid = paidMemberIdSet.has(memberId);
+      const positionName = data.positions.map((p) => p?.name).filter(Boolean).join(', ') || 'Thành viên';
+      return {
+        id: data.id,
+        memberId,
+        memberCode: data.member.memberCode,
+        fullName: data.member.fullName,
+        phone: data.member.phone,
+        bankAccount: data.member.bankAccount,
+        bankName: data.member.bankName,
+        positionId: data.positions[0]?.id || '',
+        positionName,
+        status: data.statuses[0] || 'ASSIGNED',
+        note: data.notes.filter(Boolean).join('; ') || null,
+        payoutAmount: savedConfig?.amount ?? 0,
+        payoutNote: savedConfig?.note ?? '',
+        isPaid,
+      };
+    });
+
     return {
       event,
-      members: eventMembers.map((em) => {
-        const savedConfig = salaryConfigMap.get(em.memberId);
-        const isPaid = paidMemberIdSet.has(em.memberId);
-        return {
-          id: em.id,
-          memberId: em.memberId,
-          memberCode: em.member.memberCode,
-          fullName: em.member.fullName,
-          phone: em.member.phone,
-          bankAccount: em.member.bankAccount,
-          bankName: em.member.bankName,
-          positionId: em.positionId,
-          positionName: em.position?.name || 'Thành viên',
-          status: em.status,
-          note: em.note,
-          payoutAmount: savedConfig?.amount ?? 0,
-          payoutNote: savedConfig?.note ?? '',
-          isPaid,
-        };
-      }),
+      members: memberOverviewList,
       existingTransactions,
       settledIncome,
       settledExpense,

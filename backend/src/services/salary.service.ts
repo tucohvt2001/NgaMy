@@ -236,8 +236,8 @@ export const salaryService = {
     let baseAmount = 0;
 
     for (const attendance of attendances) {
-      const eventMember = await prisma.eventMember.findUnique({
-        where: { eventId_memberId: { eventId: attendance.eventId, memberId: input.memberId } },
+      const eventMember = await prisma.eventMember.findFirst({
+        where: { eventId: attendance.eventId, memberId: input.memberId },
       });
       const positionId = eventMember?.positionId ?? null;
       const amount = await salaryConfigRepository.findApplicableAmount(

@@ -152,13 +152,19 @@ export const reportService = {
       attendanceMap.set(`${att.eventId}_${att.memberId}`, att.status);
     }
 
-    // Map eventMembers: key = `${eventId}_${memberId}`
-    const assignmentMap = new Map<string, { positionName: string | null; status: string }>();
+    // Map eventMembers: key = `${eventId}_${memberId}` (gom các vai trò lại)
+    const assignmentMap = new Map<string, { positionNames: string[]; status: string }>();
     for (const em of eventMembers) {
-      assignmentMap.set(`${em.eventId}_${em.memberId}`, {
-        positionName: em.position?.name || null,
-        status: em.status,
-      });
+      const key = `${em.eventId}_${em.memberId}`;
+      if (!assignmentMap.has(key)) {
+        assignmentMap.set(key, {
+          positionNames: [],
+          status: em.status,
+        });
+      }
+      if (em.position?.name) {
+        assignmentMap.get(key)!.positionNames.push(em.position.name);
+      }
     }
 
     // Build matrix rows
@@ -173,22 +179,23 @@ export const reportService = {
         }
       > = {};
 
-      let attendedCount = 0;
+      let memberTotalAttended = 0;
 
-      for (const event of events) {
-        const attStatus = attendanceMap.get(`${event.id}_${member.id}`) || null;
-        const assignment = assignmentMap.get(`${event.id}_${member.id}`) || null;
+      for (const ev of events) {
+        const key = `${ev.id}_${member.id}`;
+        const attStatus = attendanceMap.get(key) || null;
+        const assignment = assignmentMap.get(key);
+
         const isAttended = attStatus === 'PRESENT' || attStatus === 'LATE';
-
         if (isAttended) {
-          attendedCount++;
+          memberTotalAttended++;
         }
 
-        showAttendances[event.id] = {
+        showAttendances[ev.id] = {
           isAttended,
           attendanceStatus: attStatus,
           isAssigned: !!assignment,
-          positionName: assignment?.positionName || null,
+          positionName: assignment?.positionNames.join(', ') || null,
         };
       }
 
@@ -200,7 +207,7 @@ export const reportService = {
         status: member.status,
         teamNames: member.teams.map((t) => t.name).join(', ') || '-',
         positionNames: member.positions.map((p) => p.name).join(', ') || '-',
-        totalAttended: attendedCount,
+        totalAttended: memberTotalAttended,
         shows: showAttendances,
       };
     });

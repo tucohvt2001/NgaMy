@@ -114,7 +114,9 @@ export const eventMemberService = {
     return res.data.data;
   },
 
-  async remove(eventId: string, memberId: string) {
-    await apiClient.delete(`/events/${eventId}/members/${memberId}`);
+  async remove(eventId: string, memberId: string, positionId?: string, assignmentId?: string) {
+    await apiClient.delete(`/events/${eventId}/members/${memberId}`, {
+      params: { positionId, assignmentId },
+    });
   },
 };

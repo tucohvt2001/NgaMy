@@ -44,6 +44,18 @@ export function MemberSalaryDetailDialog({
     const isAttended = attendedEventIds.has(ev.id);
     const detail = record.details?.find((d) => d.eventId === ev.id);
     const isSettled = ev.status === 'COMPLETED';
+
+    // Lấy tất cả vai trò mà thành viên này được phân công trong show (hỗ trợ 1 người nhiều vai trò)
+    const memberRoles = (ev as any).eventMembers
+      ?.filter((em: any) => em.memberId === record.memberId)
+      ?.map((em: any) => em.position?.name)
+      ?.filter(Boolean) || [];
+
+    const positionName =
+      memberRoles.length > 0
+        ? memberRoles.join(', ')
+        : detail?.position?.name || (isAttended ? 'Diễn viên' : '-');
+
     return {
       id: ev.id,
       eventCode: ev.eventCode,
@@ -53,7 +65,7 @@ export function MemberSalaryDetailDialog({
       status: ev.status,
       isSettled,
       isAttended,
-      positionName: detail?.position?.name || (isAttended ? 'Diễn viên' : '-'),
+      positionName,
       amount: detail?.amount ?? 0,
       note: detail?.note,
     };
@@ -220,7 +232,21 @@ export function MemberSalaryDetailDialog({
                           )}
                         </TableCell>
                         <TableCell className="text-xs font-medium">
-                          {show.positionName}
+                          {show.positionName && show.positionName !== '-' ? (
+                            <div className="flex flex-wrap gap-1">
+                              {String(show.positionName).split(', ').map((pos: string, pIdx: number) => (
+                                <Badge
+                                  key={pIdx}
+                                  variant="secondary"
+                                  className="text-[11px] font-semibold bg-amber-500/10 text-amber-900 dark:text-amber-200 border border-amber-500/30"
+                                >
+                                  {pos}
+                                </Badge>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
                         </TableCell>
                         <TableCell className="text-right font-bold text-xs">
                           {show.isAttended && show.isSettled ? (

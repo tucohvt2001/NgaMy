@@ -15,9 +15,9 @@ export const eventMemberService = {
       throw AppError.notFound('Không tìm thấy sự kiện');
     }
 
-    const duplicate = await eventMemberRepository.findOne(eventId, input.memberId);
+    const duplicate = await eventMemberRepository.findOne(eventId, input.memberId, input.positionId);
     if (duplicate) {
-      throw AppError.conflict('Thành viên đã được phân công trong sự kiện này');
+      throw AppError.conflict('Thành viên đã được phân công vai trò này trong sự kiện');
     }
 
     const eventMember = await eventMemberRepository.create({
@@ -31,7 +31,7 @@ export const eventMemberService = {
     return { eventMember, warnings: [] };
   },
 
-  // Phân công hàng loạt siêu tốc không check trùng ngày
+  // Phân công hàng loạt (hỗ trợ 1 thành viên có thể nhận nhiều vai trò khác nhau trong cùng 1 show)
   async batchAssign(eventId: string, input: BatchAssignMemberInput) {
     const event = await eventRepository.findById(eventId);
     if (!event) {
@@ -42,7 +42,13 @@ export const eventMemberService = {
     const items = await prisma.$transaction(
       input.assignments.map((item) =>
         prisma.eventMember.upsert({
-          where: { eventId_memberId: { eventId, memberId: item.memberId } },
+          where: {
+            eventId_memberId_positionId: {
+              eventId,
+              memberId: item.memberId,
+              positionId: item.positionId,
+            },
+          },
           create: {
             eventId,
             memberId: item.memberId,
@@ -51,7 +57,6 @@ export const eventMemberService = {
             note: item.note,
           },
           update: {
-            positionId: item.positionId,
             status: item.status ?? 'ASSIGNED',
             note: item.note,
           },
@@ -67,19 +72,19 @@ export const eventMemberService = {
     };
   },
 
-  async update(eventId: string, memberId: string, input: UpdateEventMemberInput) {
-    const existing = await eventMemberRepository.findOne(eventId, memberId);
+  async update(eventId: string, memberId: string, input: UpdateEventMemberInput, positionId?: string) {
+    const existing = await eventMemberRepository.findOne(eventId, memberId, positionId);
     if (!existing) {
       throw AppError.notFound('Không tìm thấy phân công');
     }
-    return eventMemberRepository.update(eventId, memberId, input);
+    return eventMemberRepository.update(eventId, memberId, existing.positionId, input);
   },
 
-  async remove(eventId: string, memberId: string) {
-    const existing = await eventMemberRepository.findOne(eventId, memberId);
-    if (!existing) {
-      throw AppError.notFound('Không tìm thấy phân công');
-    }
-    await eventMemberRepository.delete(eventId, memberId);
+  async remove(eventId: string, memberId: string, positionId?: string) {
+    return eventMemberRepository.delete(eventId, memberId, positionId);
+  },
+
+  async removeById(id: string) {
+    return eventMemberRepository.deleteById(id);
   },
 };

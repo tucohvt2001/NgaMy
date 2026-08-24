@@ -192,7 +192,7 @@ model EventMember {
   member   Member   @relation(fields: [memberId], references: [id])
   position Position @relation(fields: [positionId], references: [id])
 
-  @@unique([eventId, memberId])
+  @@unique([eventId, memberId, positionId])
   @@index([eventId])
   @@index([memberId])
   @@index([positionId])

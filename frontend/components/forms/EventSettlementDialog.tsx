@@ -470,9 +470,17 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
                               </div>
                             </TableCell>
                             <TableCell>
-                              <Badge variant="secondary" className="text-[11px] font-normal">
-                                {p.positionName || 'Thành viên'}
-                              </Badge>
+                              <div className="flex flex-wrap gap-1">
+                                {(p.positionName || 'Thành viên').split(', ').map((pos, pIdx) => (
+                                  <Badge
+                                    key={pIdx}
+                                    variant="secondary"
+                                    className="text-[11px] font-semibold bg-amber-500/10 text-amber-900 dark:text-amber-200 border border-amber-500/30"
+                                  >
+                                    {pos}
+                                  </Badge>
+                                ))}
+                              </div>
                             </TableCell>
                             <TableCell>
                               <div className="relative">

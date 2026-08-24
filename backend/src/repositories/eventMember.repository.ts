@@ -9,9 +9,18 @@ export const eventMemberRepository = {
     });
   },
 
-  findOne(eventId: string, memberId: string) {
-    return prisma.eventMember.findUnique({
-      where: { eventId_memberId: { eventId, memberId } },
+  findOne(eventId: string, memberId: string, positionId?: string) {
+    if (positionId) {
+      return prisma.eventMember.findUnique({
+        where: {
+          eventId_memberId_positionId: { eventId, memberId, positionId },
+        },
+        include: { member: true, position: true },
+      });
+    }
+    return prisma.eventMember.findFirst({
+      where: { eventId, memberId },
+      include: { member: true, position: true },
     });
   },
 
@@ -19,15 +28,26 @@ export const eventMemberRepository = {
     return prisma.eventMember.create({ data, include: { member: true, position: true } });
   },
 
-  update(eventId: string, memberId: string, data: Partial<{ positionId: string; status: string; note: string | null }>) {
+  update(eventId: string, memberId: string, positionId: string, data: Partial<{ status: string; note: string | null }>) {
     return prisma.eventMember.update({
-      where: { eventId_memberId: { eventId, memberId } },
+      where: { eventId_memberId_positionId: { eventId, memberId, positionId } },
       data,
       include: { member: true, position: true },
     });
   },
 
-  delete(eventId: string, memberId: string) {
-    return prisma.eventMember.delete({ where: { eventId_memberId: { eventId, memberId } } });
+  delete(eventId: string, memberId: string, positionId?: string) {
+    if (positionId) {
+      return prisma.eventMember.delete({
+        where: { eventId_memberId_positionId: { eventId, memberId, positionId } },
+      });
+    }
+    return prisma.eventMember.deleteMany({
+      where: { eventId, memberId },
+    });
+  },
+
+  deleteById(id: string) {
+    return prisma.eventMember.delete({ where: { id } });
   },
 };
