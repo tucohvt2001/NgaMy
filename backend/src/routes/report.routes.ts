@@ -67,4 +67,32 @@ router.get('/reports/salary', authorize(PERMISSIONS.REPORT_READ), reportControll
  */
 router.get('/reports/salary/export', authorize(PERMISSIONS.REPORT_READ), reportController.exportSalaryExcel);
 
+/**
+ * @openapi
+ * /reports/monthly-matrix:
+ *   get:
+ *     summary: Báo cáo ma trận đi show theo tháng
+ *     tags: [Reports]
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200: { description: Dữ liệu ma trận đi show }
+ */
+router.get('/reports/monthly-matrix', authorize(PERMISSIONS.REPORT_READ), reportController.monthlyMatrix);
+
+/**
+ * @openapi
+ * /reports/monthly-matrix/export:
+ *   get:
+ *     summary: Xuất báo cáo ma trận đi show ra Excel
+ *     tags: [Reports]
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200: { description: File Excel ma trận đi show }
+ */
+router.get(
+  '/reports/monthly-matrix/export',
+  authorize(PERMISSIONS.REPORT_READ),
+  reportController.exportMatrixExcel,
+);
+
 export default router;

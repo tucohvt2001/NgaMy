@@ -92,4 +92,146 @@ export const reportService = {
       grandTotal: records.reduce((sum, r) => sum + r.totalAmount, 0),
     };
   },
+
+  async monthlyAttendanceMatrix(month: number, year: number) {
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0, 23, 59, 59, 999);
+
+    const [events, members, attendances, eventMembers] = await Promise.all([
+      prisma.event.findMany({
+        where: { eventDate: { gte: startDate, lte: endDate } },
+        orderBy: { eventDate: 'asc' },
+        select: {
+          id: true,
+          eventCode: true,
+          name: true,
+          eventDate: true,
+          location: true,
+          status: true,
+        },
+      }),
+      prisma.member.findMany({
+        where: { status: { not: 'INACTIVE' } },
+        orderBy: { memberCode: 'asc' },
+        select: {
+          id: true,
+          memberCode: true,
+          fullName: true,
+          phone: true,
+          status: true,
+          teams: { select: { id: true, name: true } },
+          positions: { select: { id: true, name: true } },
+        },
+      }),
+      prisma.attendance.findMany({
+        where: {
+          event: { eventDate: { gte: startDate, lte: endDate } },
+        },
+        select: {
+          eventId: true,
+          memberId: true,
+          status: true,
+        },
+      }),
+      prisma.eventMember.findMany({
+        where: {
+          event: { eventDate: { gte: startDate, lte: endDate } },
+        },
+        select: {
+          eventId: true,
+          memberId: true,
+          position: { select: { name: true } },
+          status: true,
+        },
+      }),
+    ]);
+
+    // Map attendances: key = `${eventId}_${memberId}`
+    const attendanceMap = new Map<string, string>();
+    for (const att of attendances) {
+      attendanceMap.set(`${att.eventId}_${att.memberId}`, att.status);
+    }
+
+    // Map eventMembers: key = `${eventId}_${memberId}`
+    const assignmentMap = new Map<string, { positionName: string | null; status: string }>();
+    for (const em of eventMembers) {
+      assignmentMap.set(`${em.eventId}_${em.memberId}`, {
+        positionName: em.position?.name || null,
+        status: em.status,
+      });
+    }
+
+    // Build matrix rows
+    const memberRows = members.map((member) => {
+      const showAttendances: Record<
+        string,
+        {
+          isAttended: boolean;
+          attendanceStatus: string | null;
+          isAssigned: boolean;
+          positionName: string | null;
+        }
+      > = {};
+
+      let attendedCount = 0;
+
+      for (const event of events) {
+        const attStatus = attendanceMap.get(`${event.id}_${member.id}`) || null;
+        const assignment = assignmentMap.get(`${event.id}_${member.id}`) || null;
+        const isAttended = attStatus === 'PRESENT' || attStatus === 'LATE';
+
+        if (isAttended) {
+          attendedCount++;
+        }
+
+        showAttendances[event.id] = {
+          isAttended,
+          attendanceStatus: attStatus,
+          isAssigned: !!assignment,
+          positionName: assignment?.positionName || null,
+        };
+      }
+
+      return {
+        memberId: member.id,
+        memberCode: member.memberCode,
+        fullName: member.fullName,
+        phone: member.phone,
+        status: member.status,
+        teamNames: member.teams.map((t) => t.name).join(', ') || '-',
+        positionNames: member.positions.map((p) => p.name).join(', ') || '-',
+        totalAttended: attendedCount,
+        shows: showAttendances,
+      };
+    });
+
+    // Calculate event summary (number of attendees per show)
+    const eventSummaries = events.map((event) => {
+      let attendeeCount = 0;
+      for (const member of members) {
+        const attStatus = attendanceMap.get(`${event.id}_${member.id}`);
+        if (attStatus === 'PRESENT' || attStatus === 'LATE') {
+          attendeeCount++;
+        }
+      }
+      return {
+        eventId: event.id,
+        eventCode: event.eventCode,
+        name: event.name,
+        eventDate: event.eventDate,
+        location: event.location,
+        status: event.status,
+        attendeeCount,
+      };
+    });
+
+    return {
+      month,
+      year,
+      events: eventSummaries,
+      members: memberRows,
+      totalEvents: events.length,
+      totalMembers: members.length,
+    };
+  },
 };

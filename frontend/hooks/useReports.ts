@@ -19,3 +19,10 @@ export function useSalaryReport(month?: number, year?: number) {
     queryFn: () => reportService.salary(month, year),
   });
 }
+
+export function useMonthlyAttendanceMatrix(month?: number, year?: number) {
+  return useQuery({
+    queryKey: ['reports', 'monthly-matrix', month, year],
+    queryFn: () => reportService.monthlyMatrix(month, year),
+  });
+}
