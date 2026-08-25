@@ -8,6 +8,9 @@ import {
   calculateMonthSchema,
   createSalaryConfigSchema,
   updateSalaryConfigSchema,
+  batchPositionConfigSchema,
+  batchMatrixConfigSchema,
+  eventRateConfigSchema,
 } from '../validators/salary.validator';
 import { PERMISSIONS } from '../types/enums';
 
@@ -50,6 +53,27 @@ router
     validate({ body: createSalaryConfigSchema }),
     salaryConfigController.create,
   );
+
+router.post(
+  '/salaries/configs/batch-positions',
+  authorize(PERMISSIONS.SALARY_MANAGE),
+  validate({ body: batchPositionConfigSchema }),
+  salaryConfigController.batchSavePositions,
+);
+
+router.post(
+  '/salaries/configs/matrix',
+  authorize(PERMISSIONS.SALARY_MANAGE),
+  validate({ body: batchMatrixConfigSchema }),
+  salaryConfigController.batchSaveMatrix,
+);
+
+router.post(
+  '/salaries/configs/event-rate',
+  authorize(PERMISSIONS.SALARY_MANAGE),
+  validate({ body: eventRateConfigSchema }),
+  salaryConfigController.saveEventRate,
+);
 
 router
   .route('/salaries/configs/:id')

@@ -26,6 +26,7 @@ export interface CalculateMonthInput {
 }
 
 export interface SalaryConfigInput {
+  eventType?: string | null;
   positionId?: string | null;
   memberId?: string | null;
   eventId?: string | null;
@@ -67,6 +68,27 @@ export const salaryService = {
 
   async createConfig(input: SalaryConfigInput) {
     const res = await apiClient.post<ApiSuccessResponse<SalaryConfig>>('/salaries/configs', input);
+    return res.data.data;
+  },
+
+  async batchSavePositionConfigs(configs: Array<{ positionId: string; amount: number; note?: string | null }>) {
+    const res = await apiClient.post<ApiSuccessResponse<SalaryConfig[]>>('/salaries/configs/batch-positions', {
+      configs,
+    });
+    return res.data.data;
+  },
+
+  async batchSaveMatrixConfigs(
+    configs: Array<{ eventType: string; positionId: string; amount: number; note?: string | null }>,
+  ) {
+    const res = await apiClient.post<ApiSuccessResponse<SalaryConfig[]>>('/salaries/configs/matrix', {
+      configs,
+    });
+    return res.data.data;
+  },
+
+  async saveEventRate(data: { eventId: string; amount: number; note?: string | null }) {
+    const res = await apiClient.post<ApiSuccessResponse<SalaryConfig>>('/salaries/configs/event-rate', data);
     return res.data.data;
   },
 

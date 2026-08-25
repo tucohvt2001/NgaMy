@@ -13,6 +13,7 @@ export interface EventListParams {
 export interface EventInput {
   eventCode?: string;
   name: string;
+  eventType?: string | null;
   eventDate: string;
   startTime?: string | null;
   endTime?: string | null;

@@ -12,6 +12,7 @@ import salaryRoutes from './salary.routes';
 import transactionRoutes from './transaction.routes';
 import dashboardRoutes from './dashboard.routes';
 import reportRoutes from './report.routes';
+import eventTypeRoutes from './eventType.routes';
 import { bankRouter } from './bank.routes';
 
 const router = Router();
@@ -23,6 +24,7 @@ router.use('/', memberRoutes);
 router.use('/', teamRoutes);
 router.use('/', positionRoutes);
 router.use('/', eventRoutes);
+router.use('/', eventTypeRoutes);
 router.use('/', attendanceRoutes);
 router.use('/', leaveRoutes);
 router.use('/', salaryRoutes);

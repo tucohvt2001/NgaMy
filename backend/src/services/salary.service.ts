@@ -33,7 +33,7 @@ export const salaryService = {
         },
       },
       include: {
-        event: { select: { id: true, name: true, status: true } },
+        event: { select: { id: true, name: true, status: true, eventType: true } },
       },
       orderBy: { createdAt: 'asc' },
     });
@@ -64,9 +64,11 @@ export const salaryService = {
       where: { isActive: true },
     });
 
-    // Map config theo thứ tự ưu tiên: Member+Event > Event > Member > Position
+    // Map config theo thứ tự ưu tiên: Member+Event > Event > (EventType+Position) > EventType > Member > Position
     const memberEventConfigMap = new Map<string, number>();
     const eventConfigMap = new Map<string, number>();
+    const eventTypePositionConfigMap = new Map<string, number>();
+    const eventTypeConfigMap = new Map<string, number>();
     const memberConfigMap = new Map<string, number>();
     const positionConfigMap = new Map<string, number>();
 
@@ -75,24 +77,43 @@ export const salaryService = {
         memberEventConfigMap.set(`${cfg.memberId}_${cfg.eventId}`, cfg.amount);
       } else if (cfg.eventId && !cfg.memberId && !cfg.positionId) {
         eventConfigMap.set(cfg.eventId, cfg.amount);
+      } else if (cfg.eventType && cfg.positionId && !cfg.memberId && !cfg.eventId) {
+        eventTypePositionConfigMap.set(`${cfg.eventType}_${cfg.positionId}`, cfg.amount);
+      } else if (cfg.eventType && !cfg.positionId && !cfg.memberId && !cfg.eventId) {
+        eventTypeConfigMap.set(cfg.eventType, cfg.amount);
       } else if (cfg.memberId && !cfg.eventId && !cfg.positionId) {
         memberConfigMap.set(cfg.memberId, cfg.amount);
-      } else if (cfg.positionId && !cfg.memberId && !cfg.eventId) {
+      } else if (cfg.positionId && !cfg.memberId && !cfg.eventId && !cfg.eventType) {
         positionConfigMap.set(cfg.positionId, cfg.amount);
       }
     }
 
-    const findAmountInMemory = (memberId: string, eventId: string, positionId: string | null): number => {
+    const findAmountInMemory = (
+      memberId: string,
+      eventId: string,
+      eventType: string | null,
+      positionId: string | null,
+    ): number => {
       // 1. Mức phân bổ riêng cho show này (lưu từ Dự toán sự kiện)
       const me = memberEventConfigMap.get(`${memberId}_${eventId}`);
       if (me !== undefined) return me;
       // 2. Mức tiền công chung của sự kiện
       const ev = eventConfigMap.get(eventId);
       if (ev !== undefined) return ev;
-      // 3. Mức tiền công cố định của thành viên
+      // 3. Mức tiền công theo (Loại Show + Vị trí)
+      if (eventType && positionId) {
+        const etp = eventTypePositionConfigMap.get(`${eventType}_${positionId}`);
+        if (etp !== undefined) return etp;
+      }
+      // 4. Mức tiền công chung của Loại Show
+      if (eventType) {
+        const et = eventTypeConfigMap.get(eventType);
+        if (et !== undefined) return et;
+      }
+      // 5. Mức tiền công cố định của thành viên
       const mem = memberConfigMap.get(memberId);
       if (mem !== undefined) return mem;
-      // 4. Mức tiền công theo vị trí biểu diễn
+      // 6. Mức tiền công theo vị trí biểu diễn mặc định
       if (positionId) {
         const pos = positionConfigMap.get(positionId);
         if (pos !== undefined) return pos;
@@ -127,7 +148,7 @@ export const salaryService = {
 
       for (const att of memberAttendances) {
         const positionId = eventMemberMap.get(`${att.eventId}_${memberId}`) ?? null;
-        const amount = findAmountInMemory(memberId, att.eventId, positionId);
+        const amount = findAmountInMemory(memberId, att.eventId, att.event.eventType, positionId);
         baseAmount += amount;
         details.push({
           eventId: att.eventId,
@@ -357,8 +378,84 @@ export const salaryConfigService = {
     return salaryConfigRepository.create(input);
   },
 
+  async batchSavePositions(configs: Array<{ positionId: string; amount: number; note?: string | null }>) {
+    const results = [];
+    for (const cfg of configs) {
+      const existing = await prisma.salaryConfig.findFirst({
+        where: { positionId: cfg.positionId, memberId: null, eventId: null, eventType: null },
+      });
+      if (existing) {
+        results.push(
+          await prisma.salaryConfig.update({
+            where: { id: existing.id },
+            data: { amount: cfg.amount, note: cfg.note, isActive: true },
+          }),
+        );
+      } else {
+        results.push(
+          await prisma.salaryConfig.create({
+            data: { positionId: cfg.positionId, amount: cfg.amount, note: cfg.note, isActive: true },
+          }),
+        );
+      }
+    }
+    return results;
+  },
+
+  async batchSaveMatrix(
+    configs: Array<{ eventType: string; positionId: string; amount: number; note?: string | null }>,
+  ) {
+    const results = [];
+    for (const cfg of configs) {
+      const existing = await prisma.salaryConfig.findFirst({
+        where: {
+          eventType: cfg.eventType,
+          positionId: cfg.positionId,
+          memberId: null,
+          eventId: null,
+        },
+      });
+      if (existing) {
+        results.push(
+          await prisma.salaryConfig.update({
+            where: { id: existing.id },
+            data: { amount: cfg.amount, note: cfg.note, isActive: true },
+          }),
+        );
+      } else {
+        results.push(
+          await prisma.salaryConfig.create({
+            data: {
+              eventType: cfg.eventType,
+              positionId: cfg.positionId,
+              amount: cfg.amount,
+              note: cfg.note,
+              isActive: true,
+            },
+          }),
+        );
+      }
+    }
+    return results;
+  },
+
+  async saveEventRate(eventId: string, amount: number, note?: string | null) {
+    const existing = await prisma.salaryConfig.findFirst({
+      where: { eventId, memberId: null },
+    });
+    if (existing) {
+      return prisma.salaryConfig.update({
+        where: { id: existing.id },
+        data: { amount, note, isActive: true },
+      });
+    }
+    return prisma.salaryConfig.create({
+      data: { eventId, amount, note, isActive: true },
+    });
+  },
+
   async update(id: string, input: UpdateSalaryConfigInput) {
-    const existing = await salaryConfigRepository.findById(id);
+    const existing = await prisma.salaryConfig.findUnique({ where: { id } });
     if (!existing) {
       throw AppError.notFound('Không tìm thấy cấu hình tiền công');
     }
@@ -366,7 +463,7 @@ export const salaryConfigService = {
   },
 
   async remove(id: string) {
-    const existing = await salaryConfigRepository.findById(id);
+    const existing = await prisma.salaryConfig.findUnique({ where: { id } });
     if (!existing) {
       throw AppError.notFound('Không tìm thấy cấu hình tiền công');
     }

@@ -7,6 +7,27 @@ export type MemberStatus = (typeof MEMBER_STATUSES)[number];
 export const EVENT_STATUSES = ['DRAFT', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'] as const;
 export type EventStatus = (typeof EVENT_STATUSES)[number];
 
+export const EVENT_TYPES = [
+  'KHAI_TRUONG', // Khai trương / Khánh thành
+  'TRUNG_THU', // Trung thu
+  'TET', // Tết / Tân niên
+  'DAM_CUOI', // Đám cưới / Hỷ sự
+  'LE_HOI', // Lễ hội / Sự kiện lớn
+  'BIEU_DIEN', // Biểu diễn thường
+  'OTHER', // Khác
+] as const;
+export type EventType = (typeof EVENT_TYPES)[number];
+
+export const EVENT_TYPE_LABELS: Record<string, string> = {
+  KHAI_TRUONG: 'Khai trương / Khánh thành',
+  TRUNG_THU: 'Trung thu',
+  TET: 'Tết / Tân niên',
+  DAM_CUOI: 'Đám cưới / Hỷ sự',
+  LE_HOI: 'Lễ hội / Sự kiện lớn',
+  BIEU_DIEN: 'Biểu diễn thường',
+  OTHER: 'Khác',
+};
+
 export const EVENT_MEMBER_STATUSES = ['ASSIGNED', 'CONFIRMED', 'DECLINED', 'REPLACED'] as const;
 export type EventMemberStatus = (typeof EVENT_MEMBER_STATUSES)[number];
 

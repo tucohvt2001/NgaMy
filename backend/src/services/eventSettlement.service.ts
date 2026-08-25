@@ -5,57 +5,67 @@ import { transactionService } from './transaction.service';
 
 export const eventSettlementService = {
   async getSettlementOverview(eventId: string) {
-    const [event, eventMembers, existingSalaryConfigs, existingTransactions, confirmedSalaryDetails] =
-      await Promise.all([
-        prisma.event.findUnique({
-          where: { id: eventId },
-          include: {
-            creator: { select: { id: true, username: true } },
-          },
-        }),
-        prisma.eventMember.findMany({
-          where: { eventId },
-          include: {
-            member: {
-              select: {
-                id: true,
-                memberCode: true,
-                fullName: true,
-                phone: true,
-                bankAccount: true,
-                bankName: true,
-              },
+    const [
+      event,
+      eventMembers,
+      existingSalaryConfigs,
+      existingTransactions,
+      confirmedSalaryDetails,
+      positionConfigs,
+    ] = await Promise.all([
+      prisma.event.findUnique({
+        where: { id: eventId },
+        include: {
+          creator: { select: { id: true, username: true } },
+        },
+      }),
+      prisma.eventMember.findMany({
+        where: { eventId },
+        include: {
+          member: {
+            select: {
+              id: true,
+              memberCode: true,
+              fullName: true,
+              phone: true,
+              bankAccount: true,
+              bankName: true,
             },
-            position: {
-              select: {
-                id: true,
-                name: true,
-              },
+          },
+          position: {
+            select: {
+              id: true,
+              name: true,
             },
           },
-          orderBy: { createdAt: 'asc' },
-        }),
-        prisma.salaryConfig.findMany({
-          where: { eventId, isActive: true },
-        }),
-        prisma.transaction.findMany({
-          where: { eventId },
-          include: {
-            member: { select: { id: true, memberCode: true, fullName: true } },
-          },
-          orderBy: { createdAt: 'desc' },
-        }),
-        // Kiểm tra xem tiền công của show này đã được thanh toán (CONFIRMED) trong module Tiền công chưa
-        prisma.salaryDetail.findMany({
-          where: {
-            eventId,
-            salaryRecord: { status: 'CONFIRMED' },
-          },
-          select: {
-            salaryRecord: { select: { memberId: true } },
-          },
-        }),
-      ]);
+        },
+        orderBy: { createdAt: 'asc' },
+      }),
+      prisma.salaryConfig.findMany({
+        where: { eventId, isActive: true },
+      }),
+      prisma.transaction.findMany({
+        where: { eventId },
+        include: {
+          member: { select: { id: true, memberCode: true, fullName: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      // Kiểm tra xem tiền công của show này đã được thanh toán (CONFIRMED) trong module Tiền công chưa
+      prisma.salaryDetail.findMany({
+        where: {
+          eventId,
+          salaryRecord: { status: 'CONFIRMED' },
+        },
+        select: {
+          salaryRecord: { select: { memberId: true } },
+        },
+      }),
+      // Lấy định mức lương mặc định theo vị trí
+      prisma.salaryConfig.findMany({
+        where: { positionId: { not: null }, memberId: null, eventId: null, isActive: true },
+      }),
+    ]);
 
     if (!event) {
       throw AppError.notFound('Không tìm thấy sự kiện');
@@ -65,6 +75,18 @@ export const eventSettlementService = {
 
     const salaryConfigMap = new Map(
       existingSalaryConfigs.filter((sc) => sc.memberId).map((sc) => [sc.memberId!, sc]),
+    );
+    const eventGeneralConfig = existingSalaryConfigs.find((sc) => !sc.memberId);
+    const positionConfigMap = new Map(
+      positionConfigs.filter((pc) => pc.positionId && !pc.eventType).map((pc) => [pc.positionId!, pc.amount]),
+    );
+    const eventTypePositionConfigMap = new Map(
+      positionConfigs
+        .filter((pc) => pc.eventType === event.eventType && pc.positionId)
+        .map((pc) => [pc.positionId!, pc.amount]),
+    );
+    const eventTypeGeneralConfig = positionConfigs.find(
+      (pc) => pc.eventType === event.eventType && !pc.positionId,
     );
 
     let settledIncome = 0;
@@ -108,6 +130,28 @@ export const eventSettlementService = {
       const savedConfig = salaryConfigMap.get(memberId);
       const isPaid = paidMemberIdSet.has(memberId);
       const positionName = data.positions.map((p) => p?.name).filter(Boolean).join(', ') || 'Thành viên';
+
+      // Tính mức tiền công gợi ý ban đầu: đã lưu riêng > định mức show > định mức (loại show + vai trò) > loại show chung > vai trò mặc định > 0
+      let defaultPayout = 0;
+      if (savedConfig) {
+        defaultPayout = savedConfig.amount;
+      } else if (eventGeneralConfig) {
+        defaultPayout = eventGeneralConfig.amount;
+      } else if (
+        event.eventType &&
+        data.positions.length > 0 &&
+        data.positions.some((p) => p?.id && eventTypePositionConfigMap.has(p.id))
+      ) {
+        defaultPayout = data.positions.reduce(
+          (sum, p) => sum + (p?.id ? eventTypePositionConfigMap.get(p.id) || positionConfigMap.get(p.id) || 0 : 0),
+          0,
+        );
+      } else if (event.eventType && eventTypeGeneralConfig) {
+        defaultPayout = eventTypeGeneralConfig.amount;
+      } else if (data.positions.length > 0) {
+        defaultPayout = data.positions.reduce((sum, p) => sum + (p?.id ? positionConfigMap.get(p.id) || 0 : 0), 0);
+      }
+
       return {
         id: data.id,
         memberId,
@@ -120,7 +164,7 @@ export const eventSettlementService = {
         positionName,
         status: data.statuses[0] || 'ASSIGNED',
         note: data.notes.filter(Boolean).join('; ') || null,
-        payoutAmount: savedConfig?.amount ?? 0,
+        payoutAmount: defaultPayout,
         payoutNote: savedConfig?.note ?? '',
         isPaid,
       };

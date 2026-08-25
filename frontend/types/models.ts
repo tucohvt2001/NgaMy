@@ -97,10 +97,22 @@ export interface AuthUser {
   permissions: string[];
 }
 
+export interface EventTypeModel {
+  id: string;
+  code: string;
+  name: string;
+  description?: string | null;
+  color?: string | null;
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface EventItem {
   id: string;
   eventCode: string;
   name: string;
+  eventType?: string | null;
   eventDate: string;
   startTime?: string | null;
   endTime?: string | null;
@@ -179,6 +191,7 @@ export interface LeaveRequest {
 
 export interface SalaryConfig {
   id: string;
+  eventType?: string | null;
   positionId?: string | null;
   position?: Position | null;
   memberId?: string | null;

@@ -150,10 +150,25 @@ model Member {
 
 // ============ HOẠT ĐỘNG ============
 
+model EventType {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  description String?
+  color       String?  @default("#f59e0b")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([code])
+  @@index([isActive])
+}
+
 model Event {
   id            String    @id @default(cuid())
   eventCode     String    @unique
   name          String
+  eventType     String?   @default("OTHER") // KHAI_TRUONG, TRUNG_THU, TET, DAM_CUOI, LE_HOI, BIEU_DIEN, OTHER
   eventDate     DateTime
   startTime     DateTime?
   endTime       DateTime?
@@ -176,6 +191,7 @@ model Event {
 
   @@index([eventDate])
   @@index([status])
+  @@index([eventType])
 }
 
 model EventMember {
@@ -244,6 +260,7 @@ model LeaveRequest {
 
 model SalaryConfig {
   id         String   @id @default(cuid())
+  eventType  String? // KHAI_TRUONG, TRUNG_THU, TET, DAM_CUOI, LE_HOI, BIEU_DIEN, OTHER
   positionId String?
   memberId   String?
   eventId    String?
@@ -257,6 +274,7 @@ model SalaryConfig {
   member   Member?   @relation(fields: [memberId], references: [id])
   event    Event?    @relation(fields: [eventId], references: [id])
 
+  @@index([eventType])
   @@index([positionId])
   @@index([memberId])
   @@index([eventId])

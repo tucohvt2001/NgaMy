@@ -81,6 +81,46 @@ export function useCreateSalaryConfig() {
   });
 }
 
+export function useBatchSavePositionConfigs() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (configs: Array<{ positionId: string; amount: number; note?: string | null }>) =>
+      salaryService.batchSavePositionConfigs(configs),
+    onSuccess: () => {
+      toast.success('Lưu định mức tiền công theo vị trí thành công');
+      queryClient.invalidateQueries({ queryKey: ['salaryConfigs'] });
+    },
+    onError: (error) => toast.error(getErrorMessage(error)),
+  });
+}
+
+export function useBatchSaveMatrixConfigs() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (
+      configs: Array<{ eventType: string; positionId: string; amount: number; note?: string | null }>,
+    ) => salaryService.batchSaveMatrixConfigs(configs),
+    onSuccess: () => {
+      toast.success('Thiết lập lương theo loại show & vị trí thành công');
+      queryClient.invalidateQueries({ queryKey: ['salaryConfigs'] });
+    },
+    onError: (error) => toast.error(getErrorMessage(error)),
+  });
+}
+
+export function useSaveEventRate() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { eventId: string; amount: number; note?: string | null }) =>
+      salaryService.saveEventRate(data),
+    onSuccess: () => {
+      toast.success('Thiết lập lương show diễn thành công');
+      queryClient.invalidateQueries({ queryKey: ['salaryConfigs'] });
+    },
+    onError: (error) => toast.error(getErrorMessage(error)),
+  });
+}
+
 export function useRemoveSalaryConfig() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -92,3 +132,4 @@ export function useRemoveSalaryConfig() {
     onError: (error) => toast.error(getErrorMessage(error)),
   });
 }
+

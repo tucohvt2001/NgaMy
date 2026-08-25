@@ -29,6 +29,7 @@ export type ListSalaryQuery = z.infer<typeof listSalaryQuerySchema>;
 
 export const createSalaryConfigSchema = z
   .object({
+    eventType: z.string().optional().nullable(),
     positionId: z.string().optional().nullable(),
     memberId: z.string().optional().nullable(),
     eventId: z.string().optional().nullable(),
@@ -36,8 +37,8 @@ export const createSalaryConfigSchema = z
     note: z.string().optional().nullable(),
     isActive: z.boolean().optional(),
   })
-  .refine((data) => data.positionId || data.memberId || data.eventId, {
-    message: 'Cần chọn ít nhất một trong Position/Member/Event để cấu hình mức tiền công',
+  .refine((data) => data.eventType || data.positionId || data.memberId || data.eventId, {
+    message: 'Cần chọn ít nhất một trong EventType/Position/Member/Event để cấu hình mức tiền công',
   });
 export type CreateSalaryConfigInput = z.infer<typeof createSalaryConfigSchema>;
 
@@ -47,3 +48,33 @@ export const updateSalaryConfigSchema = z.object({
   isActive: z.boolean().optional(),
 });
 export type UpdateSalaryConfigInput = z.infer<typeof updateSalaryConfigSchema>;
+
+export const batchPositionConfigSchema = z.object({
+  configs: z.array(
+    z.object({
+      positionId: z.string().min(1, 'Vui lòng chọn vị trí'),
+      amount: z.coerce.number().min(0, 'Mức lương không được âm'),
+      note: z.string().optional().nullable(),
+    }),
+  ),
+});
+export type BatchPositionConfigInput = z.infer<typeof batchPositionConfigSchema>;
+
+export const batchMatrixConfigSchema = z.object({
+  configs: z.array(
+    z.object({
+      eventType: z.string().min(1, 'Vui lòng chọn loại show'),
+      positionId: z.string().min(1, 'Vui lòng chọn vị trí'),
+      amount: z.coerce.number().min(0, 'Mức thù lao không được âm'),
+      note: z.string().optional().nullable(),
+    }),
+  ),
+});
+export type BatchMatrixConfigInput = z.infer<typeof batchMatrixConfigSchema>;
+
+export const eventRateConfigSchema = z.object({
+  eventId: z.string().min(1, 'Vui lòng chọn sự kiện'),
+  amount: z.coerce.number().min(0, 'Mức thù lao không được âm'),
+  note: z.string().optional().nullable(),
+});
+export type EventRateConfigInput = z.infer<typeof eventRateConfigSchema>;

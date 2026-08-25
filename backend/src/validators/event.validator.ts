@@ -4,6 +4,7 @@ import { EVENT_STATUSES } from '../types/enums';
 export const createEventSchema = z.object({
   eventCode: z.string().optional().nullable(),
   name: z.string().min(1, 'Vui lòng nhập tên sự kiện'),
+  eventType: z.string().optional().nullable(),
   eventDate: z.coerce.date(),
   startTime: z.coerce.date().optional().nullable(),
   endTime: z.coerce.date().optional().nullable(),

@@ -12,12 +12,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { EventItem } from '@/types/models';
-import { EVENT_STATUSES, STATUS_LABELS } from '@/types/enums';
+import { EVENT_STATUSES, STATUS_LABELS, EVENT_TYPES, EVENT_TYPE_LABELS } from '@/types/enums';
 import { EventInput } from '@/services/event.service';
+
+import { useEventTypes } from '@/hooks/useEventTypes';
 
 const eventSchema = z.object({
   eventCode: z.string().optional(),
   name: z.string().min(1, 'Vui lòng nhập tên sự kiện'),
+  eventType: z.string().optional(),
   eventDate: z.string().min(1, 'Vui lòng chọn ngày giờ diễn'),
   location: z.string().min(1, 'Vui lòng nhập địa điểm'),
   customerName: z.string().optional(),
@@ -49,6 +52,8 @@ function formatForDateTimeLocal(dateStr?: string | null) {
 }
 
 export function EventFormDialog({ open, onOpenChange, event, onSubmit, isLoading }: EventFormDialogProps) {
+  const { data: dbEventTypes = [] } = useEventTypes({ isActive: true });
+
   const {
     register,
     handleSubmit,
@@ -62,6 +67,7 @@ export function EventFormDialog({ open, onOpenChange, event, onSubmit, isLoading
       reset({
         eventCode: event?.eventCode ?? '',
         name: event?.name ?? '',
+        eventType: event?.eventType ?? 'OTHER',
         eventDate: event?.eventDate ? formatForDateTimeLocal(event.eventDate) : formatForDateTimeLocal(),
         location: event?.location ?? '',
         customerName: event?.customerName ?? '',
@@ -79,6 +85,7 @@ export function EventFormDialog({ open, onOpenChange, event, onSubmit, isLoading
 
     const payload: EventInput = {
       name: values.name.trim(),
+      eventType: values.eventType || 'OTHER',
       location: values.location.trim(),
       eventDate: validDateIso,
       customerName: values.customerName?.trim() || undefined,
@@ -126,10 +133,46 @@ export function EventFormDialog({ open, onOpenChange, event, onSubmit, isLoading
               {errors.eventDate && <p className="text-sm text-destructive">{errors.eventDate.message}</p>}
             </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="name">Tên sự kiện</Label>
-            <Input id="name" {...register('name')} />
-            {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="sm:col-span-2 space-y-2">
+              <Label htmlFor="name">Tên sự kiện / Show diễn *</Label>
+              <Input id="name" placeholder="vd: Khai trương Thẩm mỹ viện..." {...register('name')} />
+              {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label>Loại show diễn *</Label>
+              <Controller
+                control={control}
+                name="eventType"
+                render={({ field }) => (
+                  <Select value={field.value || 'OTHER'} onValueChange={field.onChange}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Chọn loại show..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {dbEventTypes.length > 0
+                        ? dbEventTypes.map((type) => (
+                            <SelectItem key={type.code} value={type.code}>
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className="size-2 rounded-full inline-block"
+                                  style={{ backgroundColor: type.color || '#f59e0b' }}
+                                />
+                                <span>{type.name}</span>
+                              </div>
+                            </SelectItem>
+                          ))
+                        : EVENT_TYPES.map((type) => (
+                            <SelectItem key={type} value={type}>
+                              {EVENT_TYPE_LABELS[type] || type}
+                            </SelectItem>
+                          ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="location">Địa điểm</Label>

@@ -19,6 +19,7 @@ import {
   ShieldCheck,
   Plus,
   DollarSign,
+  Settings,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -168,7 +169,7 @@ export default function SalariesPage() {
                 variant="outline"
                 onClick={handleSyncAllMonth}
                 isLoading={calculateMonthMutation.isPending}
-                className="h-10 rounded-2xl border-amber-500/30 text-amber-700 dark:text-amber-300 hover:bg-amber-500/10 text-xs gap-1.5 font-semibold"
+                className="h-10 rounded-2xl border-amber-500/30 text-amber-700 dark:text-amber-300 hover:bg-amber-500/10 text-xs gap-1.5 font-semibold shadow-xs"
                 title="Tự động tính lại tiền công từ các show diễn đã dự toán cho tất cả thành viên"
               >
                 <RefreshCw className="size-3.5" />

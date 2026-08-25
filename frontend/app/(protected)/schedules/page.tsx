@@ -52,7 +52,7 @@ import { EventFormDialog } from '@/components/forms/EventFormDialog';
 import { EventSettlementDialog } from '@/components/forms/EventSettlementDialog';
 import { useCancelEvent, useCreateEvent, useEvents, useUpdateEvent, useEventStats } from '@/hooks/useEvents';
 import { EventItem } from '@/types/models';
-import { EVENT_STATUSES, STATUS_LABELS } from '@/types/enums';
+import { EVENT_STATUSES, STATUS_LABELS, EVENT_TYPE_LABELS } from '@/types/enums';
 import { EventInput } from '@/services/event.service';
 
 const ALL_VALUE = '__all__';
@@ -510,7 +510,17 @@ export default function SchedulesPage() {
                         </span>
                       </TableCell>
                       <TableCell>
-                        <div className="font-semibold text-foreground">{event.name}</div>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-semibold text-foreground">{event.name}</span>
+                          {event.eventType && event.eventType !== 'OTHER' && (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] py-0 px-1.5 bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30"
+                            >
+                              {EVENT_TYPE_LABELS[event.eventType] || event.eventType}
+                            </Badge>
+                          )}
+                        </div>
                         {event.customerName && (
                           <div className="text-[11px] text-muted-foreground">
                             Khách: {event.customerName}

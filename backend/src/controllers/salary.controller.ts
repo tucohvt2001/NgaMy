@@ -43,6 +43,25 @@ export const salaryConfigController = {
     sendSuccess(res, config, 'Tạo cấu hình tiền công thành công', 201);
   }),
 
+  batchSavePositions: asyncHandler(async (req: Request, res: Response) => {
+    const results = await salaryConfigService.batchSavePositions(req.body.configs);
+    sendSuccess(res, results, 'Lưu định mức lương theo vị trí thành công');
+  }),
+
+  batchSaveMatrix: asyncHandler(async (req: Request, res: Response) => {
+    const results = await salaryConfigService.batchSaveMatrix(req.body.configs);
+    sendSuccess(res, results, 'Lưu ma trận định mức theo loại show & vị trí thành công');
+  }),
+
+  saveEventRate: asyncHandler(async (req: Request, res: Response) => {
+    const result = await salaryConfigService.saveEventRate(
+      req.body.eventId,
+      req.body.amount,
+      req.body.note,
+    );
+    sendSuccess(res, result, 'Lưu định mức lương show diễn thành công');
+  }),
+
   update: asyncHandler(async (req: Request, res: Response) => {
     const config = await salaryConfigService.update(req.params.id, req.body);
     sendSuccess(res, config, 'Cập nhật cấu hình tiền công thành công');

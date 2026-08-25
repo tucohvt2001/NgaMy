@@ -110,7 +110,7 @@ export const salaryConfigRepository = {
     });
   },
 
-  // Tìm mức lương ưu tiên: (Member + Event) > Event > Member > Position (từ cụ thể đến chung)
+  // Tìm mức lương ưu tiên: (Member + Event) > Event > (EventType + Position) > EventType > Member > Position > 0
   async findApplicableAmount(memberId: string, eventId: string, positionId: string | null): Promise<number> {
     // 1. Mức tiền công phân bổ riêng cho thành viên trong show này (lưu từ Dự toán sự kiện)
     const memberEventConfig = await prisma.salaryConfig.findFirst({
@@ -124,16 +124,38 @@ export const salaryConfigRepository = {
     });
     if (eventConfig) return eventConfig.amount;
 
-    // 3. Mức lương cố định riêng của thành viên
+    // Lấy thông tin loại show (eventType) của sự kiện nếu có
+    const event = await prisma.event.findUnique({
+      where: { id: eventId },
+      select: { eventType: true },
+    });
+
+    // 3. Mức lương theo (Loại Show + Vị trí)
+    if (event?.eventType && positionId) {
+      const typePosConfig = await prisma.salaryConfig.findFirst({
+        where: { eventType: event.eventType, positionId, memberId: null, eventId: null, isActive: true },
+      });
+      if (typePosConfig) return typePosConfig.amount;
+    }
+
+    // 4. Mức lương chung theo Loại Show
+    if (event?.eventType) {
+      const typeConfig = await prisma.salaryConfig.findFirst({
+        where: { eventType: event.eventType, positionId: null, memberId: null, eventId: null, isActive: true },
+      });
+      if (typeConfig) return typeConfig.amount;
+    }
+
+    // 5. Mức lương cố định riêng của thành viên
     const memberConfig = await prisma.salaryConfig.findFirst({
       where: { memberId, eventId: null, isActive: true },
     });
     if (memberConfig) return memberConfig.amount;
 
-    // 4. Mức lương theo vị trí biểu diễn
+    // 6. Mức lương theo vị trí biểu diễn mặc định
     if (positionId) {
       const positionConfig = await prisma.salaryConfig.findFirst({
-        where: { positionId, memberId: null, eventId: null, isActive: true },
+        where: { positionId, memberId: null, eventId: null, eventType: null, isActive: true },
       });
       if (positionConfig) return positionConfig.amount;
     }
