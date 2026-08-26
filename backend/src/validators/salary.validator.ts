@@ -65,7 +65,7 @@ export const batchMatrixConfigSchema = z.object({
     z.object({
       eventType: z.string().min(1, 'Vui lòng chọn loại show'),
       positionId: z.string().min(1, 'Vui lòng chọn vị trí'),
-      amount: z.coerce.number().min(0, 'Mức thù lao không được âm'),
+      amount: z.coerce.number().min(0, 'Mức tiền công không được âm'),
       note: z.string().optional().nullable(),
     }),
   ),
@@ -74,7 +74,7 @@ export type BatchMatrixConfigInput = z.infer<typeof batchMatrixConfigSchema>;
 
 export const eventRateConfigSchema = z.object({
   eventId: z.string().min(1, 'Vui lòng chọn sự kiện'),
-  amount: z.coerce.number().min(0, 'Mức thù lao không được âm'),
+  amount: z.coerce.number().min(0, 'Mức tiền công không được âm'),
   note: z.string().optional().nullable(),
 });
 export type EventRateConfigInput = z.infer<typeof eventRateConfigSchema>;

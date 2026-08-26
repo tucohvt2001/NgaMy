@@ -15,6 +15,7 @@ import {
   CheckSquare,
   FileClock,
   Wallet,
+  TrendingUp,
   Coins,
   ReceiptText,
   BarChart3,
@@ -63,6 +64,7 @@ const navGroups: NavGroup[] = [
     items: [
       { href: '/transactions', label: 'Sổ quỹ thu chi', icon: ReceiptText, permission: 'finance:read' },
       { href: '/salaries', label: 'Bảng lương tháng', icon: Wallet, permission: 'salary:read' },
+      { href: '/member-salaries', label: 'Lương đến hiện tại', icon: TrendingUp, permission: 'salary:read' },
       { href: '/salary-rates', label: 'Thiết lập lương', icon: Coins, permission: 'salary:read' },
     ],
   },

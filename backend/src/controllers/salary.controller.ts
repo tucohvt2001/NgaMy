@@ -30,6 +30,17 @@ export const salaryController = {
     const record = await salaryService.confirm(req.params.id, req.user.id);
     sendSuccess(res, record, 'Xác nhận bảng lương thành công');
   }),
+
+  getMemberSalariesToDate: asyncHandler(async (req: Request, res: Response) => {
+    const { fromDate, toDate, teamId, search } = req.query;
+    const data = await salaryService.getMemberSalariesToDate({
+      fromDate: fromDate as string | undefined,
+      toDate: toDate as string | undefined,
+      teamId: teamId as string | undefined,
+      search: search as string | undefined,
+    });
+    sendSuccess(res, data);
+  }),
 };
 
 export const salaryConfigController = {

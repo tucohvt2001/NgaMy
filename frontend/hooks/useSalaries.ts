@@ -24,6 +24,18 @@ export function useSalaryDetail(id: string | undefined) {
   });
 }
 
+export function useMemberSalariesToDate(params?: {
+  fromDate?: string;
+  toDate?: string;
+  teamId?: string;
+  search?: string;
+}) {
+  return useQuery({
+    queryKey: ['membersSalariesToDate', params],
+    queryFn: () => salaryService.getMembersToDate(params),
+  });
+}
+
 export function useCalculateSalary() {
   const queryClient = useQueryClient();
   return useMutation({

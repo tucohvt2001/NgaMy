@@ -366,7 +366,7 @@ export default function SalaryRatesPage() {
                   Tự động áp dụng tiền công theo Loại Show & Vai trò
                 </h3>
                 <p className="text-xs text-muted-foreground max-w-3xl leading-relaxed">
-                  Khi tạo sự kiện mới và chọn <strong>Loại show</strong> (Khai trương, Trung thu, Tết...), hệ thống sẽ <strong>tự động tra cứu bảng giá này</strong> và điền sẵn mức thù lao tương ứng cho từng vai trò khi chấm công & tất toán show.
+                  Khi tạo sự kiện mới và chọn <strong>Loại show</strong> (Khai trương, Trung thu, Tết...), hệ thống sẽ <strong>tự động tra cứu bảng giá này</strong> và điền sẵn mức tiền công tương ứng cho từng vai trò khi chấm công & tất toán show.
                 </p>
               </div>
             </div>
@@ -755,7 +755,7 @@ export default function SalaryRatesPage() {
             <div>
               <p className="font-bold">Thiết lập lương riêng cho từng show diễn ngoại lệ:</p>
               <p className="text-muted-foreground mt-0.5">
-                Dành cho các show diễn VIP, show tỉnh xa có thỏa thuận thù lao riêng cao hơn bảng giá chuẩn.
+                Dành cho các show diễn VIP, show tỉnh xa có thỏa thuận tiền công riêng cao hơn bảng giá chuẩn.
               </p>
             </div>
           </div>
@@ -764,7 +764,7 @@ export default function SalaryRatesPage() {
             <div className="p-4 rounded-3xl border border-border/80 bg-card shadow-xs space-y-3">
               <div className="flex items-center gap-2">
                 <Plus className="size-4 text-amber-500" />
-                <Label className="font-bold text-xs text-foreground">Cài đặt thù lao riêng cho show:</Label>
+                <Label className="font-bold text-xs text-foreground">Cài đặt tiền công riêng cho show:</Label>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -785,7 +785,7 @@ export default function SalaryRatesPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <Label className="text-[11px] text-muted-foreground">Mức thù lao chung (VNĐ/người) *</Label>
+                  <Label className="text-[11px] text-muted-foreground">Mức tiền công chung (VNĐ/người) *</Label>
                   <MoneyInput
                     value={eventAmount || ''}
                     onChange={(val) => setEventAmount(val)}
@@ -828,7 +828,7 @@ export default function SalaryRatesPage() {
                   <TableHead className="w-12 text-center text-xs font-bold">STT</TableHead>
                   <TableHead className="min-w-[200px] text-xs font-bold">Tên show diễn</TableHead>
                   <TableHead className="min-w-[140px] text-xs font-bold">Ngày diễn</TableHead>
-                  <TableHead className="min-w-[140px] text-xs font-bold">Mức thù lao / Người</TableHead>
+                  <TableHead className="min-w-[140px] text-xs font-bold">Mức tiền công / Người</TableHead>
                   <TableHead className="min-w-[180px] text-xs font-bold">Ghi chú</TableHead>
                   {canManage && <TableHead className="w-16 text-right text-xs font-bold">Xóa</TableHead>}
                 </TableRow>

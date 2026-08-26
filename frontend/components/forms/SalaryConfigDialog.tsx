@@ -74,7 +74,7 @@ export function SalaryConfigDialog({ open, onOpenChange, canManage = true }: Sal
   const [positionRates, setPositionRates] = useState<Record<string, { amount: number; note: string }>>({});
   const [bulkPositionAmount, setBulkPositionAmount] = useState<string>('');
 
-  // State Tab 2: Mức thù lao theo mỗi show (Event Rates)
+  // State Tab 2: Mức tiền công theo mỗi show (Event Rates)
   const [selectedEventId, setSelectedEventId] = useState<string>('');
   const [eventAmount, setEventAmount] = useState<number>(0);
   const [eventNote, setEventNote] = useState<string>('');
@@ -199,7 +199,7 @@ export function SalaryConfigDialog({ open, onOpenChange, canManage = true }: Sal
             <div>
               <DialogTitle className="text-xl font-bold flex items-center gap-2 text-foreground">
                 <Settings className="size-5 text-amber-500" />
-                Thiết Lập Định Mức Lương & Thù Lao
+                Thiết Lập Định Mức Lương & Tiền Công
               </DialogTitle>
               <p className="text-xs text-muted-foreground mt-1">
                 Cài đặt mức tiền công mặc định <strong>theo vị trí biểu diễn</strong>, <strong>theo từng show</strong> hoặc <strong>theo thành viên</strong>
@@ -395,7 +395,7 @@ export function SalaryConfigDialog({ open, onOpenChange, canManage = true }: Sal
                 <div>
                   <p className="font-bold">Thiết lập lương riêng cho từng show diễn đặc thù:</p>
                   <p className="text-[11px] text-muted-foreground mt-0.5">
-                    Đối với các show lớn, show tỉnh xa hoặc show VIP có mức chi trả cao hơn thông thường, bạn có thể thiết lập mức thù lao chung cho show đó tại đây. Mức này sẽ có <strong>độ ưu tiên cao hơn</strong> mức lương theo vai trò.
+                    Đối với các show lớn, show tỉnh xa hoặc show VIP có mức chi trả cao hơn thông thường, bạn có thể thiết lập mức tiền công chung cho show đó tại đây. Mức này sẽ có <strong>độ ưu tiên cao hơn</strong> mức lương theo vai trò.
                   </p>
                 </div>
               </div>
@@ -405,7 +405,7 @@ export function SalaryConfigDialog({ open, onOpenChange, canManage = true }: Sal
                 <div className="p-4 rounded-2xl border border-border/80 bg-card shadow-xs space-y-3">
                   <div className="flex items-center gap-2">
                     <Plus className="size-4 text-amber-500" />
-                    <Label className="font-bold text-xs text-foreground">Thiết lập thù lao cho show diễn:</Label>
+                    <Label className="font-bold text-xs text-foreground">Thiết lập tiền công cho show diễn:</Label>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -426,7 +426,7 @@ export function SalaryConfigDialog({ open, onOpenChange, canManage = true }: Sal
                     </div>
 
                     <div className="space-y-1">
-                      <Label className="text-[11px] text-muted-foreground">Mức thù lao chung (VNĐ/người) *</Label>
+                      <Label className="text-[11px] text-muted-foreground">Mức tiền công chung (VNĐ/người) *</Label>
                       <MoneyInput
                         value={eventAmount || ''}
                         onChange={(val) => setEventAmount(val)}
@@ -436,11 +436,11 @@ export function SalaryConfigDialog({ open, onOpenChange, canManage = true }: Sal
                     </div>
 
                     <div className="space-y-1">
-                      <Label className="text-[11px] text-muted-foreground">Ghi chú định mức</Label>
+                      <Label className="text-[11px] text-muted-foreground">Ghi chú</Label>
                       <Input
                         value={eventNote}
                         onChange={(e) => setEventNote(e.target.value)}
-                        placeholder="vd: Show tỉnh xa, hỗ trợ đi lại..."
+                        placeholder="vd: Hỗ trợ tiền xăng xe, ăn uống..."
                         className="h-9 text-xs rounded-xl bg-background"
                       />
                     </div>
@@ -462,69 +462,66 @@ export function SalaryConfigDialog({ open, onOpenChange, canManage = true }: Sal
                 </div>
               )}
 
-              {/* Bảng danh sách show đã có định mức riêng */}
-              <div className="space-y-2">
-                <Label className="text-xs font-semibold">Danh sách show có cơ chế lương riêng:</Label>
-                <div className="rounded-2xl border border-border/80 overflow-hidden shadow-xs bg-card">
-                  <Table>
-                    <TableHeader className="bg-muted/50">
+              {/* Danh sách các show đã thiết lập mức tiền công riêng */}
+              <div className="rounded-2xl border border-border/80 overflow-hidden bg-card">
+                <Table>
+                  <TableHeader className="bg-muted/50">
+                    <TableRow>
+                      <TableHead className="w-12 text-center text-xs font-bold">STT</TableHead>
+                      <TableHead className="min-w-[200px] text-xs font-bold">Tên show diễn</TableHead>
+                      <TableHead className="min-w-[140px] text-xs font-bold">Ngày diễn</TableHead>
+                      <TableHead className="min-w-[140px] text-xs font-bold">Mức tiền công / Người</TableHead>
+                      <TableHead className="min-w-[180px] text-xs font-bold">Ghi chú</TableHead>
+                      {canManage && <TableHead className="w-16 text-right text-xs font-bold">Xóa</TableHead>}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {eventConfigs.length === 0 ? (
                       <TableRow>
-                        <TableHead className="w-12 text-center text-xs font-bold">STT</TableHead>
-                        <TableHead className="min-w-[200px] text-xs font-bold">Tên show diễn</TableHead>
-                        <TableHead className="min-w-[140px] text-xs font-bold">Ngày diễn</TableHead>
-                        <TableHead className="min-w-[140px] text-xs font-bold">Mức thù lao / Người</TableHead>
-                        <TableHead className="min-w-[180px] text-xs font-bold">Ghi chú</TableHead>
-                        {canManage && <TableHead className="w-16 text-right text-xs font-bold">Xóa</TableHead>}
+                        <TableCell colSpan={canManage ? 6 : 5} className="h-24 text-center text-xs text-muted-foreground">
+                          Chưa có show diễn nào có cơ chế lương riêng.
+                        </TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {eventConfigs.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={canManage ? 6 : 5} className="h-24 text-center text-xs text-muted-foreground">
-                            Chưa có show diễn nào có cơ chế lương riêng.
+                    ) : (
+                      eventConfigs.map((cfg, idx) => (
+                        <TableRow key={cfg.id} className="hover:bg-muted/20">
+                          <TableCell className="text-center font-mono text-xs text-muted-foreground">
+                            {idx + 1}
                           </TableCell>
+                          <TableCell>
+                            <span className="font-bold text-xs text-foreground block">
+                              {cfg.event?.name || 'Sự kiện'}
+                            </span>
+                            <span className="font-mono text-[10px] text-muted-foreground">
+                              {cfg.event?.eventCode}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {cfg.event?.eventDate ? formatDate(cfg.event.eventDate) : '-'}
+                          </TableCell>
+                          <TableCell className="font-bold text-xs text-emerald-600 dark:text-emerald-400">
+                            {formatCurrency(cfg.amount)}
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {cfg.note || '-'}
+                          </TableCell>
+                          {canManage && (
+                            <TableCell className="text-right">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => removeConfigMutation.mutate(cfg.id)}
+                                className="size-7 text-destructive hover:text-destructive hover:bg-destructive/10 rounded-lg"
+                              >
+                                <Trash2 className="size-3.5" />
+                              </Button>
+                            </TableCell>
+                          )}
                         </TableRow>
-                      ) : (
-                        eventConfigs.map((cfg, idx) => (
-                          <TableRow key={cfg.id} className="hover:bg-muted/20">
-                            <TableCell className="text-center font-mono text-xs text-muted-foreground">
-                              {idx + 1}
-                            </TableCell>
-                            <TableCell>
-                              <span className="font-bold text-xs text-foreground block">
-                                {cfg.event?.name || 'Sự kiện'}
-                              </span>
-                              <span className="font-mono text-[10px] text-muted-foreground">
-                                {cfg.event?.eventCode}
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-xs text-muted-foreground">
-                              {cfg.event?.eventDate ? formatDate(cfg.event.eventDate) : '-'}
-                            </TableCell>
-                            <TableCell className="font-bold text-xs text-emerald-600 dark:text-emerald-400">
-                              {formatCurrency(cfg.amount)}
-                            </TableCell>
-                            <TableCell className="text-xs text-muted-foreground">
-                              {cfg.note || '-'}
-                            </TableCell>
-                            {canManage && (
-                              <TableCell className="text-right">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => removeConfigMutation.mutate(cfg.id)}
-                                  className="size-7 text-destructive hover:text-destructive hover:bg-destructive/10 rounded-lg"
-                                >
-                                  <Trash2 className="size-3.5" />
-                                </Button>
-                              </TableCell>
-                            )}
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
               </div>
             </div>
           )}
@@ -539,7 +536,7 @@ export function SalaryConfigDialog({ open, onOpenChange, canManage = true }: Sal
                 <div>
                   <p className="font-bold">Định mức tiền công cố định cho thành viên riêng biệt:</p>
                   <p className="text-[11px] text-muted-foreground mt-0.5">
-                    Dành cho các Huấn luyện viên, Đội trưởng hoặc nghệ nhân biểu diễn có mức thù lao cố định theo từng buổi diễn mà không phụ thuộc vào vị trí.
+                    Dành cho các Huấn luyện viên, Đội trưởng hoặc nghệ nhân biểu diễn có mức tiền công cố định theo từng buổi diễn mà không phụ thuộc vào vị trí.
                   </p>
                 </div>
               </div>

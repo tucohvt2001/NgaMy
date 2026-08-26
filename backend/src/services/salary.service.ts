@@ -367,6 +367,225 @@ export const salaryService = {
 
     return updated;
   },
+
+  async getMemberSalariesToDate(params?: {
+    fromDate?: string;
+    toDate?: string;
+    teamId?: string;
+    search?: string;
+  }) {
+    const memberWhere: any = {};
+    if (params?.teamId) {
+      memberWhere.teams = { some: { id: params.teamId } };
+    }
+    if (params?.search) {
+      memberWhere.OR = [
+        { fullName: { contains: params.search, mode: 'insensitive' } },
+        { memberCode: { contains: params.search, mode: 'insensitive' } },
+        { phone: { contains: params.search, mode: 'insensitive' } },
+      ];
+    }
+
+    const members = await prisma.member.findMany({
+      where: memberWhere,
+      include: {
+        bank: true,
+        teams: { select: { id: true, name: true } },
+        positions: { select: { id: true, name: true } },
+      },
+      orderBy: { memberCode: 'asc' },
+    });
+
+    const dateFilter: any = {};
+    if (params?.fromDate || params?.toDate) {
+      dateFilter.eventDate = {};
+      if (params.fromDate) dateFilter.eventDate.gte = new Date(params.fromDate);
+      if (params.toDate) dateFilter.eventDate.lte = new Date(params.toDate);
+    }
+
+    // 1. Lấy tất cả sự kiện COMPLETED theo thời gian
+    const events = await prisma.event.findMany({
+      where: {
+        status: 'COMPLETED',
+        ...dateFilter,
+      },
+      include: {
+        eventMembers: { include: { position: true } },
+        attendances: { where: { status: { in: ['PRESENT', 'LATE'] } } },
+        salaryConfigs: true,
+      },
+      orderBy: { eventDate: 'desc' },
+    });
+
+    // 2. Lấy tất cả SalaryRecord trong phạm vi
+    const salaryRecords = await prisma.salaryRecord.findMany({
+      include: {
+        details: { include: { event: true, position: true } },
+      },
+      orderBy: [{ year: 'desc' }, { month: 'desc' }],
+    });
+
+    // 3. Lấy tất cả SalaryConfig active
+    const configs = await prisma.salaryConfig.findMany({ where: { isActive: true } });
+    const positionConfigMap = new Map(
+      configs
+        .filter((c) => c.positionId && !c.eventType && !c.memberId && !c.eventId)
+        .map((c) => [c.positionId!, c.amount]),
+    );
+    const eventTypePositionConfigMap = new Map(
+      configs
+        .filter((c) => c.eventType && c.positionId)
+        .map((c) => [`${c.eventType}_${c.positionId}`, c.amount]),
+    );
+    const eventTypeConfigMap = new Map(
+      configs
+        .filter((c) => c.eventType && !c.positionId && !c.memberId && !c.eventId)
+        .map((c) => [c.eventType!, c.amount]),
+    );
+    const memberConfigMap = new Map(
+      configs.filter((c) => c.memberId && !c.eventId).map((c) => [c.memberId!, c.amount]),
+    );
+    const eventConfigMap = new Map(
+      configs.filter((c) => c.eventId && !c.memberId).map((c) => [c.eventId!, c.amount]),
+    );
+
+    // Map salary records theo memberId
+    const recordsByMember = new Map<string, typeof salaryRecords>();
+    for (const r of salaryRecords) {
+      if (!recordsByMember.has(r.memberId)) recordsByMember.set(r.memberId, []);
+      recordsByMember.get(r.memberId)!.push(r);
+    }
+
+    const results = members.map((member) => {
+      // Gom tất cả show thành viên này đã tham gia
+      const memberEvents: Array<{
+        eventId: string;
+        eventCode: string;
+        eventName: string;
+        eventType: string | null;
+        eventDate: string;
+        location: string;
+        roles: string[];
+        amount: number;
+        status: string;
+      }> = [];
+
+      let totalEarnedFromEvents = 0;
+
+      for (const ev of events) {
+        const hasAttended = ev.attendances.some((a) => a.memberId === member.id);
+        const assignment = ev.eventMembers.filter((em) => em.memberId === member.id);
+
+        if (hasAttended || assignment.length > 0) {
+          // Tính tiền công cho show này
+          const memberEventCfg = ev.salaryConfigs.find((sc) => sc.memberId === member.id);
+          const generalEventCfg = ev.salaryConfigs.find((sc) => !sc.memberId);
+
+          let showAmount = 0;
+          if (memberEventCfg) {
+            showAmount = memberEventCfg.amount;
+          } else if (generalEventCfg) {
+            showAmount = generalEventCfg.amount;
+          } else if (
+            ev.eventType &&
+            assignment.length > 0 &&
+            assignment.some((a) => a.positionId && eventTypePositionConfigMap.has(`${ev.eventType}_${a.positionId}`))
+          ) {
+            showAmount = assignment.reduce(
+              (sum, a) =>
+                sum +
+                (a.positionId
+                  ? eventTypePositionConfigMap.get(`${ev.eventType}_${a.positionId}`) ||
+                    positionConfigMap.get(a.positionId) ||
+                    0
+                  : 0),
+              0,
+            );
+          } else if (ev.eventType && eventTypeConfigMap.has(ev.eventType)) {
+            showAmount = eventTypeConfigMap.get(ev.eventType)!;
+          } else if (memberConfigMap.has(member.id)) {
+            showAmount = memberConfigMap.get(member.id)!;
+          } else if (assignment.length > 0) {
+            showAmount = assignment.reduce(
+              (sum, a) => sum + (a.positionId ? positionConfigMap.get(a.positionId) || 0 : 0),
+              0,
+            );
+          }
+
+          const roles = assignment.map((a) => a.position?.name).filter(Boolean) as string[];
+
+          memberEvents.push({
+            eventId: ev.id,
+            eventCode: ev.eventCode,
+            eventName: ev.name,
+            eventType: ev.eventType,
+            eventDate: ev.eventDate.toISOString(),
+            location: ev.location,
+            roles: roles.length > 0 ? roles : ['Thành viên'],
+            amount: showAmount,
+            status: ev.status,
+          });
+
+          totalEarnedFromEvents += showAmount;
+        }
+      }
+
+      // Tổng hợp từ các bảng lương tháng của thành viên
+      const mRecords = recordsByMember.get(member.id) || [];
+      const totalFromSalaryRecords = mRecords.reduce((sum, r) => sum + r.totalAmount, 0);
+      const paidFromSalaryRecords = mRecords
+        .filter((r) => r.status === 'CONFIRMED')
+        .reduce((sum, r) => sum + r.totalAmount, 0);
+
+      // Nếu có bảng lương tháng thì dùng tổng bảng lương, nếu không thì dùng tổng từ các show
+      const totalAmount = Math.max(totalEarnedFromEvents, totalFromSalaryRecords);
+      const paidAmount = paidFromSalaryRecords;
+      const remainingAmount = Math.max(0, totalAmount - paidAmount);
+
+      return {
+        memberId: member.id,
+        memberCode: member.memberCode,
+        fullName: member.fullName,
+        avatar: member.avatar,
+        phone: member.phone,
+        status: member.status,
+        bankAccount: member.bankAccount,
+        bankName: member.bankName || member.bank?.name,
+        bankCode: member.bankCode || member.bank?.code,
+        bankBin: member.bankBin || member.bank?.bin,
+        teams: member.teams.map((t) => t.name),
+        positions: member.positions.map((p) => p.name),
+        totalEvents: memberEvents.length,
+        totalAmount,
+        paidAmount,
+        remainingAmount,
+        events: memberEvents,
+        salaryRecords: mRecords.map((r) => ({
+          id: r.id,
+          month: r.month,
+          year: r.year,
+          totalAmount: r.totalAmount,
+          status: r.status,
+          confirmedAt: r.confirmedAt,
+        })),
+      };
+    });
+
+    // Thống kê tổng hợp toàn câu lạc bộ
+    const summary = {
+      totalMembers: results.length,
+      activeMembersWithEarnings: results.filter((r) => r.totalAmount > 0).length,
+      grandTotalAmount: results.reduce((sum, r) => sum + r.totalAmount, 0),
+      grandPaidAmount: results.reduce((sum, r) => sum + r.paidAmount, 0),
+      grandRemainingAmount: results.reduce((sum, r) => sum + r.remainingAmount, 0),
+      grandTotalEvents: results.reduce((sum, r) => sum + r.totalEvents, 0),
+    };
+
+    return {
+      summary,
+      members: results,
+    };
+  },
 };
 
 export const salaryConfigService = {

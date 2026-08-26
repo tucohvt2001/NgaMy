@@ -40,6 +40,7 @@ export default function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isCardVisible, setIsCardVisible] = useState(true);
+  const [mobileMode, setMobileMode] = useState<'contain' | 'cover'>('contain');
 
   const {
     register,
@@ -67,31 +68,51 @@ export default function LoginPage() {
       className="relative min-h-screen w-full flex items-center justify-center p-4 sm:p-6 overflow-hidden bg-black select-none cursor-pointer"
       title={isCardVisible ? 'Chạm ra ngoài để xem trọn vẹn ảnh nền' : 'Chạm vào màn hình để mở đăng nhập'}
     >
-      {/* ẢNH NỀN BANNER FULL MÀN HÌNH */}
-      <div className="absolute inset-0 z-0 pointer-events-none">
+      {/* ẢNH NỀN BANNER THÔNG MINH (Desktop: Full 100%, Mobile: Xem trọn vẹn không bị cắt) */}
+      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+        {/* 1. Lớp nền mờ Ambient Glow tạo chiều sâu (Đặc biệt trên màn hình dọc Mobile) */}
         <Image
           src="/banner.jpg"
-          alt="Thể Thao Nga My Banner"
+          alt="Thể Thao Nga My Ambient"
           fill
           priority
           sizes="100vw"
           className={`object-cover object-center transition-all duration-700 ease-out ${
             isCardVisible
-              ? 'scale-[1.02] filter brightness-90 contrast-105'
-              : 'scale-100 filter brightness-100 contrast-105'
+              ? 'scale-105 filter blur-xs brightness-90 contrast-105'
+              : 'scale-110 filter blur-xl brightness-50 contrast-125 opacity-70'
           }`}
         />
+
+        {/* 2. Lớp ảnh chính: Trên Desktop luôn tràn viền (object-cover), trên Mobile khi ẩn form sẽ chuyển sang object-contain xem trọn vẹn 100% */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <Image
+            src="/banner.jpg"
+            alt="Thể Thao Nga My Banner"
+            fill
+            priority
+            sizes="100vw"
+            className={`transition-all duration-700 ease-out ${
+              isCardVisible
+                ? 'object-cover object-center scale-[1.02] filter brightness-90 contrast-105'
+                : mobileMode === 'contain'
+                ? 'sm:object-cover object-contain object-center scale-100 filter brightness-100 contrast-105 drop-shadow-2xl'
+                : 'object-cover object-center scale-100 filter brightness-100 contrast-105'
+            }`}
+          />
+        </div>
+
         {/* Lớp phủ động: Khi ẩn Card thì mờ đi để lộ trọn vẹn ảnh banner rực rỡ */}
         <div
           className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
             isCardVisible
               ? 'bg-gradient-to-b from-black/75 via-black/55 to-black/85 backdrop-blur-[2px] opacity-100'
-              : 'bg-black/20 backdrop-blur-none opacity-30'
+              : 'bg-black/10 backdrop-blur-none opacity-20'
           }`}
         />
         <div
           className={`absolute inset-0 bg-radial-gradient from-transparent via-black/30 to-black/80 transition-opacity duration-700 ${
-            isCardVisible ? 'opacity-100' : 'opacity-20'
+            isCardVisible ? 'opacity-100' : 'opacity-10'
           }`}
         />
       </div>
@@ -114,7 +135,31 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* NÚT HOẶC THANH GỢI Ý KHI ẨN CARD (Nằm sát đáy màn hình chính giữa theo vị trí khoanh đỏ) */}
+      {/* NÚT CHUYỂN CHẾ ĐỘ XEM TRÀN VIỀN / TOÀN CẢNH TRÊN MOBILE */}
+      {!isCardVisible && (
+        <div
+          onClick={(e) => {
+            e.stopPropagation();
+            setMobileMode((prev) => (prev === 'contain' ? 'cover' : 'contain'));
+          }}
+          className="absolute top-6 right-6 z-30 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-black/75 hover:bg-black/90 backdrop-blur-xl border border-white/20 text-white text-xs font-semibold shadow-lg transition-all cursor-pointer hover:scale-105"
+          title="Chuyển chế độ xem ảnh"
+        >
+          {mobileMode === 'contain' ? (
+            <>
+              <Maximize2 className="size-3.5 text-amber-400" />
+              <span>Xem tràn viền</span>
+            </>
+          ) : (
+            <>
+              <Sparkles className="size-3.5 text-amber-400" />
+              <span>Xem trọn vẹn 100%</span>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* NÚT HOẶC THANH GỢI Ý KHI ẨN CARD (Nằm sát đáy màn hình chính giữa) */}
       {!isCardVisible && (
         <div
           onClick={(e) => {

@@ -28,6 +28,7 @@ router.use(authenticate);
  *       200: { description: Danh sách bảng lương }
  */
 router.get('/salaries', authorize(PERMISSIONS.SALARY_READ), salaryController.list);
+router.get('/salaries/members-to-date', authorize(PERMISSIONS.SALARY_READ), salaryController.getMemberSalariesToDate);
 
 /**
  * @openapi

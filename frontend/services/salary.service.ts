@@ -87,6 +87,13 @@ export const salaryService = {
     return res.data.data;
   },
 
+  async getMembersToDate(params?: { fromDate?: string; toDate?: string; teamId?: string; search?: string }) {
+    const res = await apiClient.get<ApiSuccessResponse<MemberSalaryToDateResponse>>('/salaries/members-to-date', {
+      params,
+    });
+    return res.data.data;
+  },
+
   async saveEventRate(data: { eventId: string; amount: number; note?: string | null }) {
     const res = await apiClient.post<ApiSuccessResponse<SalaryConfig>>('/salaries/configs/event-rate', data);
     return res.data.data;
@@ -97,3 +104,59 @@ export const salaryService = {
     return res.data.data;
   },
 };
+
+export interface MemberSalaryToDateEvent {
+  eventId: string;
+  eventCode: string;
+  eventName: string;
+  eventType: string | null;
+  eventDate: string;
+  location: string;
+  roles: string[];
+  amount: number;
+  status: string;
+}
+
+export interface MemberSalaryToDateRecord {
+  id: string;
+  month: number;
+  year: number;
+  totalAmount: number;
+  status: string;
+  confirmedAt?: string | null;
+}
+
+export interface MemberSalaryToDateItem {
+  memberId: string;
+  memberCode: string;
+  fullName: string;
+  avatar?: string | null;
+  phone?: string | null;
+  status: string;
+  bankAccount?: string | null;
+  bankName?: string | null;
+  bankCode?: string | null;
+  bankBin?: string | null;
+  teams: string[];
+  positions: string[];
+  totalEvents: number;
+  totalAmount: number;
+  paidAmount: number;
+  remainingAmount: number;
+  events: MemberSalaryToDateEvent[];
+  salaryRecords: MemberSalaryToDateRecord[];
+}
+
+export interface MemberSalaryToDateSummary {
+  totalMembers: number;
+  activeMembersWithEarnings: number;
+  grandTotalAmount: number;
+  grandPaidAmount: number;
+  grandRemainingAmount: number;
+  grandTotalEvents: number;
+}
+
+export interface MemberSalaryToDateResponse {
+  summary: MemberSalaryToDateSummary;
+  members: MemberSalaryToDateItem[];
+}
