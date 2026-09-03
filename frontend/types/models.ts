@@ -124,7 +124,7 @@ export interface EventItem {
   description?: string | null;
   createdBy: string;
   creator?: { id: string; username: string };
-  _count?: { eventMembers?: number; transactions?: number };
+  _count?: { eventMembers?: number; transactions?: number; salaryConfigs?: number };
 }
 
 export interface EventMonthlyStat {

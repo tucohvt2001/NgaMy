@@ -126,6 +126,7 @@ export const eventService = {
           select: {
             eventMembers: true,
             transactions: true,
+            salaryConfigs: true,
           },
         },
       },
@@ -161,7 +162,7 @@ export const eventService = {
       const val = ev.contractValue || 0;
       totalContractValue += val;
 
-      const isSettled = ev._count.transactions > 0;
+      const isSettled = ev._count.transactions > 0 || ev._count.salaryConfigs > 0 || ev.status === 'COMPLETED';
       if (isSettled) settledEvents++;
       else unsettledEvents++;
 

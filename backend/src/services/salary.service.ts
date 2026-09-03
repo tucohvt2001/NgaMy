@@ -23,13 +23,17 @@ export const salaryService = {
     });
     const existingMap = new Map(existingRecords.map((r) => [r.memberId, r]));
 
-    // 2. Lấy tất cả điểm danh PRESENT/LATE của các SHOW ĐÃ DỰ TOÁN (status = COMPLETED) trong tháng
+    // 2. Lấy tất cả điểm danh PRESENT/LATE của các SHOW ĐÃ DỰ TOÁN (status = COMPLETED hoặc đã có cấu hình tiền công / phiếu thu chi) trong tháng
     const attendances = await prisma.attendance.findMany({
       where: {
         status: { in: ['PRESENT', 'LATE'] },
         event: {
           eventDate: { gte: startDate, lte: endDate },
-          status: 'COMPLETED', // Show chưa dự toán sẽ KHÔNG được tính vào tiền công
+          OR: [
+            { status: 'COMPLETED' },
+            { salaryConfigs: { some: {} } },
+            { transactions: { some: {} } },
+          ],
         },
       },
       include: {
@@ -403,10 +407,14 @@ export const salaryService = {
       if (params.toDate) dateFilter.eventDate.lte = new Date(params.toDate);
     }
 
-    // 1. Lấy tất cả sự kiện COMPLETED theo thời gian
+    // 1. Lấy tất cả sự kiện đã dự toán hoặc hoàn thành theo thời gian
     const events = await prisma.event.findMany({
       where: {
-        status: 'COMPLETED',
+        OR: [
+          { status: 'COMPLETED' },
+          { salaryConfigs: { some: {} } },
+          { transactions: { some: {} } },
+        ],
         ...dateFilter,
       },
       include: {

@@ -43,7 +43,11 @@ export function MemberSalaryDetailDialog({
   const combinedShows = monthEvents.map((ev) => {
     const isAttended = attendedEventIds.has(ev.id);
     const detail = record.details?.find((d) => d.eventId === ev.id);
-    const isSettled = ev.status === 'COMPLETED';
+    const isSettled =
+      ev.status === 'COMPLETED' ||
+      ((ev as any)._count?.transactions ?? 0) > 0 ||
+      ((ev as any)._count?.salaryConfigs ?? 0) > 0 ||
+      ((ev as any).salaryConfigs?.length ?? 0) > 0;
 
     // Lấy tất cả vai trò mà thành viên này được phân công trong show (hỗ trợ 1 người nhiều vai trò)
     const memberRoles = (ev as any).eventMembers

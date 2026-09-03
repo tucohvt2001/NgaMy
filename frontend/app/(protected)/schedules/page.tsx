@@ -102,7 +102,10 @@ export default function SchedulesPage() {
   };
 
   const filteredItems = data?.items.filter((item) => {
-    const isSettled = (item._count?.transactions ?? 0) > 0;
+    const isSettled =
+      (item._count?.transactions ?? 0) > 0 ||
+      (item._count?.salaryConfigs ?? 0) > 0 ||
+      item.status === 'COMPLETED';
     if (settlementFilter === 'SETTLED') return isSettled;
     if (settlementFilter === 'UNSETTLED') return !isSettled;
     return true;
@@ -491,7 +494,10 @@ export default function SchedulesPage() {
                   const isToday = evDate.toDateString() === now.toDateString();
                   const isPast = !isToday && evDate.getTime() < now.getTime();
                   const isUpcoming = !isToday && evDate.getTime() > now.getTime();
-                  const isSettled = (event._count?.transactions ?? 0) > 0;
+                  const isSettled =
+                    (event._count?.transactions ?? 0) > 0 ||
+                    (event._count?.salaryConfigs ?? 0) > 0 ||
+                    event.status === 'COMPLETED';
 
                   return (
                     <TableRow
@@ -559,7 +565,7 @@ export default function SchedulesPage() {
                         {isSettled ? (
                           <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 text-[10px] gap-1 font-semibold">
                             <CheckCircle2 className="size-3 text-emerald-600 dark:text-emerald-400" />
-                            Đã dự toán ({event._count?.transactions} phiếu)
+                            Đã dự toán {(event._count?.transactions ?? 0) > 0 ? `(${event._count?.transactions} phiếu)` : ''}
                           </Badge>
                         ) : (
                           <Badge variant="outline" className="text-amber-700 dark:text-amber-400 border-amber-500/30 text-[10px] gap-1 font-medium bg-amber-50/60 dark:bg-amber-950/20">

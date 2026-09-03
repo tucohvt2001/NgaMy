@@ -42,7 +42,7 @@ export const eventRepository = {
       take: params.take,
       include: {
         creator: { select: { id: true, username: true } },
-        _count: { select: { eventMembers: true, transactions: true } },
+        _count: { select: { eventMembers: true, transactions: true, salaryConfigs: true } },
       },
       orderBy: { eventDate: 'desc' },
     });
@@ -58,7 +58,7 @@ export const eventRepository = {
       include: {
         creator: { select: { id: true, username: true } },
         eventMembers: { include: { member: true, position: true } },
-        _count: { select: { eventMembers: true, transactions: true } },
+        _count: { select: { eventMembers: true, transactions: true, salaryConfigs: true } },
       },
     });
   },

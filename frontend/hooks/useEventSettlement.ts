@@ -22,8 +22,11 @@ export function useSettleEvent() {
       queryClient.invalidateQueries({ queryKey: ['events'] });
       queryClient.invalidateQueries({ queryKey: ['event', variables.id] });
       queryClient.invalidateQueries({ queryKey: ['event-settlement', variables.id] });
+      queryClient.invalidateQueries({ queryKey: ['event-stats'] });
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['transaction-summary'] });
+      queryClient.invalidateQueries({ queryKey: ['salaries'] });
+      queryClient.invalidateQueries({ queryKey: ['membersSalariesToDate'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
     },
     onError: (error: any) => {
