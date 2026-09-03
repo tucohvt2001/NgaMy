@@ -188,6 +188,7 @@ model Event {
   salaryConfigs SalaryConfig[]
   salaryDetails SalaryDetail[]
   transactions  Transaction[]
+  reviews       EventReview[]
 
   @@index([eventDate])
   @@index([status])
@@ -403,5 +404,29 @@ model Bank {
   @@index([shortName])
   @@index([isActive])
 }
+
+// ============ ĐÁNH GIÁ SỰ KIỆN TỪ KHÁCH HÀNG (CUSTOMER REVIEWS) ============
+
+model EventReview {
+  id                 String   @id @default(cuid())
+  eventId            String
+  customerName       String
+  customerPhone      String?
+  rating             Int      // 1 đến 5 sao
+  performanceQuality Int?     // Chất lượng múa: 1 - 5 sao
+  punctuality        Int?     // Đúng giờ & chuẩn bị: 1 - 5 sao
+  attitude           Int?     // Thái độ phục vụ: 1 - 5 sao
+  comment            String?
+  isPublic           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  event              Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+  @@index([rating])
+  @@index([createdAt])
+}
+
 
 

@@ -23,6 +23,8 @@ import {
   CheckCheck,
   Clock,
   Layers,
+  QrCode,
+  Star,
 } from 'lucide-react';
 import {
   BarChart,
@@ -50,6 +52,7 @@ import { LoadingState, EmptyState } from '@/components/tables/States';
 import { ConfirmDialog } from '@/components/forms/ConfirmDialog';
 import { EventFormDialog } from '@/components/forms/EventFormDialog';
 import { EventSettlementDialog } from '@/components/forms/EventSettlementDialog';
+import { EventReviewShareDialog } from '@/components/forms/EventReviewShareDialog';
 import { useCancelEvent, useCreateEvent, useEvents, useUpdateEvent, useEventStats } from '@/hooks/useEvents';
 import { EventItem } from '@/types/models';
 import { EVENT_STATUSES, STATUS_LABELS, EVENT_TYPE_LABELS } from '@/types/enums';
@@ -79,6 +82,7 @@ export default function SchedulesPage() {
   const [confirmEvent, setConfirmEvent] = useState<EventItem | null>(null);
   const [settlementEvent, setSettlementEvent] = useState<EventItem | null>(null);
   const [settlementOpen, setSettlementOpen] = useState(false);
+  const [reviewShareEvent, setReviewShareEvent] = useState<EventItem | null>(null);
 
   const { data, isLoading } = useEvents({
     page,
@@ -596,6 +600,15 @@ export default function SchedulesPage() {
                       >
                         <Coins className="size-4" />
                       </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setReviewShareEvent(event)}
+                        className="text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30"
+                        title="Mã QR & Link đánh giá cho khách"
+                      >
+                        <QrCode className="size-4" />
+                      </Button>
                       <Button variant="ghost" size="icon" asChild>
                         <Link href={`/assignments?eventId=${event.id}`} title="Phân công nhân sự">
                           <ClipboardList className="size-4" />
@@ -648,6 +661,12 @@ export default function SchedulesPage() {
         open={settlementOpen}
         onOpenChange={setSettlementOpen}
         event={settlementEvent}
+      />
+
+      <EventReviewShareDialog
+        open={Boolean(reviewShareEvent)}
+        onOpenChange={(open) => !open && setReviewShareEvent(null)}
+        event={reviewShareEvent}
       />
 
       <ConfirmDialog
