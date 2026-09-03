@@ -20,13 +20,13 @@ const router = Router();
 
 router.use('/', healthRoutes);
 router.use('/', authRoutes);
+router.use('/', reviewRoutes);
 router.use('/', accountRoutes);
 router.use('/', memberRoutes);
 router.use('/', teamRoutes);
 router.use('/', positionRoutes);
 router.use('/', eventRoutes);
 router.use('/', eventTypeRoutes);
-router.use('/', reviewRoutes);
 router.use('/', attendanceRoutes);
 router.use('/', leaveRoutes);
 router.use('/', salaryRoutes);

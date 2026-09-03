@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect } from 'react';
+import { useParams } from 'next/navigation';
 import Image from 'next/image';
 import {
   Star,
@@ -56,9 +57,9 @@ function formatDate(dateStr: string) {
   });
 }
 
-export default function PublicEventReviewPage({ params }: { params: Promise<{ id: string }> }) {
-  const resolvedParams = use(params);
-  const eventId = resolvedParams.id;
+export default function PublicEventReviewPage() {
+  const params = useParams();
+  const eventId = (params?.id as string) || '';
 
   const { data, isLoading, isError } = usePublicReviewInfo(eventId);
   const submitMutation = useSubmitReview();
