@@ -49,8 +49,15 @@ apiClient.interceptors.response.use(
     useLoadingStore.getState().stopLoading();
     if (error.response?.status === 401) {
       useAuthStore.getState().clearAuth();
-      if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
-        window.location.href = '/login';
+      if (typeof window !== 'undefined') {
+        const path = window.location.pathname;
+        const isPublicRoute =
+          path.startsWith('/login') ||
+          path.startsWith('/review') ||
+          path.startsWith('/feedback');
+        if (!isPublicRoute) {
+          window.location.href = '/login';
+        }
       }
     }
     return Promise.reject(error);

@@ -50,7 +50,7 @@ export function EventReviewShareDialog({ open, onOpenChange, event }: EventRevie
 
   // Lấy URL thực tế từ window.location hoặc fallback
   const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
-  const reviewUrl = `${origin}/review/${event.id}`;
+  const reviewUrl = `${origin}/feedback/${event.id}`;
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(reviewUrl)}&margin=10`;
 
   const handleCopyLink = async () => {
