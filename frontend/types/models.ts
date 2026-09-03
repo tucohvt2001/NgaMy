@@ -437,6 +437,7 @@ export interface EventSettlementInput {
   createIncomeVoucher?: boolean;
   createExpenseVouchers?: boolean;
   markEventCompleted?: boolean;
+  isDraft?: boolean;
   notes?: string;
 }
 

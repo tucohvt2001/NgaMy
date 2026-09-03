@@ -61,9 +61,9 @@ export const eventSettlementService = {
           salaryRecord: { select: { memberId: true } },
         },
       }),
-      // Lấy định mức lương mặc định theo vị trí
+      // Lấy tất cả cấu hình tiền công đang active để tra cứu đúng theo Thiết lập tiền công
       prisma.salaryConfig.findMany({
-        where: { positionId: { not: null }, memberId: null, eventId: null, isActive: true },
+        where: { isActive: true },
       }),
     ]);
 
@@ -73,21 +73,29 @@ export const eventSettlementService = {
 
     const paidMemberIdSet = new Set(confirmedSalaryDetails.map((sd) => sd.salaryRecord.memberId));
 
-    const salaryConfigMap = new Map(
-      existingSalaryConfigs.filter((sc) => sc.memberId).map((sc) => [sc.memberId!, sc]),
-    );
-    const eventGeneralConfig = existingSalaryConfigs.find((sc) => !sc.memberId);
-    const positionConfigMap = new Map(
-      positionConfigs.filter((pc) => pc.positionId && !pc.eventType).map((pc) => [pc.positionId!, pc.amount]),
-    );
-    const eventTypePositionConfigMap = new Map(
-      positionConfigs
-        .filter((pc) => pc.eventType === event.eventType && pc.positionId)
-        .map((pc) => [pc.positionId!, pc.amount]),
-    );
-    const eventTypeGeneralConfig = positionConfigs.find(
-      (pc) => pc.eventType === event.eventType && !pc.positionId,
-    );
+    // Map các cấu hình tiền công theo 6 cấp độ ưu tiên
+    const memberEventConfigMap = new Map<string, number>();
+    const eventConfigMap = new Map<string, number>();
+    const eventTypePositionConfigMap = new Map<string, number>();
+    const eventTypeConfigMap = new Map<string, number>();
+    const memberConfigMap = new Map<string, number>();
+    const positionConfigMap = new Map<string, number>();
+
+    for (const cfg of positionConfigs) {
+      if (cfg.memberId && cfg.eventId) {
+        memberEventConfigMap.set(`${cfg.memberId}_${cfg.eventId}`, cfg.amount);
+      } else if (cfg.eventId && !cfg.memberId && !cfg.positionId) {
+        eventConfigMap.set(cfg.eventId, cfg.amount);
+      } else if (cfg.eventType && cfg.positionId && !cfg.memberId && !cfg.eventId) {
+        eventTypePositionConfigMap.set(`${cfg.eventType}_${cfg.positionId}`, cfg.amount);
+      } else if (cfg.eventType && !cfg.positionId && !cfg.memberId && !cfg.eventId) {
+        eventTypeConfigMap.set(cfg.eventType, cfg.amount);
+      } else if (cfg.memberId && !cfg.eventId && !cfg.positionId) {
+        memberConfigMap.set(cfg.memberId, cfg.amount);
+      } else if (cfg.positionId && !cfg.memberId && !cfg.eventId && !cfg.eventType) {
+        positionConfigMap.set(cfg.positionId, cfg.amount);
+      }
+    }
 
     let settledIncome = 0;
     let settledExpense = 0;
@@ -127,28 +135,39 @@ export const eventSettlementService = {
     }
 
     const memberOverviewList = Array.from(assignedMemberMap.entries()).map(([memberId, data]) => {
-      const savedConfig = salaryConfigMap.get(memberId);
+      const savedConfig = existingSalaryConfigs.find((sc) => sc.memberId === memberId);
       const isPaid = paidMemberIdSet.has(memberId);
       const positionName = data.positions.map((p) => p?.name).filter(Boolean).join(', ') || 'Thành viên';
 
-      // Tính mức tiền công gợi ý ban đầu: đã lưu riêng > định mức show > định mức (loại show + vai trò) > loại show chung > vai trò mặc định > 0
+      // Tính mức tiền công gợi ý dựa đúng theo Thiết lập tiền công (6 cấp độ ưu tiên):
+      // 1. Đã lưu bản nháp riêng cho show này
+      // 2. Mức chung của show này
+      // 3. Ma trận (Loại show + Vị trí) trong Thiết lập tiền công
+      // 4. Mức theo Loại show trong Thiết lập tiền công
+      // 5. Mức riêng của Thành viên trong Thiết lập tiền công
+      // 6. Mức theo Vị trí mặc định trong Thiết lập tiền công
+      // 7. Không có trong thiết lập -> 0 đ
       let defaultPayout = 0;
       if (savedConfig) {
         defaultPayout = savedConfig.amount;
-      } else if (eventGeneralConfig) {
-        defaultPayout = eventGeneralConfig.amount;
+      } else if (memberEventConfigMap.has(`${memberId}_${eventId}`)) {
+        defaultPayout = memberEventConfigMap.get(`${memberId}_${eventId}`) || 0;
+      } else if (eventConfigMap.has(eventId)) {
+        defaultPayout = eventConfigMap.get(eventId) || 0;
       } else if (
         event.eventType &&
         data.positions.length > 0 &&
-        data.positions.some((p) => p?.id && eventTypePositionConfigMap.has(p.id))
+        data.positions.some((p) => p?.id && eventTypePositionConfigMap.has(`${event.eventType}_${p.id}`))
       ) {
         defaultPayout = data.positions.reduce(
-          (sum, p) => sum + (p?.id ? eventTypePositionConfigMap.get(p.id) || positionConfigMap.get(p.id) || 0 : 0),
+          (sum, p) => sum + (p?.id ? eventTypePositionConfigMap.get(`${event.eventType}_${p.id}`) || 0 : 0),
           0,
         );
-      } else if (event.eventType && eventTypeGeneralConfig) {
-        defaultPayout = eventTypeGeneralConfig.amount;
-      } else if (data.positions.length > 0) {
+      } else if (event.eventType && eventTypeConfigMap.has(event.eventType)) {
+        defaultPayout = eventTypeConfigMap.get(event.eventType) || 0;
+      } else if (memberConfigMap.has(memberId)) {
+        defaultPayout = memberConfigMap.get(memberId) || 0;
+      } else if (data.positions.length > 0 && data.positions.some((p) => p?.id && positionConfigMap.has(p.id))) {
         defaultPayout = data.positions.reduce((sum, p) => sum + (p?.id ? positionConfigMap.get(p.id) || 0 : 0), 0);
       }
 
@@ -204,12 +223,14 @@ export const eventSettlementService = {
     const txDate = input.settlementDate ? new Date(input.settlementDate) : new Date();
     const createdTransactions: any[] = [];
 
+    const isDraft = Boolean(input.isDraft);
+
     // 1. Cập nhật thông tin sự kiện nếu có yêu cầu
     const eventUpdateData: any = {};
     if (input.contractAmount !== undefined) {
       eventUpdateData.contractValue = input.contractAmount;
     }
-    if (input.markEventCompleted && event.status !== 'COMPLETED') {
+    if (!isDraft && input.markEventCompleted && event.status !== 'COMPLETED') {
       eventUpdateData.status = 'COMPLETED';
     }
 
@@ -220,9 +241,9 @@ export const eventSettlementService = {
       });
     }
 
-    // 2. Tạo Phiếu Thu (Doanh thu show + Tiền lộc)
+    // 2. Tạo Phiếu Thu (Doanh thu show + Tiền lộc) - Chỉ khi không phải bản nháp
     const totalIncome = input.contractAmount + (input.tipAmount || 0);
-    if (input.createIncomeVoucher && totalIncome > 0) {
+    if (!isDraft && input.createIncomeVoucher && totalIncome > 0) {
       const code = await transactionService.generateCode('INCOME', txDate);
       const incomeTx = await prisma.transaction.create({
         data: {
@@ -244,8 +265,8 @@ export const eventSettlementService = {
       createdTransactions.push(incomeTx);
     }
 
-    // 3. Tạo các Phiếu Chi phát sinh (Xe cộ, Ăn uống, Hậu cần...) nếu có
-    if (input.expenses && input.expenses.length > 0) {
+    // 3. Tạo các Phiếu Chi phát sinh - Chỉ khi không phải bản nháp
+    if (!isDraft && input.expenses && input.expenses.length > 0) {
       const CATEGORY_EXPENSE_LABELS: Record<string, string> = {
         EQUIPMENT_PURCHASE: 'Mua sắm đầu lân / Đạo cụ / Trống',
         EQUIPMENT_MAINTENANCE: 'Bảo dưỡng / Sửa chữa đạo cụ',
@@ -330,9 +351,13 @@ export const eventSettlementService = {
       else createdExpenseTotal += tx.amount;
     });
 
+    const finalMessage = isDraft
+      ? `Đã lưu bản nháp dự toán show "${event.name}" thành công! Dữ liệu đã được lưu lại để bạn tiếp tục chỉnh sửa.`
+      : `Dự toán show "${event.name}" thành công! Đã chốt tiền công cho ${input.memberPayouts?.length || 0} thành viên và lập phiếu thu chi vào sổ quỹ.`;
+
     return {
       success: true,
-      message: `Dự toán show "${event.name}" thành công! Đã lưu tiền công dự kiến cho ${input.memberPayouts?.length || 0} thành viên và chuyển về mục Tiền Công để thanh toán.`,
+      message: finalMessage,
       createdTransactionsCount: createdTransactions.length,
       totalIncome: createdIncomeTotal,
       totalExpense: createdExpenseTotal,

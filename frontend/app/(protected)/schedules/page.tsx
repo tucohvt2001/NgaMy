@@ -25,6 +25,7 @@ import {
   Layers,
   QrCode,
   Star,
+  FileText,
 } from 'lucide-react';
 import {
   BarChart,
@@ -106,12 +107,11 @@ export default function SchedulesPage() {
   };
 
   const filteredItems = data?.items.filter((item) => {
-    const isSettled =
-      (item._count?.transactions ?? 0) > 0 ||
-      (item._count?.salaryConfigs ?? 0) > 0 ||
-      item.status === 'COMPLETED';
+    const isSettled = (item._count?.transactions ?? 0) > 0 || item.status === 'COMPLETED';
+    const hasDraft = !isSettled && (item._count?.salaryConfigs ?? 0) > 0;
     if (settlementFilter === 'SETTLED') return isSettled;
-    if (settlementFilter === 'UNSETTLED') return !isSettled;
+    if (settlementFilter === 'DRAFT') return hasDraft;
+    if (settlementFilter === 'UNSETTLED') return !isSettled && !hasDraft;
     return true;
   }) ?? [];
 
@@ -437,8 +437,9 @@ export default function SchedulesPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value={ALL_VALUE}>Tất cả dự toán</SelectItem>
-            <SelectItem value="UNSETTLED">🟡 Chưa dự toán</SelectItem>
             <SelectItem value="SETTLED">🟢 Đã dự toán</SelectItem>
+            <SelectItem value="DRAFT">📝 Bản nháp dự toán</SelectItem>
+            <SelectItem value="UNSETTLED">🟡 Chưa dự toán</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -464,6 +465,9 @@ export default function SchedulesPage() {
           <span className="font-semibold text-foreground">Sổ quỹ:</span>
           <span className="flex items-center gap-1 text-emerald-700 dark:text-emerald-400 font-medium">
             <CheckCircle2 className="size-3.5" /> Đã dự toán
+          </span>
+          <span className="flex items-center gap-1 text-purple-700 dark:text-purple-400 font-medium">
+            <FileText className="size-3.5" /> Bản nháp
           </span>
           <span className="flex items-center gap-1 text-amber-700 dark:text-amber-400 font-medium">
             <AlertCircle className="size-3.5" /> Chưa dự toán
@@ -498,10 +502,8 @@ export default function SchedulesPage() {
                   const isToday = evDate.toDateString() === now.toDateString();
                   const isPast = !isToday && evDate.getTime() < now.getTime();
                   const isUpcoming = !isToday && evDate.getTime() > now.getTime();
-                  const isSettled =
-                    (event._count?.transactions ?? 0) > 0 ||
-                    (event._count?.salaryConfigs ?? 0) > 0 ||
-                    event.status === 'COMPLETED';
+                  const isSettled = (event._count?.transactions ?? 0) > 0 || event.status === 'COMPLETED';
+                  const hasDraft = !isSettled && (event._count?.salaryConfigs ?? 0) > 0;
 
                   return (
                     <TableRow
@@ -570,6 +572,11 @@ export default function SchedulesPage() {
                           <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 text-[10px] gap-1 font-semibold">
                             <CheckCircle2 className="size-3 text-emerald-600 dark:text-emerald-400" />
                             Đã dự toán {(event._count?.transactions ?? 0) > 0 ? `(${event._count?.transactions} phiếu)` : ''}
+                          </Badge>
+                        ) : hasDraft ? (
+                          <Badge variant="outline" className="text-purple-700 dark:text-purple-300 border-purple-500/40 text-[10px] gap-1 font-medium bg-purple-50/70 dark:bg-purple-950/30">
+                            <FileText className="size-3 text-purple-600 dark:text-purple-400" />
+                            Bản nháp dự toán
                           </Badge>
                         ) : (
                           <Badge variant="outline" className="text-amber-700 dark:text-amber-400 border-amber-500/30 text-[10px] gap-1 font-medium bg-amber-50/60 dark:bg-amber-950/20">

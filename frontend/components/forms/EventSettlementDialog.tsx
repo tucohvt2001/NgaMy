@@ -46,6 +46,8 @@ import {
   CalendarCheck,
   Lock,
   ShieldCheck,
+  Save,
+  AlertTriangle,
 } from 'lucide-react';
 
 interface EventSettlementDialogProps {
@@ -81,9 +83,9 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
   // State chia tiền công thành viên (dự kiến)
   const [payouts, setPayouts] = useState<PayoutItemState[]>([]);
   const [bulkAmount, setBulkAmount] = useState<string>('');
-
-  // State chi phí phát sinh
   const [expenses, setExpenses] = useState<EventExpenseItem[]>([]);
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [isDraftSubmitting, setIsDraftSubmitting] = useState(false);
 
   useEffect(() => {
     if (event) {
@@ -96,6 +98,8 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
       setNotes('');
       setExpenses([]);
       setBulkAmount('');
+      setConfirmModalOpen(false);
+      setIsDraftSubmitting(false);
     }
   }, [event, open]);
 
@@ -118,11 +122,8 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
   const handlePayoutChange = (memberId: string, field: keyof PayoutItemState, value: any) => {
     setPayouts((prev) =>
       prev.map((p) => {
-        if (p.memberId === memberId) {
-          if (p.isPaid) return p; // Khóa không cho sửa nếu đã thanh toán
-          return { ...p, [field]: value };
-        }
-        return p;
+        if (p.memberId !== memberId || p.isPaid) return p;
+        return { ...p, [field]: value };
       })
     );
   };
@@ -144,6 +145,37 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
     if (!amountEach || amountEach <= 0 || payouts.length === 0) return;
     setPayouts((prev) =>
       prev.map((p) => (p.isPaid ? p : { ...p, amount: amountEach }))
+    );
+  };
+
+  // Áp dụng định mức hàng loạt cho tất cả thành viên chưa thanh toán
+  const handleApplyBulk = () => {
+    const amount = Number(bulkAmount.replace(/\D/g, '')) || 0;
+    if (amount <= 0) return;
+    setPayouts((prev) =>
+      prev.map((p) => {
+        if (p.isPaid) return p;
+        return { ...p, amount };
+      })
+    );
+  };
+
+  // Tự động chia đều tiền hợp đồng (sau khi trừ chi phí) cho các thành viên chưa thanh toán
+  const handleSplitRemaining = () => {
+    const totalIncome = Number(contractAmount) + Number(tipAmount);
+    const totalExp = expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+    const paidSum = payouts.filter((p) => p.isPaid).reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+    const remainingForUnpaid = Math.max(0, totalIncome - totalExp - paidSum);
+
+    const unpaidCount = payouts.filter((p) => !p.isPaid).length;
+    if (unpaidCount === 0) return;
+
+    const share = Math.floor(remainingForUnpaid / unpaidCount / 10000) * 10000;
+    setPayouts((prev) =>
+      prev.map((p) => {
+        if (p.isPaid) return p;
+        return { ...p, amount: share };
+      })
     );
   };
 
@@ -179,8 +211,9 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
   const totalEstimatedPayout = payouts.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
   const netClubProfit = totalIncome - totalExpenses - totalEstimatedPayout;
 
-  const handleSubmit = () => {
+  const handleExecuteSubmit = (isDraft: boolean) => {
     if (!event) return;
+    setIsDraftSubmitting(isDraft);
 
     const payload: EventSettlementInput = {
       contractAmount: Number(contractAmount) || 0,
@@ -208,7 +241,8 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
         }),
       createIncomeVoucher,
       createExpenseVouchers: true,
-      markEventCompleted: markCompleted,
+      markEventCompleted: isDraft ? false : markCompleted,
+      isDraft,
       notes,
     };
 
@@ -216,6 +250,7 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
       { id: event.id, input: payload },
       {
         onSuccess: () => {
+          setConfirmModalOpen(false);
           onOpenChange(false);
         },
       }
@@ -650,21 +685,117 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
           </div>
         )}
 
-        <DialogFooter className="pt-4 border-t gap-2 sm:gap-0">
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl text-xs">
-            Đóng
-          </Button>
+        <DialogFooter className="pt-4 border-t gap-2 sm:gap-2 flex-col sm:flex-row sm:justify-between items-stretch sm:items-center">
           <Button
             type="button"
-            onClick={handleSubmit}
-            isLoading={settleMutation.isPending}
-            className="bg-amber-600 hover:bg-amber-700 text-white font-bold gap-1.5 rounded-xl text-xs shadow-md shadow-amber-600/20"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            className="rounded-xl text-xs"
           >
-            <CheckCircle2 className="size-4" />
-            Xác Nhận Dự Toán Show
+            Đóng
           </Button>
+
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => handleExecuteSubmit(true)}
+              disabled={settleMutation.isPending}
+              isLoading={settleMutation.isPending && isDraftSubmitting}
+              className="rounded-xl text-xs font-semibold gap-1.5 border-amber-500/40 text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/30"
+            >
+              <Save className="size-3.5 text-amber-500" />
+              Lưu Bản Nháp
+            </Button>
+
+            <Button
+              type="button"
+              onClick={() => setConfirmModalOpen(true)}
+              disabled={settleMutation.isPending}
+              className="bg-amber-600 hover:bg-amber-700 text-white font-bold gap-1.5 rounded-xl text-xs shadow-md shadow-amber-600/20"
+            >
+              <CheckCircle2 className="size-4" />
+              Xác Nhận Dự Toán Show
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
+
+      {/* Modal Xác Nhận Quyết Toán Show Diễn */}
+      <Dialog open={confirmModalOpen} onOpenChange={setConfirmModalOpen}>
+        <DialogContent className="max-w-md rounded-3xl p-6 space-y-4">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="size-11 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
+                <AlertTriangle className="size-6 text-amber-500" />
+              </div>
+              <div>
+                <DialogTitle className="text-lg font-bold text-foreground">
+                  Xác Nhận Quyết Toán Show?
+                </DialogTitle>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Vui lòng kiểm tra lại số liệu trước khi chốt
+                </p>
+              </div>
+            </div>
+          </DialogHeader>
+
+          {/* Thẻ tóm tắt số liệu */}
+          <div className="p-4 rounded-2xl bg-muted/40 border border-border/80 space-y-2 text-xs">
+            <div className="flex items-center justify-between font-bold text-foreground pb-2 border-b border-border/60">
+              <span>🎪 Show:</span>
+              <span className="text-right">{event.name} ({event.eventCode})</span>
+            </div>
+            <div className="flex items-center justify-between text-muted-foreground">
+              <span>1. Tiền show & Tiền lộc:</span>
+              <span className="font-bold text-emerald-600">+{formatCurrency(totalIncome)}</span>
+            </div>
+            <div className="flex items-center justify-between text-muted-foreground">
+              <span>2. Tiền công ({payouts.length} người):</span>
+              <span className="font-bold text-rose-600">-{formatCurrency(totalEstimatedPayout)}</span>
+            </div>
+            <div className="flex items-center justify-between text-muted-foreground">
+              <span>3. Chi phí phát sinh ({expenses.length} khoản):</span>
+              <span className="font-bold text-rose-600">-{formatCurrency(totalExpenses)}</span>
+            </div>
+            <div className="flex items-center justify-between pt-2 border-t border-border/60 font-black text-sm">
+              <span>4. Lợi nhuận quỹ CLB:</span>
+              <span className={netClubProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}>
+                {netClubProfit >= 0 ? '+' : ''} {formatCurrency(netClubProfit)}
+              </span>
+            </div>
+          </div>
+
+          {/* Cảnh báo rõ ràng */}
+          <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-[11px] leading-relaxed flex items-start gap-2">
+            <AlertCircle className="size-4 shrink-0 mt-0.5 text-amber-600" />
+            <span>
+              Khi bấm <strong>"Chắc chắn xác nhận"</strong>, hệ thống sẽ chính thức <strong>lập phiếu thu chi vào Sổ quỹ</strong>, <strong>chốt định mức tiền công</strong> của các thành viên vào bảng lương và chuyển sự kiện sang trạng thái <strong>Hoàn thành (COMPLETED)</strong>.
+            </span>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setConfirmModalOpen(false)}
+              className="rounded-xl text-xs"
+            >
+              Quay lại chỉnh sửa
+            </Button>
+            <Button
+              type="button"
+              onClick={() => handleExecuteSubmit(false)}
+              disabled={settleMutation.isPending}
+              isLoading={settleMutation.isPending && !isDraftSubmitting}
+              className="bg-amber-600 hover:bg-amber-700 text-white font-bold gap-1.5 rounded-xl text-xs shadow-md shadow-amber-600/20"
+            >
+              <CheckCircle2 className="size-4" />
+              Chắc Chắn Xác Nhận
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }

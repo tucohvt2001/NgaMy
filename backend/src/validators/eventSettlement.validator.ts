@@ -28,6 +28,7 @@ export const eventSettlementSchema = z.object({
   createIncomeVoucher: z.boolean().default(true),
   createExpenseVouchers: z.boolean().default(true),
   markEventCompleted: z.boolean().default(true),
+  isDraft: z.boolean().optional().default(false),
   notes: z.string().optional(),
 });
 

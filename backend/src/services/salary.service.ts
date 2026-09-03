@@ -31,7 +31,6 @@ export const salaryService = {
           eventDate: { gte: startDate, lte: endDate },
           OR: [
             { status: 'COMPLETED' },
-            { salaryConfigs: { some: {} } },
             { transactions: { some: {} } },
           ],
         },
@@ -412,7 +411,6 @@ export const salaryService = {
       where: {
         OR: [
           { status: 'COMPLETED' },
-          { salaryConfigs: { some: {} } },
           { transactions: { some: {} } },
         ],
         ...dateFilter,
