@@ -136,7 +136,7 @@ export default function ReportsPage() {
             }`}
           >
             <TableProperties className="size-4" />
-            Thống Kê Thành Viên Đi Show Theo Tháng
+            Ma trận đi show
           </Button>
 
           <Button
@@ -150,7 +150,7 @@ export default function ReportsPage() {
             }`}
           >
             <BarChart3 className="size-4" />
-            Tổng Hợp & Sổ Quỹ
+            Tổng quan báo cáo
           </Button>
         </div>
       </div>

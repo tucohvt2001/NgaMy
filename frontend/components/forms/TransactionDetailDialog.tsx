@@ -98,13 +98,13 @@ export function TransactionDetailDialog({
           <div className="space-y-3 text-sm">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-dashed pb-2">
               <span className="text-muted-foreground font-medium">
-                {isIncome ? 'Họ và tên người nộp tiền:' : 'Họ và tên người nhận tiền:'}
+                {isIncome ? 'Người nộp tiền:' : 'Người nhận tiền:'}
               </span>
               <span className="font-bold text-foreground">{transaction.payerOrReceiver}</span>
             </div>
 
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-dashed pb-2">
-              <span className="text-muted-foreground font-medium">Danh mục giao dịch:</span>
+              <span className="text-muted-foreground font-medium">Danh mục:</span>
               <span className="font-semibold">
                 {TRANSACTION_CATEGORY_LABELS[transaction.category as TransactionCategory] || transaction.category}
               </span>
@@ -117,7 +117,7 @@ export function TransactionDetailDialog({
 
             {transaction.event && (
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-dashed pb-2">
-                <span className="text-muted-foreground font-medium">Sự kiện / Show diễn liên quan:</span>
+                <span className="text-muted-foreground font-medium">Show diễn liên quan:</span>
                 <span className="font-bold text-amber-700 dark:text-amber-300 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/20 text-xs">
                   🎪 {transaction.event.eventCode ? `[${transaction.event.eventCode}] ` : ''}{transaction.event.name}
                 </span>
@@ -134,13 +134,13 @@ export function TransactionDetailDialog({
             )}
 
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-dashed pb-2">
-              <span className="text-muted-foreground font-medium">Lý do / Diễn giải:</span>
+              <span className="text-muted-foreground font-medium">{isIncome ? 'Lý do thu:' : 'Lý do chi:'}</span>
               <span className="text-foreground">{transaction.description || 'Không có diễn giải'}</span>
             </div>
 
             {transaction.notes && (
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-dashed pb-2">
-                <span className="text-muted-foreground font-medium">Ghi chú kèm theo:</span>
+                <span className="text-muted-foreground font-medium">Chứng từ kèm theo:</span>
                 <span className="italic text-muted-foreground">{transaction.notes}</span>
               </div>
             )}

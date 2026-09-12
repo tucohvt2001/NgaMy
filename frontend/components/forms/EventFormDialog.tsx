@@ -128,7 +128,7 @@ export function EventFormDialog({ open, onOpenChange, event, onSubmit, isLoading
               {errors.eventCode && <p className="text-sm text-destructive">{errors.eventCode.message}</p>}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="eventDate">Ngày giờ biểu diễn *</Label>
+              <Label htmlFor="eventDate">Thời gian diễn *</Label>
               <Input id="eventDate" type="datetime-local" {...register('eventDate')} />
               {errors.eventDate && <p className="text-sm text-destructive">{errors.eventDate.message}</p>}
             </div>
@@ -136,19 +136,19 @@ export function EventFormDialog({ open, onOpenChange, event, onSubmit, isLoading
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="sm:col-span-2 space-y-2">
-              <Label htmlFor="name">Tên sự kiện / Show diễn *</Label>
+              <Label htmlFor="name">Tên sự kiện *</Label>
               <Input id="name" placeholder="vd: Khai trương Thẩm mỹ viện..." {...register('name')} />
               {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
             </div>
             <div className="space-y-2">
-              <Label>Loại show diễn *</Label>
+              <Label>Loại sự kiện *</Label>
               <Controller
                 control={control}
                 name="eventType"
                 render={({ field }) => (
                   <Select value={field.value || 'OTHER'} onValueChange={field.onChange}>
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Chọn loại show..." />
+                      <SelectValue placeholder="Chọn loại sự kiện..." />
                     </SelectTrigger>
                     <SelectContent>
                       {dbEventTypes.length > 0

@@ -173,7 +173,7 @@ export default function SalariesPage() {
                 title="Tự động tính lại tiền công từ các show diễn đã dự toán cho tất cả thành viên"
               >
                 <RefreshCw className="size-3.5" />
-                <span>Đồng bộ / Tính lại tháng</span>
+                <span>Đồng bộ tiền công</span>
               </Button>
 
               <Button
@@ -181,7 +181,7 @@ export default function SalariesPage() {
                 className="h-10 rounded-2xl bg-amber-500 hover:bg-amber-600 text-black text-xs font-bold gap-1.5 shadow-md shadow-amber-500/20"
               >
                 <Plus className="size-4" />
-                <span>Thêm bảng lương lẻ</span>
+                <span>Tạo bảng lương</span>
               </Button>
             </>
           )}
@@ -209,7 +209,7 @@ export default function SalariesPage() {
         <Card className="border-border/70 bg-gradient-to-br from-emerald-500/[0.05] via-card to-card shadow-xs">
           <CardContent className="p-4 flex items-center justify-between">
             <div>
-              <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">Đã thanh toán (CONFIRMED)</p>
+              <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">Đã thanh toán</p>
               <p className="text-lg sm:text-xl font-black text-emerald-600 dark:text-emerald-400 mt-0.5">
                 {formatCurrency(paidAmount)}
               </p>
@@ -224,7 +224,7 @@ export default function SalariesPage() {
         <Card className="border-border/70 bg-gradient-to-br from-rose-500/[0.05] via-card to-card shadow-xs">
           <CardContent className="p-4 flex items-center justify-between">
             <div>
-              <p className="text-xs font-semibold text-rose-700 dark:text-rose-400">Chưa thanh toán (DRAFT)</p>
+              <p className="text-xs font-semibold text-rose-700 dark:text-rose-400">Chưa thanh toán</p>
               <p className="text-lg sm:text-xl font-black text-rose-600 dark:text-rose-400 mt-0.5">
                 {formatCurrency(unpaidAmount)}
               </p>
@@ -270,7 +270,7 @@ export default function SalariesPage() {
         {isLoading ? (
           <LoadingState />
         ) : !data || data.items.length === 0 ? (
-          <EmptyState label={`Chưa có dữ liệu tiền công cho Tháng ${month}/${year}. Hãy kiểm tra điểm danh show hoặc bấm "Đồng bộ / Tính lại tháng".`} />
+          <EmptyState label={`Chưa có dữ liệu tiền công cho Tháng ${month}/${year}. Hãy kiểm tra điểm danh show hoặc bấm "Đồng bộ tiền công".`} />
         ) : (
           <div className="overflow-x-auto">
             <Table>
@@ -278,12 +278,12 @@ export default function SalariesPage() {
                 <TableRow>
                   <TableHead className="w-12 text-center">STT</TableHead>
                   <TableHead>Thành viên</TableHead>
-                  <TableHead className="text-center">Số show đi</TableHead>
-                  <TableHead className="text-right">Lương</TableHead>
+                  <TableHead className="text-center">Số show</TableHead>
+                  <TableHead className="text-right">Tiền công show</TableHead>
                   <TableHead className="text-right">Phụ cấp</TableHead>
                   <TableHead className="text-right">Thưởng</TableHead>
                   <TableHead className="text-right">Khấu trừ</TableHead>
-                  <TableHead className="text-right">Tổng thực nhận</TableHead>
+                  <TableHead className="text-right">Thực nhận</TableHead>
                   <TableHead className="text-center">Trạng thái</TableHead>
                   <TableHead className="text-right w-40">Thao tác</TableHead>
                 </TableRow>

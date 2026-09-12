@@ -175,13 +175,12 @@ export default function TransactionsPage() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header & Main Actions */}
+    <div className="space-y-6">      {/* Header & Main Actions */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Quản lý thu chi / sổ quỹ</h1>
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Quản lý Thu Chi & Sổ Quỹ</h1>
           <p className="text-sm text-muted-foreground">
-            Theo dõi dòng tiền thu chi, quản lý kinh phí show diễn, mua sắm đạo cụ và quỹ CLB
+            Theo dõi dòng tiền thu chi, kinh phí sự kiện, mua sắm đạo cụ và quỹ đoàn
           </p>
         </div>
 
@@ -252,7 +251,7 @@ export default function TransactionsPage() {
             </div>
             <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
               <ArrowDownLeft className="size-3.5 text-emerald-500" />
-              Từ biểu diễn show, tài trợ, quỹ hội viên...
+              Thu biểu diễn, tài trợ, hội phí...
             </p>
           </CardContent>
         </Card>
@@ -273,7 +272,7 @@ export default function TransactionsPage() {
             </div>
             <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
               <ArrowUpRight className="size-3.5 text-rose-500" />
-              Chi tiền công, mua lân, bảo dưỡng, ăn uống...
+              Tiền công, đạo cụ, ăn uống...
             </p>
           </CardContent>
         </Card>
@@ -297,7 +296,7 @@ export default function TransactionsPage() {
             </div>
             <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
               <Coins className="size-3.5 text-amber-500" />
-              Số dư quỹ tiền mặt & ngân hàng hiện hữu
+              Số dư tiền mặt & ngân hàng hiện hữu
             </p>
           </CardContent>
         </Card>
@@ -311,7 +310,7 @@ export default function TransactionsPage() {
             <div className="relative sm:col-span-2">
               <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Tìm mã phiếu, người nộp/nhận, diễn giải..."
+                placeholder="Tìm mã phiếu, người nộp/nhận, lý do..."
                 className="pl-9"
                 value={search}
                 onChange={(e) => {
@@ -321,7 +320,7 @@ export default function TransactionsPage() {
               />
             </div>
 
-            {/* Lọc theo Sự kiện / Show diễn */}
+            {/* Lọc theo Sự kiện */}
             <div className="sm:col-span-2">
               <Select
                 value={eventId}
@@ -331,10 +330,10 @@ export default function TransactionsPage() {
                 }}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Tất cả sự kiện / show diễn" />
+                  <SelectValue placeholder="Tất cả sự kiện" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={ALL_VALUE}>Tất cả sự kiện / show diễn</SelectItem>
+                  <SelectItem value={ALL_VALUE}>Tất cả sự kiện</SelectItem>
                   {eventsData?.items.map((ev) => (
                     <SelectItem key={ev.id} value={ev.id}>
                       {ev.eventCode} - {ev.name} ({new Date(ev.eventDate).toLocaleDateString('vi-VN')})
@@ -354,7 +353,7 @@ export default function TransactionsPage() {
                 }}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Tất cả loại" />
+                  <SelectValue placeholder="Loại phiếu" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={ALL_VALUE}>Tất cả loại (Thu & Chi)</SelectItem>
@@ -374,7 +373,7 @@ export default function TransactionsPage() {
                 }}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Tất cả danh mục" />
+                  <SelectValue placeholder="Danh mục" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={ALL_VALUE}>Tất cả danh mục</SelectItem>
@@ -397,10 +396,10 @@ export default function TransactionsPage() {
                 }}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Phương thức" />
+                  <SelectValue placeholder="Hình thức" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={ALL_VALUE}>Tất cả phương thức</SelectItem>
+                  <SelectItem value={ALL_VALUE}>Tất cả hình thức</SelectItem>
                   {PAYMENT_METHODS.map((pm) => (
                     <SelectItem key={pm} value={pm}>
                       {PAYMENT_METHOD_LABELS[pm]}
@@ -455,12 +454,12 @@ export default function TransactionsPage() {
         </CardContent>
       </Card>
 
-      {/* Bảng Dữ Liệu Giao Dịch */}
+      {/* Bảng Danh Sách Giao Dịch */}
       <div className="rounded-xl border bg-card shadow-xs overflow-hidden">
         {isLoading ? (
           <LoadingState label="Đang tải dữ liệu sổ quỹ..." />
         ) : !data || data.items.length === 0 ? (
-          <EmptyState label="Không tìm thấy giao dịch thu chi nào phù hợp" />
+          <EmptyState label="Không tìm thấy phiếu thu chi nào phù hợp" />
         ) : (
           <>
             <Table>
@@ -468,10 +467,10 @@ export default function TransactionsPage() {
                 <TableRow>
                   <TableHead className="w-32 font-bold">Mã phiếu</TableHead>
                   <TableHead className="w-28 font-bold">Ngày lập</TableHead>
-                  <TableHead className="w-28 font-bold">Phân loại</TableHead>
-                  <TableHead className="font-bold">Danh mục & Diễn giải</TableHead>
+                  <TableHead className="w-28 font-bold">Loại phiếu</TableHead>
+                  <TableHead className="font-bold">Danh mục & Lý do</TableHead>
                   <TableHead className="font-bold">Người nộp / nhận</TableHead>
-                  <TableHead className="w-32 font-bold">Phương thức</TableHead>
+                  <TableHead className="w-32 font-bold">Hình thức</TableHead>
                   <TableHead className="text-right font-bold w-40">Số tiền</TableHead>
                   <TableHead className="w-28 font-bold">Trạng thái</TableHead>
                   <TableHead className="w-28 text-right font-bold">Thao tác</TableHead>

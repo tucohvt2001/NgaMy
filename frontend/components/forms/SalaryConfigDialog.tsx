@@ -142,6 +142,43 @@ export function SalaryConfigDialog({ open, onOpenChange, canManage = true }: Sal
     batchSavePositionsMutation.mutate(payload);
   };
 
+  // Xử lý khi chọn / thay đổi show diễn: tự động tải định mức hiện có và thông tin show
+  const handleSelectEvent = (eventId: string) => {
+    setSelectedEventId(eventId);
+    if (!eventId) {
+      setEventAmount(0);
+      setEventNote('');
+      return;
+    }
+    const existingConfig = configs.find((c) => c.eventId === eventId && !c.memberId);
+    if (existingConfig) {
+      setEventAmount(existingConfig.amount);
+      setEventNote(existingConfig.note || '');
+    } else {
+      const ev = eventsData?.items.find((e) => e.id === eventId);
+      setEventAmount(0);
+      setEventNote(ev ? `Tiền công show ${ev.name}` : '');
+    }
+  };
+
+  // Xử lý khi chọn / thay đổi thành viên: tự động tải định mức riêng hiện có
+  const handleSelectMember = (memberId: string) => {
+    setSelectedMemberId(memberId);
+    if (!memberId) {
+      setMemberAmount(0);
+      setMemberNote('');
+      return;
+    }
+    const existingConfig = configs.find((c) => c.memberId === memberId && !c.eventId);
+    if (existingConfig) {
+      setMemberAmount(existingConfig.amount);
+      setMemberNote(existingConfig.note || '');
+    } else {
+      setMemberAmount(0);
+      setMemberNote('');
+    }
+  };
+
   // Lưu định mức cho 1 show cụ thể
   const handleSaveEventRate = () => {
     if (!selectedEventId || eventAmount <= 0) return;
@@ -411,7 +448,7 @@ export function SalaryConfigDialog({ open, onOpenChange, canManage = true }: Sal
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div className="space-y-1">
                       <Label className="text-[11px] text-muted-foreground">Chọn show diễn *</Label>
-                      <Select value={selectedEventId} onValueChange={setSelectedEventId}>
+                      <Select value={selectedEventId} onValueChange={handleSelectEvent}>
                         <SelectTrigger className="h-9 text-xs rounded-xl bg-background">
                           <SelectValue placeholder="-- Chọn show diễn --" />
                         </SelectTrigger>
@@ -552,7 +589,7 @@ export function SalaryConfigDialog({ open, onOpenChange, canManage = true }: Sal
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div className="space-y-1">
                       <Label className="text-[11px] text-muted-foreground">Chọn thành viên *</Label>
-                      <Select value={selectedMemberId} onValueChange={setSelectedMemberId}>
+                      <Select value={selectedMemberId} onValueChange={handleSelectMember}>
                         <SelectTrigger className="h-9 text-xs rounded-xl bg-background">
                           <SelectValue placeholder="-- Chọn thành viên --" />
                         </SelectTrigger>

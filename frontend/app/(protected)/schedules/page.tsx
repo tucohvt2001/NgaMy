@@ -136,7 +136,7 @@ export default function SchedulesPage() {
             className="gap-1.5 text-xs h-9 rounded-xl border-dashed"
           >
             <BarChart3 className="size-4 text-amber-600 dark:text-amber-400" />
-            {showCharts ? 'Ẩn biểu đồ' : 'Xem biểu đồ phân tích'}
+            {showCharts ? 'Ẩn biểu đồ' : 'Xem biểu đồ'}
             {showCharts ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
           </Button>
 
@@ -147,7 +147,7 @@ export default function SchedulesPage() {
             }}
             className="h-9 text-xs rounded-xl shadow-xs"
           >
-            <Plus className="mr-1.5 size-4" /> Tạo Sự Kiện Mới
+            <Plus className="mr-1.5 size-4" /> Tạo sự kiện
           </Button>
         </div>
       </div>
@@ -485,12 +485,12 @@ export default function SchedulesPage() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/40">
-                  <TableHead className="w-32">Mã</TableHead>
+                  <TableHead className="w-32">Mã sự kiện</TableHead>
                   <TableHead>Tên sự kiện</TableHead>
-                  <TableHead className="w-44">Ngày giờ diễn</TableHead>
+                  <TableHead className="w-44">Thời gian diễn</TableHead>
                   <TableHead>Địa điểm</TableHead>
-                  <TableHead className="w-28">Số người</TableHead>
-                  <TableHead className="w-36">Dự toán thu chi</TableHead>
+                  <TableHead className="w-28">Nhân sự</TableHead>
+                  <TableHead className="w-36">Dự toán quỹ</TableHead>
                   <TableHead className="w-28">Trạng thái</TableHead>
                   <TableHead className="text-right w-40">Thao tác</TableHead>
                 </TableRow>

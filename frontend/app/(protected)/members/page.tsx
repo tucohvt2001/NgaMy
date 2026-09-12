@@ -153,7 +153,7 @@ export default function MembersPage() {
           className="rounded-2xl gap-2 font-semibold shadow-sm"
         >
           <Plus className="size-4" />
-          Thêm thành viên mới
+          Thêm thành viên
         </Button>
       </div>
 
@@ -289,10 +289,10 @@ export default function MembersPage() {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/40 hover:bg-muted/40">
-                    <TableHead className="w-16 text-center font-bold text-xs">Mã</TableHead>
-                    <TableHead className="font-bold text-xs min-w-[200px]">Họ tên thành viên</TableHead>
-                    <TableHead className="font-bold text-xs min-w-[130px]">Đội / Nhóm</TableHead>
-                    <TableHead className="font-bold text-xs min-w-[130px]">Chức vụ</TableHead>
+                    <TableHead className="w-16 text-center font-bold text-xs">Mã TV</TableHead>
+                    <TableHead className="font-bold text-xs min-w-[200px]">Họ và tên</TableHead>
+                    <TableHead className="font-bold text-xs min-w-[130px]">Đội biểu diễn</TableHead>
+                    <TableHead className="font-bold text-xs min-w-[130px]">Vị trí</TableHead>
                     <TableHead className="font-bold text-xs min-w-[120px]">Số điện thoại</TableHead>
                     <TableHead className="font-bold text-xs min-w-[210px]">Tài khoản ngân hàng</TableHead>
                     <TableHead className="font-bold text-xs text-center min-w-[110px]">Trạng thái</TableHead>

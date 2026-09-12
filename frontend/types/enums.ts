@@ -19,12 +19,12 @@ export const EVENT_TYPES = [
 export type EventType = (typeof EVENT_TYPES)[number];
 
 export const EVENT_TYPE_LABELS: Record<string, string> = {
-  KHAI_TRUONG: 'Khai trương / Khánh thành',
+  KHAI_TRUONG: 'Khai trương',
   TRUNG_THU: 'Trung thu',
-  TET: 'Tết / Tân niên',
-  DAM_CUOI: 'Đám cưới / Hỷ sự',
-  LE_HOI: 'Lễ hội / Sự kiện lớn',
-  BIEU_DIEN: 'Biểu diễn thường',
+  TET: 'Tết - Tân niên',
+  DAM_CUOI: 'Hỷ sự - Cưới hỏi',
+  LE_HOI: 'Lễ hội',
+  BIEU_DIEN: 'Biểu diễn',
   OTHER: 'Khác',
 };
 
@@ -92,24 +92,24 @@ export const TRANSACTION_STATUSES = ['COMPLETED', 'PENDING', 'CANCELLED'] as con
 export type TransactionStatus = (typeof TRANSACTION_STATUSES)[number];
 
 export const TRANSACTION_CATEGORY_LABELS: Record<TransactionCategory, string> = {
-  EVENT_REVENUE: 'Thu biểu diễn show/sự kiện',
-  SPONSORSHIP: 'Tài trợ / Ủng hộ',
-  MEMBERSHIP_FEE: 'Quỹ hội viên / Đoàn phí',
-  EQUIPMENT_RENTAL: 'Cho thuê đạo cụ / Đầu lân',
+  EVENT_REVENUE: 'Thu biểu diễn',
+  SPONSORSHIP: 'Tài trợ - Ủng hộ',
+  MEMBERSHIP_FEE: 'Đoàn phí - Hội phí',
+  EQUIPMENT_RENTAL: 'Cho thuê đạo cụ',
   OTHER_INCOME: 'Thu khác',
-  SALARY_PAYOUT: 'Chi trả tiền công',
-  BONUS_REWARD: 'Chi khen thưởng, lì xì, thưởng nóng',
-  EQUIPMENT_PURCHASE: 'Mua sắm đầu lân / Đạo cụ / Trống',
-  EQUIPMENT_MAINTENANCE: 'Bảo dưỡng / Sửa chữa đạo cụ',
-  TRAVEL_FOOD: 'Ăn uống / Đi lại lưu diễn',
-  EVENT_OPERATIONS: 'Chi phí tổ chức sự kiện',
-  UNIFORM: 'Đồng phục CLB',
+  SALARY_PAYOUT: 'Chi tiền công',
+  BONUS_REWARD: 'Chi khen thưởng',
+  EQUIPMENT_PURCHASE: 'Mua sắm đạo cụ',
+  EQUIPMENT_MAINTENANCE: 'Sửa chữa đạo cụ',
+  TRAVEL_FOOD: 'Ăn uống - Xăng xe',
+  EVENT_OPERATIONS: 'Chi phí sự kiện',
+  UNIFORM: 'Đồng phục',
   OTHER_EXPENSE: 'Chi khác',
 };
 
 export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   CASH: 'Tiền mặt',
-  BANK_TRANSFER: 'Chuyển khoản ngân hàng',
+  BANK_TRANSFER: 'Chuyển khoản',
 };
 
 export const STATUS_LABELS: Record<string, string> = {
@@ -134,9 +134,8 @@ export const STATUS_LABELS: Record<string, string> = {
 };
 
 export const ROLE_LABELS: Record<RoleName, string> = {
-  SUPER_ADMIN: 'Chủ nhiệm (Super Admin)',
+  SUPER_ADMIN: 'Chủ nhiệm',
   ADMIN: 'Quản trị viên',
   TEAM_LEADER: 'Đội trưởng',
   MEMBER: 'Thành viên',
 };
-
