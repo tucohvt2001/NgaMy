@@ -512,8 +512,8 @@ export default function SchedulesPage() {
                 <TableRow className="bg-muted/40">
                   <TableHead className="w-32">Mã sự kiện</TableHead>
                   <TableHead>Tên sự kiện</TableHead>
-                  <TableHead className="w-44">Thời gian diễn</TableHead>
                   <TableHead>Địa điểm</TableHead>
+                  <TableHead className="w-44">Thời gian diễn</TableHead>
                   <TableHead className="w-36">Giá trị hợp đồng</TableHead>
                   <TableHead className="w-36">Dự toán quỹ</TableHead>
                   <TableHead className="w-28">Trạng thái</TableHead>
@@ -575,6 +575,7 @@ export default function SchedulesPage() {
                           </div>
                         )}
                       </TableCell>
+                      <TableCell className="text-xs">{event.location}</TableCell>
                       <TableCell className="text-xs">
                         <div className="flex items-center gap-1.5">
                           <span className="font-semibold text-foreground">
@@ -598,7 +599,6 @@ export default function SchedulesPage() {
                           {formatTime24h(evDate)}
                         </div>
                       </TableCell>
-                      <TableCell className="text-xs">{event.location}</TableCell>
                       <TableCell className="text-xs">
                         <div className="font-semibold text-emerald-600 dark:text-emerald-400">
                           {event.contractValue ? formatCurrency(Number(event.contractValue)) : '0 đ'}
