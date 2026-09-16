@@ -19,6 +19,8 @@ function buildWhere(params: Omit<FindManyEventsParams, 'skip' | 'take'>): Prisma
             { name: { contains: params.search } },
             { eventCode: { contains: params.search } },
             { location: { contains: params.search } },
+            { customerName: { contains: params.search } },
+            { customerPhone: { contains: params.search } },
           ],
         }
       : {}),

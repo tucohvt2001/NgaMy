@@ -26,6 +26,7 @@ import {
   QrCode,
   Star,
   FileText,
+  MoreHorizontal,
 } from 'lucide-react';
 import {
   BarChart,
@@ -48,6 +49,13 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { PaginationBar } from '@/components/tables/PaginationBar';
 import { LoadingState, EmptyState } from '@/components/tables/States';
 import { ConfirmDialog } from '@/components/forms/ConfirmDialog';
@@ -489,10 +497,10 @@ export default function SchedulesPage() {
                   <TableHead>Tên sự kiện</TableHead>
                   <TableHead className="w-44">Thời gian diễn</TableHead>
                   <TableHead>Địa điểm</TableHead>
-                  <TableHead className="w-28">Nhân sự</TableHead>
+                  <TableHead className="w-36">Giá trị hợp đồng</TableHead>
                   <TableHead className="w-36">Dự toán quỹ</TableHead>
                   <TableHead className="w-28">Trạng thái</TableHead>
-                  <TableHead className="text-right w-40">Thao tác</TableHead>
+                  <TableHead className="text-right w-20">Thao tác</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -533,9 +541,9 @@ export default function SchedulesPage() {
                             </Badge>
                           )}
                         </div>
-                        {event.customerName && (
-                          <div className="text-[11px] text-muted-foreground">
-                            Khách: {event.customerName}
+                        {(event.customerName || event.customerPhone) && (
+                          <div className="text-[11px] text-muted-foreground mt-0.5">
+                            Khách: {[event.customerName, event.customerPhone].filter(Boolean).join(' - ')}
                           </div>
                         )}
                       </TableCell>
@@ -566,7 +574,9 @@ export default function SchedulesPage() {
                         </div>
                       </TableCell>
                       <TableCell className="text-xs">{event.location}</TableCell>
-                      <TableCell className="text-xs">{event._count?.eventMembers ?? 0} người</TableCell>
+                      <TableCell className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                        {event.contractValue ? formatCurrency(Number(event.contractValue)) : '0 đ'}
+                      </TableCell>
                       <TableCell>
                         {isSettled ? (
                           <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 text-[10px] gap-1 font-semibold">
@@ -590,58 +600,69 @@ export default function SchedulesPage() {
                           {STATUS_LABELS[event.status]}
                         </Badge>
                       </TableCell>
-                    <TableCell className="text-right space-x-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => {
-                          setSettlementEvent(event);
-                          setSettlementOpen(true);
-                        }}
-                        className={
-                          isSettled
-                            ? 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/30'
-                            : 'text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/30'
-                        }
-                        title={isSettled ? 'Xem / Lập thêm dự toán show' : 'Dự toán show & chia tiền công'}
-                      >
-                        <Coins className="size-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setReviewShareEvent(event)}
-                        className="text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30"
-                        title="Mã QR & Link đánh giá cho khách"
-                      >
-                        <QrCode className="size-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" asChild>
-                        <Link href={`/assignments?eventId=${event.id}`} title="Phân công nhân sự">
-                          <ClipboardList className="size-4" />
-                        </Link>
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => {
-                          setEditingEvent(event);
-                          setFormOpen(true);
-                        }}
-                        title="Chỉnh sửa sự kiện"
-                      >
-                        <Pencil className="size-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setConfirmEvent(event)}
-                        title="Hủy sự kiện"
-                      >
-                        <Ban className="size-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-8 text-muted-foreground hover:text-foreground"
+                            >
+                              <MoreHorizontal className="size-4" />
+                              <span className="sr-only">Thao tác</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-52">
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setSettlementEvent(event);
+                                setSettlementOpen(true);
+                              }}
+                              className="cursor-pointer gap-2"
+                            >
+                              <Coins className={`size-4 ${isSettled ? 'text-emerald-500' : 'text-amber-500'}`} />
+                              <span>{isSettled ? 'Xem / Lập dự toán' : hasDraft ? 'Tiếp tục dự toán' : 'Dự toán & Chia lương'}</span>
+                            </DropdownMenuItem>
+
+                            <DropdownMenuItem asChild>
+                              <Link href={`/assignments?eventId=${event.id}`} className="cursor-pointer gap-2 flex items-center w-full">
+                                <ClipboardList className="size-4 text-blue-500" />
+                                <span>Phân công nhân sự</span>
+                              </Link>
+                            </DropdownMenuItem>
+
+                            <DropdownMenuItem
+                              onClick={() => setReviewShareEvent(event)}
+                              className="cursor-pointer gap-2"
+                            >
+                              <QrCode className="size-4 text-emerald-500" />
+                              <span>Mã QR & Link đánh giá</span>
+                            </DropdownMenuItem>
+
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setEditingEvent(event);
+                                setFormOpen(true);
+                              }}
+                              className="cursor-pointer gap-2"
+                            >
+                              <Pencil className="size-4 text-slate-500" />
+                              <span>Chỉnh sửa sự kiện</span>
+                            </DropdownMenuItem>
+
+                            <DropdownMenuSeparator />
+
+                            <DropdownMenuItem
+                              onClick={() => setConfirmEvent(event)}
+                              className="cursor-pointer gap-2 text-destructive focus:text-destructive focus:bg-destructive/10"
+                            >
+                              <Ban className="size-4" />
+                              <span>Hủy sự kiện</span>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
                 );
               })}
             </TableBody>
