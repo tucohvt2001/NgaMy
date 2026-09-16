@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import Link from 'next/link';
 import {
   Plus,
@@ -106,6 +106,22 @@ export default function SchedulesPage() {
   const createMutation = useCreateEvent();
   const updateMutation = useUpdateEvent();
   const cancelMutation = useCancelEvent();
+
+  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleRowTouchStart = (ev: EventItem) => {
+    longPressTimerRef.current = setTimeout(() => {
+      setEditingEvent(ev);
+      setFormOpen(true);
+    }, 500);
+  };
+
+  const handleRowTouchEnd = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
 
   const handleSubmit = (values: EventInput) => {
     if (editingEvent) {
@@ -517,7 +533,18 @@ export default function SchedulesPage() {
                   return (
                     <TableRow
                       key={event.id}
-                      className={`transition-colors ${
+                      onDoubleClick={() => {
+                        setEditingEvent(event);
+                        setFormOpen(true);
+                      }}
+                      onTouchStart={() => handleRowTouchStart(event)}
+                      onTouchEnd={handleRowTouchEnd}
+                      onTouchMove={handleRowTouchEnd}
+                      onMouseDown={() => handleRowTouchStart(event)}
+                      onMouseUp={handleRowTouchEnd}
+                      onMouseLeave={handleRowTouchEnd}
+                      title="Nhấp đúp hoặc nhấn giữ để chỉnh sửa sự kiện"
+                      className={`transition-colors cursor-pointer select-none ${
                         isToday
                           ? 'bg-amber-500/10 hover:bg-amber-500/15 border-l-4 border-l-amber-500'
                           : isUpcoming
@@ -605,7 +632,13 @@ export default function SchedulesPage() {
                           {STATUS_LABELS[event.status]}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell
+                        className="text-right"
+                        onClick={(e) => e.stopPropagation()}
+                        onDoubleClick={(e) => e.stopPropagation()}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onTouchStart={(e) => e.stopPropagation()}
+                      >
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button
