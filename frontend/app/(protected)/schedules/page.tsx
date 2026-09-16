@@ -56,6 +56,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { formatTime24h, formatDateVN } from '@/lib/utils';
 import { PaginationBar } from '@/components/tables/PaginationBar';
 import { LoadingState, EmptyState } from '@/components/tables/States';
 import { ConfirmDialog } from '@/components/forms/ConfirmDialog';
@@ -550,7 +551,7 @@ export default function SchedulesPage() {
                       <TableCell className="text-xs">
                         <div className="flex items-center gap-1.5">
                           <span className="font-semibold text-foreground">
-                            {evDate.toLocaleDateString('vi-VN')}
+                            {formatDateVN(evDate)}
                           </span>
                           {isToday ? (
                             <Badge className="bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/40 text-[9px] px-1 py-0 h-4">
@@ -567,15 +568,19 @@ export default function SchedulesPage() {
                           )}
                         </div>
                         <div className="text-[11px] text-muted-foreground mt-0.5">
-                          {evDate.toLocaleTimeString('vi-VN', {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
+                          {formatTime24h(evDate)}
                         </div>
                       </TableCell>
                       <TableCell className="text-xs">{event.location}</TableCell>
-                      <TableCell className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                        {event.contractValue ? formatCurrency(Number(event.contractValue)) : '0 đ'}
+                      <TableCell className="text-xs">
+                        <div className="font-semibold text-emerald-600 dark:text-emerald-400">
+                          {event.contractValue ? formatCurrency(Number(event.contractValue)) : '0 đ'}
+                        </div>
+                        {(event.depositAmount ?? 0) > 0 && (
+                          <div className="text-[10px] text-amber-600 dark:text-amber-400 font-medium mt-0.5">
+                            Đã cọc: {formatCurrency(Number(event.depositAmount))}
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell>
                         {isSettled ? (

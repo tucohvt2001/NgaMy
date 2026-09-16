@@ -26,6 +26,8 @@ import { EventItem } from '@/types/models';
 import { useEventReviews } from '@/hooks/useReviews';
 import { toast } from 'sonner';
 
+import { formatDateTime24h } from '@/lib/utils';
+
 interface EventReviewShareDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -33,11 +35,7 @@ interface EventReviewShareDialogProps {
 }
 
 function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString('vi-VN', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  });
+  return formatDateTime24h(dateStr);
 }
 
 export function EventReviewShareDialog({ open, onOpenChange, event }: EventReviewShareDialogProps) {

@@ -21,6 +21,7 @@ export interface EventInput {
   customerName?: string | null;
   customerPhone?: string | null;
   contractValue?: number | null;
+  depositAmount?: number | null;
   status?: EventStatus;
   description?: string | null;
 }

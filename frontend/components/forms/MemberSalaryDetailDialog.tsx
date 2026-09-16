@@ -17,13 +17,14 @@ interface MemberSalaryDetailDialogProps {
   canManage?: boolean;
 }
 
+import { formatDateTime24h } from '@/lib/utils';
+
 function formatCurrency(val: number) {
   return val.toLocaleString('vi-VN') + ' đ';
 }
 
 function formatDate(dateStr: string) {
-  const d = new Date(dateStr);
-  return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return formatDateTime24h(dateStr);
 }
 
 export function MemberSalaryDetailDialog({

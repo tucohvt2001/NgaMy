@@ -50,6 +50,8 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 
+import { formatDateTime24h } from '@/lib/utils';
+
 interface EventSettlementDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -63,7 +65,7 @@ function formatCurrency(val: number) {
 }
 
 function formatDate(val: string) {
-  return new Date(val).toLocaleDateString('vi-VN');
+  return formatDateTime24h(val);
 }
 
 export function EventSettlementDialog({ open, onOpenChange, event }: EventSettlementDialogProps) {
@@ -77,7 +79,7 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
   const [payer, setPayer] = useState<string>('');
   const [incomePaymentMethod, setIncomePaymentMethod] = useState<PaymentMethod>('CASH');
   const [createIncomeVoucher, setCreateIncomeVoucher] = useState<boolean>(true);
-  const [markCompleted, setMarkCompleted] = useState<boolean>(true);
+  const [markCompleted, setMarkCompleted] = useState<boolean>(false);
   const [notes, setNotes] = useState<string>('');
 
   // State chia tiền công thành viên (dự kiến)
@@ -94,7 +96,7 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
       setPayer(event.customerName || '');
       setIncomePaymentMethod('CASH');
       setCreateIncomeVoucher(true);
-      setMarkCompleted(true);
+      setMarkCompleted(event.status === 'COMPLETED');
       setNotes('');
       setExpenses([]);
       setBulkAmount('');
@@ -273,6 +275,14 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
             <span>Ngày diễn: {formatDate(event.eventDate)}</span>
             <span>•</span>
             <span>Địa điểm: {event.location}</span>
+            {(event.depositAmount ?? 0) > 0 && (
+              <>
+                <span>•</span>
+                <span className="text-amber-600 dark:text-amber-400 font-semibold">
+                  Đã cọc: {formatCurrency(Number(event.depositAmount))}
+                </span>
+              </>
+            )}
           </div>
         </DialogHeader>
 

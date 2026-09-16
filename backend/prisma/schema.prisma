@@ -176,6 +176,7 @@ model Event {
   customerName  String?
   customerPhone String?
   contractValue Float?
+  depositAmount Float?    @default(0)
   status        String    @default("DRAFT") // DRAFT, CONFIRMED, IN_PROGRESS, COMPLETED, CANCELLED
   description   String?
   createdBy     String

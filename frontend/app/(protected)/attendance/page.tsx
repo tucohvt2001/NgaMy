@@ -47,6 +47,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { ATTENDANCE_STATUSES, STATUS_LABELS } from '@/types/enums';
 import { Member } from '@/types/models';
 import { toast } from 'sonner';
+import { formatDisplayDateWithWeekday24h } from '@/lib/utils';
 
 const ALL_VALUE = '__all__';
 
@@ -57,23 +58,13 @@ interface AttendanceRowState {
   isAssigned: boolean;
   attendanceId?: string;
   status: string;
+  checkInTime?: string;
   note: string;
   isDirty: boolean;
 }
 
 function formatDisplayDate(dateStr?: string | Date | null) {
-  if (!dateStr) return '-';
-  const d = new Date(dateStr);
-  return isNaN(d.getTime())
-    ? '-'
-    : d.toLocaleDateString('vi-VN', {
-      weekday: 'short',
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+  return formatDisplayDateWithWeekday24h(dateStr);
 }
 
 export default function AttendancePage() {

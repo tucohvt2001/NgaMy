@@ -15,6 +15,10 @@ export const createEventSchema = z.object({
     (v) => (v === '' || v === null || v === undefined || isNaN(Number(v)) ? undefined : Number(v)),
     z.number().optional().nullable()
   ),
+  depositAmount: z.preprocess(
+    (v) => (v === '' || v === null || v === undefined || isNaN(Number(v)) ? undefined : Number(v)),
+    z.number().optional().nullable()
+  ),
   status: z.enum(EVENT_STATUSES).optional(),
   description: z.string().optional().nullable(),
 });

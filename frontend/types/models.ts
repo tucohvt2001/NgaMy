@@ -120,6 +120,7 @@ export interface EventItem {
   customerName?: string | null;
   customerPhone?: string | null;
   contractValue?: number | null;
+  depositAmount?: number | null;
   status: EventStatus;
   description?: string | null;
   createdBy: string;

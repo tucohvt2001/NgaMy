@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -11,10 +11,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DateTimePicker } from '@/components/ui/date-time-picker';
 import { EventItem } from '@/types/models';
 import { EVENT_STATUSES, STATUS_LABELS, EVENT_TYPES, EVENT_TYPE_LABELS } from '@/types/enums';
 import { EventInput } from '@/services/event.service';
-
 import { useEventTypes } from '@/hooks/useEventTypes';
 
 const eventSchema = z.object({
@@ -26,6 +26,7 @@ const eventSchema = z.object({
   customerName: z.string().optional(),
   customerPhone: z.string().optional(),
   contractValue: z.coerce.number().optional(),
+  depositAmount: z.coerce.number().optional(),
   status: z.enum(EVENT_STATUSES).optional(),
   description: z.string().optional(),
 });
@@ -40,17 +41,6 @@ interface EventFormDialogProps {
   isLoading?: boolean;
 }
 
-function formatForDateTimeLocal(dateStr?: string | null) {
-  if (!dateStr) {
-    const now = new Date();
-    const offset = now.getTimezoneOffset() * 60000;
-    return new Date(now.getTime() - offset).toISOString().slice(0, 16);
-  }
-  const d = new Date(dateStr);
-  const offset = d.getTimezoneOffset() * 60000;
-  return new Date(d.getTime() - offset).toISOString().slice(0, 16);
-}
-
 export function EventFormDialog({ open, onOpenChange, event, onSubmit, isLoading }: EventFormDialogProps) {
   const { data: dbEventTypes = [] } = useEventTypes({ isActive: true });
 
@@ -62,17 +52,22 @@ export function EventFormDialog({ open, onOpenChange, event, onSubmit, isLoading
     formState: { errors },
   } = useForm<EventFormValues>({ resolver: zodResolver(eventSchema) });
 
+  const contractVal = useWatch({ control, name: 'contractValue' }) || 0;
+  const depositVal = useWatch({ control, name: 'depositAmount' }) || 0;
+  const remainingAmount = Math.max(0, Number(contractVal) - Number(depositVal));
+
   useEffect(() => {
     if (open) {
       reset({
         eventCode: event?.eventCode ?? '',
         name: event?.name ?? '',
         eventType: event?.eventType ?? 'OTHER',
-        eventDate: event?.eventDate ? formatForDateTimeLocal(event.eventDate) : formatForDateTimeLocal(),
+        eventDate: event?.eventDate ? new Date(event.eventDate).toISOString() : new Date().toISOString(),
         location: event?.location ?? '',
         customerName: event?.customerName ?? '',
         customerPhone: event?.customerPhone ?? '',
         contractValue: event?.contractValue ?? undefined,
+        depositAmount: event?.depositAmount ?? undefined,
         status: (event?.status as EventFormValues['status']) ?? 'DRAFT',
         description: event?.description ?? '',
       });
@@ -94,6 +89,10 @@ export function EventFormDialog({ open, onOpenChange, event, onSubmit, isLoading
         values.contractValue !== undefined && !isNaN(Number(values.contractValue))
           ? Number(values.contractValue)
           : undefined,
+      depositAmount:
+        values.depositAmount !== undefined && !isNaN(Number(values.depositAmount))
+          ? Number(values.depositAmount)
+          : undefined,
       status: values.status || 'DRAFT',
       description: values.description?.trim() || undefined,
     };
@@ -107,41 +106,57 @@ export function EventFormDialog({ open, onOpenChange, event, onSubmit, isLoading
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>{event ? 'Cập nhật sự kiện' : 'Tạo sự kiện'}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(submitHandler)} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="eventCode" className="flex items-center justify-between">
+              <Label htmlFor="eventCode" className="flex items-center justify-between text-xs font-semibold">
                 <span>Mã sự kiện</span>
-                {!event && <span className="text-[11px] text-emerald-600 font-medium">Tự động sinh</span>}
+                {!event && <span className="text-[10px] text-emerald-600 font-medium">Tự động sinh</span>}
               </Label>
               <Input
                 id="eventCode"
                 disabled
-                placeholder={event ? event.eventCode : 'Tự động tạo mã (vd: SK-202608-0001)'}
+                placeholder={event ? event.eventCode : 'SK-YYYYMM-XXXX'}
                 className="bg-muted/50 cursor-not-allowed font-mono text-xs"
                 {...register('eventCode')}
               />
-              {errors.eventCode && <p className="text-sm text-destructive">{errors.eventCode.message}</p>}
+              {errors.eventCode && <p className="text-xs text-destructive">{errors.eventCode.message}</p>}
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="eventDate">Thời gian diễn *</Label>
-              <Input id="eventDate" type="datetime-local" {...register('eventDate')} />
-              {errors.eventDate && <p className="text-sm text-destructive">{errors.eventDate.message}</p>}
+              <Label htmlFor="eventDate" className="text-xs font-semibold">
+                Thời gian diễn *
+              </Label>
+              <Controller
+                control={control}
+                name="eventDate"
+                render={({ field }) => (
+                  <DateTimePicker
+                    id="eventDate"
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Chọn ngày & giờ (24h)..."
+                  />
+                )}
+              />
+              {errors.eventDate && <p className="text-xs text-destructive">{errors.eventDate.message}</p>}
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="sm:col-span-2 space-y-2">
-              <Label htmlFor="name">Tên sự kiện *</Label>
+              <Label htmlFor="name" className="text-xs font-semibold">
+                Tên sự kiện *
+              </Label>
               <Input id="name" placeholder="vd: Khai trương Thẩm mỹ viện..." {...register('name')} />
-              {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
+              {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
             </div>
             <div className="space-y-2">
-              <Label>Loại sự kiện *</Label>
+              <Label className="text-xs font-semibold">Loại sự kiện *</Label>
               <Controller
                 control={control}
                 name="eventType"
@@ -153,84 +168,128 @@ export function EventFormDialog({ open, onOpenChange, event, onSubmit, isLoading
                     <SelectContent>
                       {dbEventTypes.length > 0
                         ? dbEventTypes.map((type) => (
-                            <SelectItem key={type.code} value={type.code}>
-                              <div className="flex items-center gap-2">
-                                <span
-                                  className="size-2 rounded-full inline-block"
-                                  style={{ backgroundColor: type.color || '#f59e0b' }}
-                                />
-                                <span>{type.name}</span>
-                              </div>
-                            </SelectItem>
-                          ))
+                          <SelectItem key={type.code} value={type.code}>
+                            <div className="flex items-center gap-2">
+                              <span
+                                className="size-2 rounded-full inline-block"
+                                style={{ backgroundColor: type.color || '#f59e0b' }}
+                              />
+                              <span>{type.name}</span>
+                            </div>
+                          </SelectItem>
+                        ))
                         : EVENT_TYPES.map((type) => (
-                            <SelectItem key={type} value={type}>
-                              {EVENT_TYPE_LABELS[type] || type}
-                            </SelectItem>
-                          ))}
+                          <SelectItem key={type} value={type}>
+                            {EVENT_TYPE_LABELS[type] || type}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 )}
               />
             </div>
           </div>
+
           <div className="space-y-2">
-            <Label htmlFor="location">Địa điểm</Label>
-            <Input id="location" {...register('location')} />
-            {errors.location && <p className="text-sm text-destructive">{errors.location.message}</p>}
+            <Label htmlFor="location" className="text-xs font-semibold">
+              Địa điểm *
+            </Label>
+            <Input id="location" placeholder="vd: 92 P. Bế Văn Đàn, Hà Đông, Hà Nội" {...register('location')} />
+            {errors.location && <p className="text-xs text-destructive">{errors.location.message}</p>}
           </div>
-          <div className="grid grid-cols-2 gap-4">
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="customerName">Khách hàng</Label>
-              <Input id="customerName" {...register('customerName')} />
+              <Label htmlFor="customerName" className="text-xs font-semibold">
+                Khách hàng
+              </Label>
+              <Input id="customerName" placeholder="vd: Anh Tuấn / Chị Lan" {...register('customerName')} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="customerPhone">SĐT khách hàng</Label>
-              <Input id="customerPhone" {...register('customerPhone')} />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="contractValue">Giá trị hợp đồng</Label>
-              <Controller
-                control={control}
-                name="contractValue"
-                render={({ field }) => (
-                  <MoneyInput
-                    id="contractValue"
-                    value={field.value}
-                    onChange={field.onChange}
-                    placeholder="0"
-                  />
-                )}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Trạng thái</Label>
-              <Controller
-                control={control}
-                name="status"
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {EVENT_STATUSES.map((status) => (
-                        <SelectItem key={status} value={status}>
-                          {STATUS_LABELS[status]}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
+              <Label htmlFor="customerPhone" className="text-xs font-semibold">
+                SĐT khách hàng
+              </Label>
+              <Input id="customerPhone" placeholder="vd: 0912345678" {...register('customerPhone')} />
             </div>
           </div>
+
+          {/* Khối Thông tin Hợp đồng & Tiền cọc */}
+          <div className="p-3.5 rounded-xl border border-border/80 bg-muted/20 space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="contractValue" className="text-xs font-semibold">
+                  Giá trị hợp đồng (Tổng tiền show)
+                </Label>
+                <Controller
+                  control={control}
+                  name="contractValue"
+                  render={({ field }) => (
+                    <MoneyInput
+                      id="contractValue"
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="0 đ"
+                    />
+                  )}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="depositAmount" className="text-xs font-semibold flex items-center justify-between">
+                  <span>Số tiền đã cọc</span>
+                  {Number(contractVal) > 0 && Number(depositVal) > 0 && (
+                    <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400">
+                      {Number(depositVal) >= Number(contractVal)
+                        ? '✓ Đã cọc đủ 100%'
+                        : `Còn lại: ${remainingAmount.toLocaleString('vi-VN')} đ`}
+                    </span>
+                  )}
+                </Label>
+                <Controller
+                  control={control}
+                  name="depositAmount"
+                  render={({ field }) => (
+                    <MoneyInput
+                      id="depositAmount"
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="0 đ"
+                    />
+                  )}
+                />
+              </div>
+            </div>
+          </div>
+
           <div className="space-y-2">
-            <Label htmlFor="description">Mô tả</Label>
-            <Textarea id="description" {...register('description')} />
+            <Label className="text-xs font-semibold">Trạng thái sự kiện</Label>
+            <Controller
+              control={control}
+              name="status"
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {EVENT_STATUSES.map((status) => (
+                      <SelectItem key={status} value={status}>
+                        {STATUS_LABELS[status]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
           </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="description" className="text-xs font-semibold">
+              Ghi chú / Yêu cầu thêm
+            </Label>
+            <Textarea id="description" placeholder="Ghi chú về đạo cụ, trang phục, lịch trình..." {...register('description')} />
+          </div>
+
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Hủy

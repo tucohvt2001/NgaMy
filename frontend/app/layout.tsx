@@ -31,8 +31,11 @@ export const metadata: Metadata = {
     title: "Nga My LSR",
   },
   icons: {
-    icon: "/logo.jpg",
-    apple: "/logo.jpg",
+    icon: [
+      { url: '/logo.jpg', type: 'image/jpeg' },
+    ],
+    shortcut: '/logo.jpg',
+    apple: '/logo.jpg',
   },
 };
 
@@ -44,11 +47,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
+        <link rel="icon" href="/logo.jpg" type="image/jpeg" />
+        <link rel="shortcut icon" href="/logo.jpg" type="image/jpeg" />
+        <link rel="apple-touch-icon" href="/logo.jpg" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Nga My LSR" />
-        <link rel="apple-touch-icon" href="/logo.jpg" />
       </head>
       <body suppressHydrationWarning className="min-h-full flex flex-col">
         <Providers>{children}</Providers>
