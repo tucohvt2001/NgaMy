@@ -1,4 +1,4 @@
-import { apiClient, ApiSuccessResponse } from '@/lib/axios';
+import { publicApiClient, ApiSuccessResponse } from '@/lib/axios';
 
 export interface PublicEventMember {
   id: string;
@@ -48,7 +48,7 @@ export interface PublicScheduleParams {
 
 export const publicScheduleService = {
   async getUpcomingSchedules(params?: PublicScheduleParams) {
-    const res = await apiClient.get<ApiSuccessResponse<PublicScheduleResponse>>('/public/schedules', {
+    const res = await publicApiClient.get<ApiSuccessResponse<PublicScheduleResponse>>('/public/schedules', {
       params,
     });
     return res.data.data;

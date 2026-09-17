@@ -40,6 +40,13 @@ apiClient.interceptors.request.use(
   }
 );
 
+export const publicApiClient = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
 apiClient.interceptors.response.use(
   (response) => {
     useLoadingStore.getState().stopLoading();
@@ -54,7 +61,9 @@ apiClient.interceptors.response.use(
         const isPublicRoute =
           path.startsWith('/login') ||
           path.startsWith('/review') ||
-          path.startsWith('/feedback');
+          path.startsWith('/feedback') ||
+          path.startsWith('/shows') ||
+          path.startsWith('/lich-dien');
         if (!isPublicRoute) {
           window.location.href = '/login';
         }
@@ -63,4 +72,5 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   },
 );
+
 
