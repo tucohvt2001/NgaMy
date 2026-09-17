@@ -15,12 +15,17 @@ import reportRoutes from './report.routes';
 import eventTypeRoutes from './eventType.routes';
 import reviewRoutes from './review.routes';
 import { bankRouter } from './bank.routes';
+import { eventController } from '../controllers/event.controller';
 
 const router = Router();
 
+// ============ PUBLIC ROUTES (Không cần đăng nhập) ============
 router.use('/', healthRoutes);
 router.use('/', authRoutes);
 router.use('/', reviewRoutes);
+router.get('/public/schedules', eventController.getPublicUpcomingEvents);
+
+// ============ PROTECTED ROUTES ============
 router.use('/', accountRoutes);
 router.use('/', memberRoutes);
 router.use('/', teamRoutes);
