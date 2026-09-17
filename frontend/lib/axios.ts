@@ -63,7 +63,9 @@ apiClient.interceptors.response.use(
           path.startsWith('/review') ||
           path.startsWith('/feedback') ||
           path.startsWith('/shows') ||
-          path.startsWith('/lich-dien');
+          path.startsWith('/lich-dien') ||
+          path.startsWith('/dat-show') ||
+          path.startsWith('/booking');
         if (!isPublicRoute) {
           window.location.href = '/login';
         }

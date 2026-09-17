@@ -24,6 +24,7 @@ router.use('/', healthRoutes);
 router.use('/', authRoutes);
 router.use('/', reviewRoutes);
 router.get('/public/schedules', eventController.getPublicUpcomingEvents);
+router.post('/public/booking', eventController.publicBookShow);
 
 // ============ PROTECTED ROUTES ============
 router.use('/', accountRoutes);

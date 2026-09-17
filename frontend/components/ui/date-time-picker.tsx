@@ -211,7 +211,7 @@ export function DateTimePicker({
       </PopoverTrigger>
       <PopoverContent
         align="start"
-        className="w-auto p-0 border border-border/80 shadow-2xl rounded-2xl overflow-hidden bg-card text-card-foreground"
+        className="w-auto p-0 border-2 border-amber-500/40 shadow-2xl rounded-2xl overflow-hidden bg-white dark:bg-neutral-950 text-slate-900 dark:text-white z-[200]"
       >
         <div className="flex flex-col sm:flex-row divide-y sm:divide-y-0 sm:divide-x divide-border/60">
           {/* Calendar Panel (Left) */}

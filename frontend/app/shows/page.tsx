@@ -259,6 +259,16 @@ export default function PublicShowsPage() {
 
           <div className="flex items-center gap-2">
             <Button
+              variant="default"
+              size="sm"
+              asChild
+              className="h-8 text-xs rounded-xl gap-1.5 bg-gradient-to-r from-red-600 to-amber-500 hover:from-red-700 hover:to-amber-600 text-white font-bold shadow-xs shadow-amber-500/20"
+            >
+              <Link href="/dat-show">
+                <span>🏮 Đặt Show / Trang Trí</span>
+              </Link>
+            </Button>
+            <Button
               variant="outline"
               size="sm"
               onClick={() => refetch()}

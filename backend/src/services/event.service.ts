@@ -1,7 +1,7 @@
 import { prisma } from '../config/prisma';
 import { AppError } from '../utils/AppError';
 import { eventRepository } from '../repositories/event.repository';
-import { CreateEventInput, ListEventQuery, UpdateEventInput } from '../validators/event.validator';
+import { CreateEventInput, ListEventQuery, UpdateEventInput, PublicBookingInput } from '../validators/event.validator';
 
 export const eventService = {
   async generateEventCode(targetDate?: Date): Promise<string> {
@@ -313,6 +313,114 @@ export const eventService = {
         thisWeekEventsCount,
       },
       updatedAt: new Date().toISOString(),
+    };
+  },
+
+  // Public: Khách hàng điền form đăng ký đặt show / trang trí lân sư rồng
+  async createPublicBooking(input: PublicBookingInput) {
+    const adminUser =
+      (await prisma.user.findFirst({
+        where: { role: { name: { in: ['SUPER_ADMIN', 'ADMIN'] } } },
+      })) || (await prisma.user.findFirst());
+
+    if (!adminUser) {
+      throw new AppError('Hệ thống chưa thiết lập tài khoản quản trị tiếp nhận lịch', 500);
+    }
+
+    const parsedDate = new Date(input.eventDate);
+    if (isNaN(parsedDate.getTime())) {
+      throw AppError.badRequest('Ngày tổ chức không hợp lệ');
+    }
+
+    let startDateTime: Date | null = null;
+    let endDateTime: Date | null = null;
+
+    if (input.startTime) {
+      if (input.startTime.includes(':') && !input.startTime.includes('T')) {
+        const [hours, minutes] = input.startTime.split(':').map(Number);
+        startDateTime = new Date(parsedDate);
+        startDateTime.setHours(hours || 0, minutes || 0, 0, 0);
+      } else {
+        const d = new Date(input.startTime);
+        if (!isNaN(d.getTime())) startDateTime = d;
+      }
+    }
+
+    if (input.endTime) {
+      if (input.endTime.includes(':') && !input.endTime.includes('T')) {
+        const [hours, minutes] = input.endTime.split(':').map(Number);
+        endDateTime = new Date(parsedDate);
+        endDateTime.setHours(hours || 0, minutes || 0, 0, 0);
+      } else {
+        const d = new Date(input.endTime);
+        if (!isNaN(d.getTime())) endDateTime = d;
+      }
+    }
+
+    let mapLink = input.mapUrl?.trim() || '';
+    if (!mapLink && input.latitude && input.longitude) {
+      mapLink = `https://www.google.com/maps?q=${input.latitude},${input.longitude}`;
+    }
+
+    const fullLocation = mapLink ? `${input.address.trim()} (Bản đồ: ${mapLink})` : input.address.trim();
+
+    const eventCode = await this.generateEventCode(parsedDate);
+    const serviceLabel = input.serviceName || input.serviceType || 'Biểu diễn & Trang trí Lân Sư Rồng';
+    const eventName = `[ĐẶT SHOW] ${input.customerName.trim()} - ${serviceLabel}`;
+
+    const validEventTypes = ['KHAI_TRUONG', 'TRUNG_THU', 'TET', 'DAM_CUOI', 'LE_HOI', 'BIEU_DIEN', 'OTHER'];
+    const eventType = input.serviceType && validEventTypes.includes(input.serviceType) ? input.serviceType : 'OTHER';
+
+    const performancesText =
+      input.performances && input.performances.length > 0 ? input.performances.join(', ') : 'Chưa chỉ định';
+
+    const descriptionParts = [
+      `🏮 YÊU CẦU ĐẶT LỊCH BIỂU DIỄN & TRANG TRÍ (Đăng ký online)`,
+      `👤 Khách hàng / Đơn vị: ${input.customerName.trim()}`,
+      `📞 Số điện thoại: ${input.customerPhone.trim()}${input.customerZalo ? ` | Zalo: ${input.customerZalo.trim()}` : ''}`,
+      input.customerEmail ? `✉️ Email: ${input.customerEmail.trim()}` : null,
+      `🎪 Loại dịch vụ: ${serviceLabel}`,
+      `🎭 Tiết mục & Hạng mục: ${performancesText}`,
+      mapLink ? `📍 Vị trí bản đồ: ${mapLink}` : null,
+      input.estimatedBudget ? `💰 Ngân sách dự kiến: ${Number(input.estimatedBudget).toLocaleString('vi-VN')} VNĐ` : null,
+      input.notes ? `📝 Ghi chú từ khách hàng: ${input.notes.trim()}` : null,
+      `🕒 Thời gian gửi yêu cầu: ${new Date().toLocaleString('vi-VN')}`,
+    ].filter(Boolean);
+
+    const event = await prisma.event.create({
+      data: {
+        eventCode,
+        name: eventName,
+        eventType,
+        eventDate: parsedDate,
+        startTime: startDateTime,
+        endTime: endDateTime,
+        location: fullLocation,
+        customerName: input.customerName.trim(),
+        customerPhone: input.customerPhone.trim(),
+        contractValue: input.estimatedBudget ? Number(input.estimatedBudget) : null,
+        status: 'DRAFT',
+        description: descriptionParts.join('\n'),
+        createdBy: adminUser.id,
+      },
+      select: {
+        id: true,
+        eventCode: true,
+        name: true,
+        eventDate: true,
+        startTime: true,
+        endTime: true,
+        location: true,
+        customerName: true,
+        customerPhone: true,
+        status: true,
+        createdAt: true,
+      },
+    });
+
+    return {
+      booking: event,
+      message: `Đoàn Nghệ Thuật Lân Sư Rồng Nga My Thượng đã nhận được thông tin đặt lịch của quý khách ${input.customerName}! Chúng tôi sẽ liên hệ lại qua số điện thoại ${input.customerPhone} trong thời gian sớm nhất để tư vấn phương án biểu diễn & trang trí tối ưu.`,
     };
   },
 };

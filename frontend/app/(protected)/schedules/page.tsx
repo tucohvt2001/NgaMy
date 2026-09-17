@@ -28,7 +28,9 @@ import {
   FileText,
   MoreHorizontal,
   Globe,
+  MapPin,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   BarChart,
   Bar,
@@ -130,6 +132,17 @@ export default function SchedulesPage() {
     } else {
       createMutation.mutate(values, { onSuccess: () => setFormOpen(false) });
     }
+  };
+
+  const handleApproveEvent = (event: EventItem) => {
+    updateMutation.mutate(
+      { id: event.id, input: { status: 'CONFIRMED' } },
+      {
+        onSuccess: () => {
+          toast.success(`Đã duyệt show "${event.name}" thành công!`);
+        },
+      }
+    );
   };
 
   const filteredItems = data?.items.filter((item) => {
@@ -431,6 +444,80 @@ export default function SchedulesPage() {
       )}
 
       {/* 3. BỘ LỌC TÌM KIẾM & BẢNG LỊCH DIỄN */}
+      {/* 3.1 Quick Status Tabs */}
+      <div className="flex flex-wrap items-center gap-1.5 pb-1">
+        <Button
+          variant={!status ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => {
+            setStatus(undefined);
+            setPage(1);
+          }}
+          className={`h-8 text-xs rounded-xl font-bold ${!status ? 'bg-foreground text-background' : ''}`}
+        >
+          Tất cả ({stats?.totalEvents ?? 0})
+        </Button>
+
+        <Button
+          variant={status === 'DRAFT' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => {
+            setStatus(status === 'DRAFT' ? undefined : 'DRAFT');
+            setPage(1);
+          }}
+          className={`h-8 text-xs rounded-xl font-bold gap-1.5 ${
+            status === 'DRAFT'
+              ? 'bg-amber-500 text-black shadow-xs shadow-amber-500/20'
+              : 'border-amber-500/40 text-amber-800 dark:text-amber-200 hover:bg-amber-500/10'
+          }`}
+        >
+          <span className="size-2 rounded-full bg-amber-500 animate-pulse" />
+          <span>⏳ Show chờ duyệt</span>
+        </Button>
+
+        <Button
+          variant={status === 'CONFIRMED' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => {
+            setStatus(status === 'CONFIRMED' ? undefined : 'CONFIRMED');
+            setPage(1);
+          }}
+          className={`h-8 text-xs rounded-xl font-semibold ${
+            status === 'CONFIRMED' ? 'bg-blue-600 text-white' : ''
+          }`}
+        >
+          ✅ Đã duyệt
+        </Button>
+
+        <Button
+          variant={status === 'IN_PROGRESS' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => {
+            setStatus(status === 'IN_PROGRESS' ? undefined : 'IN_PROGRESS');
+            setPage(1);
+          }}
+          className={`h-8 text-xs rounded-xl font-semibold ${
+            status === 'IN_PROGRESS' ? 'bg-amber-600 text-white' : ''
+          }`}
+        >
+          ⚡ Đang diễn
+        </Button>
+
+        <Button
+          variant={status === 'COMPLETED' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => {
+            setStatus(status === 'COMPLETED' ? undefined : 'COMPLETED');
+            setPage(1);
+          }}
+          className={`h-8 text-xs rounded-xl font-semibold ${
+            status === 'COMPLETED' ? 'bg-emerald-600 text-white' : ''
+          }`}
+        >
+          🟢 Hoàn thành ({stats?.completedEvents ?? 0})
+        </Button>
+      </div>
+
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -538,7 +625,7 @@ export default function SchedulesPage() {
                   <TableHead className="w-44">Thời gian diễn</TableHead>
                   <TableHead className="w-36">Giá trị hợp đồng</TableHead>
                   <TableHead className="w-36">Dự toán quỹ</TableHead>
-                  <TableHead className="w-28">Trạng thái</TableHead>
+                  <TableHead className="w-36">Trạng thái</TableHead>
                   <TableHead className="text-right w-20">Thao tác</TableHead>
                 </TableRow>
               </TableHeader>
@@ -560,9 +647,17 @@ export default function SchedulesPage() {
 
                   const isSettled = (event._count?.transactions ?? 0) > 0 || event.status === 'COMPLETED';
                   const hasDraft = !isSettled && (event._count?.salaryConfigs ?? 0) > 0;
+                  const isDraftBooking = event.status === 'DRAFT';
+
+                  // Tách link bản đồ nếu có trong location
+                  const mapMatch = event.location.match(/https?:\/\/[^\s\)]+/);
+                  const mapLink = mapMatch ? mapMatch[0] : null;
+                  const cleanLocation = event.location.replace(/\(Bản đồ:.*?\)/, '').replace(/\[Bản đồ:.*?\]/, '').trim();
 
                   let rowStyle = 'hover:bg-muted/40 border-l-4 border-l-slate-300 dark:border-l-slate-700';
-                  if (isToday) {
+                  if (isDraftBooking) {
+                    rowStyle = 'bg-amber-500/10 hover:bg-amber-500/15 border-l-4 border-l-amber-500 font-medium';
+                  } else if (isToday) {
                     rowStyle = 'bg-amber-500/15 hover:bg-amber-500/20 border-l-4 border-l-amber-500 font-bold';
                   } else if (isTomorrow) {
                     rowStyle = 'bg-emerald-500/10 hover:bg-emerald-500/15 border-l-4 border-l-emerald-500 font-semibold';
@@ -613,7 +708,21 @@ export default function SchedulesPage() {
                           </div>
                         )}
                       </TableCell>
-                      <TableCell className="text-xs">{event.location}</TableCell>
+                      <TableCell className="text-xs">
+                        <div>{cleanLocation}</div>
+                        {mapLink && (
+                          <a
+                            href={mapLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-[10px] text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1 font-semibold mt-0.5"
+                          >
+                            <MapPin className="size-3 text-red-500" />
+                            Xem vị trí bản đồ
+                          </a>
+                        )}
+                      </TableCell>
                       <TableCell className="text-xs">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="font-semibold text-foreground">
@@ -678,9 +787,29 @@ export default function SchedulesPage() {
                         )}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={event.status === 'CANCELLED' ? 'destructive' : 'secondary'} className="text-[10px]">
-                          {STATUS_LABELS[event.status]}
-                        </Badge>
+                        {isDraftBooking ? (
+                          <div className="flex items-center gap-1.5">
+                            <Badge className="bg-amber-500/20 text-amber-900 dark:text-amber-200 border-amber-500/40 text-[10px] font-bold">
+                              ⏳ Chờ duyệt
+                            </Badge>
+                            <Button
+                              type="button"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleApproveEvent(event);
+                              }}
+                              disabled={updateMutation.isPending}
+                              className="h-6 text-[10px] px-2 rounded-lg font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+                            >
+                              Duyệt
+                            </Button>
+                          </div>
+                        ) : (
+                          <Badge variant={event.status === 'CANCELLED' ? 'destructive' : 'secondary'} className="text-[10px]">
+                            {STATUS_LABELS[event.status]}
+                          </Badge>
+                        )}
                       </TableCell>
                       <TableCell
                         className="text-right"
@@ -701,6 +830,16 @@ export default function SchedulesPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-52">
+                            {isDraftBooking && (
+                              <DropdownMenuItem
+                                onClick={() => handleApproveEvent(event)}
+                                className="cursor-pointer gap-2 font-bold text-emerald-600 dark:text-emerald-400"
+                              >
+                                <CheckCircle2 className="size-4 text-emerald-600" />
+                                <span>Duyệt & Tạo show ngay</span>
+                              </DropdownMenuItem>
+                            )}
+
                             <DropdownMenuItem
                               onClick={() => {
                                 setSettlementEvent(event);
@@ -751,9 +890,9 @@ export default function SchedulesPage() {
                         </DropdownMenu>
                       </TableCell>
                     </TableRow>
-                );
-              })}
-            </TableBody>
+                  );
+                })}
+              </TableBody>
             </Table>
             <PaginationBar
               page={data.pagination.page}

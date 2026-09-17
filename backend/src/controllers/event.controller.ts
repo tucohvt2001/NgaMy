@@ -3,6 +3,7 @@ import { asyncHandler } from '../utils/asyncHandler';
 import { sendSuccess } from '../utils/apiResponse';
 import { eventService } from '../services/event.service';
 import { AppError } from '../utils/AppError';
+import { publicBookingSchema } from '../validators/event.validator';
 
 export const eventController = {
   list: asyncHandler(async (req: Request, res: Response) => {
@@ -41,6 +42,13 @@ export const eventController = {
   getPublicUpcomingEvents: asyncHandler(async (req: Request, res: Response) => {
     const data = await eventService.getPublicUpcomingEvents(req.query as any);
     sendSuccess(res, data, 'Lấy danh sách lịch diễn sắp tới thành công');
+  }),
+
+  // Public: Khách hàng gửi form yêu cầu đặt lịch biểu diễn / trang trí lân sư rồng
+  publicBookShow: asyncHandler(async (req: Request, res: Response) => {
+    const validated = publicBookingSchema.parse(req.body);
+    const result = await eventService.createPublicBooking(validated);
+    sendSuccess(res, result, result.message, 201);
   }),
 };
 
