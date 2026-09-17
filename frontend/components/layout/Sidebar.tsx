@@ -19,6 +19,7 @@ import {
   Coins,
   ReceiptText,
   BarChart3,
+  Globe,
   X,
   ChevronLeft,
   ChevronRight,
@@ -54,6 +55,7 @@ const navGroups: NavGroup[] = [
     items: [
       { href: '/schedules', label: 'Lịch diễn', icon: CalendarDays, permission: 'event:read' },
       { href: '/assignments', label: 'Phân công', icon: ClipboardList, permission: 'assignment:read' },
+      { href: '/shows', label: 'Xem trang công khai', icon: Globe },
       { href: '/attendance', label: 'Chấm công', icon: CheckSquare, permission: 'attendance:read' },
       { href: '/leaves', label: 'Nghỉ phép', icon: FileClock, permission: 'leave:read' },
       { href: '/event-types', label: 'Loại show', icon: CalendarHeart, permission: 'event:read' },

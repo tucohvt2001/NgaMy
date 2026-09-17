@@ -27,6 +27,7 @@ import {
   Star,
   FileText,
   MoreHorizontal,
+  Globe,
 } from 'lucide-react';
 import {
   BarChart,
@@ -154,6 +155,19 @@ export default function SchedulesPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            asChild
+            variant="outline"
+            size="sm"
+            className="gap-1.5 text-xs h-9 rounded-xl border-blue-500/30 text-blue-600 hover:bg-blue-500/10 font-semibold"
+          >
+            <Link href="/shows" target="_blank">
+              <Globe className="size-3.5" />
+              <span className="hidden sm:inline">Trang lịch diễn công khai</span>
+              <span className="sm:hidden">Trang công khai</span>
+            </Link>
+          </Button>
+
           <Button
             variant="outline"
             size="sm"
@@ -470,19 +484,27 @@ export default function SchedulesPage() {
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground px-3 py-2 bg-muted/20 rounded-xl border">
-        <div className="flex flex-wrap items-center gap-4">
-          <span className="font-semibold text-foreground">Thời gian diễn:</span>
-          <span className="flex items-center gap-1.5">
-            <span className="size-2.5 rounded-full bg-emerald-500 inline-block ring-2 ring-emerald-500/20" />
-            <strong className="text-emerald-700 dark:text-emerald-400">Sắp tới</strong>
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="font-bold text-foreground">Màu ưu tiên:</span>
+          <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-300 font-bold border border-amber-500/30">
+            <span className="size-2 rounded-full bg-amber-500 animate-pulse" />
+            Hôm nay
           </span>
-          <span className="flex items-center gap-1.5">
-            <span className="size-2.5 rounded-full bg-amber-500 inline-block ring-2 ring-amber-500/20" />
-            <strong className="text-amber-700 dark:text-amber-400">Hôm nay</strong>
+          <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-semibold border border-emerald-500/30">
+            <span className="size-2 rounded-full bg-emerald-500" />
+            Ngày mai
           </span>
-          <span className="flex items-center gap-1.5">
-            <span className="size-2.5 rounded-full bg-slate-400 inline-block" />
-            <span>Đã qua</span>
+          <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-700 dark:text-blue-300 font-semibold border border-blue-500/30">
+            <span className="size-2 rounded-full bg-blue-500" />
+            2 - 3 ngày
+          </span>
+          <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-700 dark:text-purple-300 font-medium border border-purple-500/30">
+            <span className="size-2 rounded-full bg-purple-500" />
+            Tuần này
+          </span>
+          <span className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-md text-slate-500">
+            <span className="size-2 rounded-full bg-slate-400" />
+            Đã qua
           </span>
         </div>
 
@@ -524,11 +546,33 @@ export default function SchedulesPage() {
                 {filteredItems.map((event) => {
                   const evDate = new Date(event.eventDate);
                   const now = new Date();
-                  const isToday = evDate.toDateString() === now.toDateString();
-                  const isPast = !isToday && evDate.getTime() < now.getTime();
-                  const isUpcoming = !isToday && evDate.getTime() > now.getTime();
+                  
+                  const evMidnight = new Date(evDate.getFullYear(), evDate.getMonth(), evDate.getDate()).getTime();
+                  const nowMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+                  const diffDays = Math.round((evMidnight - nowMidnight) / (1000 * 60 * 60 * 24));
+
+                  const isToday = diffDays === 0;
+                  const isTomorrow = diffDays === 1;
+                  const isNext2to3Days = diffDays >= 2 && diffDays <= 3;
+                  const isThisWeek = diffDays >= 4 && diffDays <= 7;
+                  const isUpcomingLater = diffDays > 7;
+                  const isPast = diffDays < 0;
+
                   const isSettled = (event._count?.transactions ?? 0) > 0 || event.status === 'COMPLETED';
                   const hasDraft = !isSettled && (event._count?.salaryConfigs ?? 0) > 0;
+
+                  let rowStyle = 'hover:bg-muted/40 border-l-4 border-l-slate-300 dark:border-l-slate-700';
+                  if (isToday) {
+                    rowStyle = 'bg-amber-500/15 hover:bg-amber-500/20 border-l-4 border-l-amber-500 font-bold';
+                  } else if (isTomorrow) {
+                    rowStyle = 'bg-emerald-500/10 hover:bg-emerald-500/15 border-l-4 border-l-emerald-500 font-semibold';
+                  } else if (isNext2to3Days) {
+                    rowStyle = 'bg-blue-500/5 hover:bg-blue-500/10 border-l-4 border-l-blue-500 font-medium';
+                  } else if (isThisWeek) {
+                    rowStyle = 'bg-purple-500/5 hover:bg-purple-500/10 border-l-4 border-l-purple-500 font-medium';
+                  } else if (isPast) {
+                    rowStyle = 'opacity-65 hover:opacity-100 bg-muted/20 hover:bg-muted/40 border-l-4 border-l-slate-300 dark:border-l-slate-800';
+                  }
 
                   return (
                     <TableRow
@@ -544,16 +588,10 @@ export default function SchedulesPage() {
                       onMouseUp={handleRowTouchEnd}
                       onMouseLeave={handleRowTouchEnd}
                       title="Nhấp đúp hoặc nhấn giữ để chỉnh sửa sự kiện"
-                      className={`transition-colors cursor-pointer select-none ${
-                        isToday
-                          ? 'bg-amber-500/10 hover:bg-amber-500/15 border-l-4 border-l-amber-500'
-                          : isUpcoming
-                          ? 'bg-emerald-500/5 hover:bg-emerald-500/10 border-l-4 border-l-emerald-500 font-medium'
-                          : 'opacity-75 hover:opacity-100 bg-muted/20 hover:bg-muted/40 border-l-4 border-l-slate-300 dark:border-l-slate-700'
-                      }`}
+                      className={`transition-colors cursor-pointer select-none ${rowStyle}`}
                     >
                       <TableCell className="font-mono text-xs">
-                        <span className={isUpcoming ? 'font-bold text-emerald-700 dark:text-emerald-400' : 'text-muted-foreground'}>
+                        <span className={isToday ? 'font-black text-amber-700 dark:text-amber-300' : isTomorrow ? 'font-bold text-emerald-700 dark:text-emerald-400' : isNext2to3Days ? 'font-semibold text-blue-700 dark:text-blue-400' : 'text-muted-foreground'}>
                           {event.eventCode}
                         </span>
                       </TableCell>
@@ -577,20 +615,32 @@ export default function SchedulesPage() {
                       </TableCell>
                       <TableCell className="text-xs">{event.location}</TableCell>
                       <TableCell className="text-xs">
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="font-semibold text-foreground">
                             {formatDateVN(evDate)}
                           </span>
                           {isToday ? (
-                            <Badge className="bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/40 text-[9px] px-1 py-0 h-4">
-                              Hôm nay
+                            <Badge className="bg-amber-500 text-black font-extrabold text-[9px] px-1.5 py-0 h-4 border-amber-400 animate-pulse">
+                              🔥 Hôm nay
                             </Badge>
-                          ) : isUpcoming ? (
-                            <Badge className="bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 text-[9px] px-1 py-0 h-4">
-                              Sắp tới
+                          ) : isTomorrow ? (
+                            <Badge className="bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 text-[9px] px-1.5 py-0 h-4 font-bold">
+                              ⚡ Ngày mai
+                            </Badge>
+                          ) : isNext2to3Days ? (
+                            <Badge className="bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-500/40 text-[9px] px-1.5 py-0 h-4 font-semibold">
+                              ⏳ Còn {diffDays} ngày
+                            </Badge>
+                          ) : isThisWeek ? (
+                            <Badge className="bg-purple-500/20 text-purple-700 dark:text-purple-300 border-purple-500/40 text-[9px] px-1.5 py-0 h-4">
+                              Tuần này
+                            </Badge>
+                          ) : isUpcomingLater ? (
+                            <Badge variant="outline" className="text-slate-600 dark:text-slate-400 text-[9px] px-1 py-0 h-4">
+                              Sắp tới ({diffDays} ngày)
                             </Badge>
                           ) : (
-                            <Badge variant="outline" className="text-slate-500 text-[9px] px-1 py-0 h-4">
+                            <Badge variant="outline" className="text-slate-400 text-[9px] px-1 py-0 h-4">
                               Đã qua
                             </Badge>
                           )}

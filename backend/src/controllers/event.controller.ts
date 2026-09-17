@@ -36,4 +36,11 @@ export const eventController = {
     const stats = await eventService.getStats(year);
     sendSuccess(res, stats, 'Lấy thống kê biểu đồ lịch diễn thành công');
   }),
+
+  // Public: Lấy danh sách lịch diễn sắp tới cho toàn đội không cần đăng nhập
+  getPublicUpcomingEvents: asyncHandler(async (req: Request, res: Response) => {
+    const data = await eventService.getPublicUpcomingEvents(req.query as any);
+    sendSuccess(res, data, 'Lấy danh sách lịch diễn sắp tới thành công');
+  }),
 };
+

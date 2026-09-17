@@ -15,6 +15,21 @@ import {
 import { PERMISSIONS } from '../types/enums';
 
 const router = Router();
+
+// ============ PUBLIC ROUTES (Không cần đăng nhập) ============
+
+/**
+ * @openapi
+ * /public/schedules:
+ *   get:
+ *     summary: Lấy danh sách lịch diễn sắp tới công khai cho toàn đội
+ *     tags: [Events]
+ *     responses:
+ *       200: { description: Danh sách lịch diễn sắp tới }
+ */
+router.get('/public/schedules', eventController.getPublicUpcomingEvents);
+
+// ============ PROTECTED ROUTES (Yêu cầu đăng nhập & phân quyền) ============
 router.use(authenticate);
 
 /**

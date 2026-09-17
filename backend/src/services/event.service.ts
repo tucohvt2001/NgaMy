@@ -203,4 +203,117 @@ export const eventService = {
       ],
     };
   },
+
+  /**
+   * Lấy danh sách lịch diễn sắp tới công khai cho toàn đội (không cần đăng nhập, bảo mật thông tin tài chính)
+   */
+  async getPublicUpcomingEvents(query?: { search?: string; filter?: 'all' | 'today' | 'week' | 'month' }) {
+    const now = new Date();
+    // Lấy từ đầu ngày hôm nay (00:00:00) theo giờ địa phương
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+    // Tính đầu tuần / cuối tuần này
+    const dayOfWeek = now.getDay();
+    const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToMonday, 0, 0, 0, 0);
+    const endOfWeek = new Date(startOfWeek.getTime() + 7 * 24 * 60 * 60 * 1000 - 1);
+
+    // Đầu tháng / cuối tháng này
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+
+    let dateFilter: any = { gte: startOfToday };
+    if (query?.filter === 'today') {
+      dateFilter = { gte: startOfToday, lte: endOfToday };
+    } else if (query?.filter === 'week') {
+      dateFilter = { gte: startOfToday, lte: endOfWeek };
+    } else if (query?.filter === 'month') {
+      dateFilter = { gte: startOfToday, lte: endOfMonth };
+    }
+
+    const where: any = {
+      eventDate: dateFilter,
+      status: { notIn: ['CANCELLED'] },
+    };
+
+    if (query?.search?.trim()) {
+      const q = query.search.trim();
+      where.OR = [
+        { name: { contains: q, mode: 'insensitive' } },
+        { location: { contains: q, mode: 'insensitive' } },
+        { eventCode: { contains: q, mode: 'insensitive' } },
+        { description: { contains: q, mode: 'insensitive' } },
+        {
+          eventMembers: {
+            some: {
+              member: {
+                fullName: { contains: q, mode: 'insensitive' },
+              },
+            },
+          },
+        },
+      ];
+    }
+
+    const events = await prisma.event.findMany({
+      where,
+      select: {
+        id: true,
+        eventCode: true,
+        name: true,
+        eventType: true,
+        eventDate: true,
+        startTime: true,
+        endTime: true,
+        location: true,
+        description: true,
+        status: true,
+        eventMembers: {
+          select: {
+            id: true,
+            status: true,
+            note: true,
+            position: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            member: {
+              select: {
+                id: true,
+                fullName: true,
+                avatar: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { eventDate: 'asc' },
+    });
+
+    // Thống kê nhanh
+    const totalUpcoming = events.length;
+    const todayEventsCount = events.filter((e) => {
+      const d = new Date(e.eventDate);
+      return d >= startOfToday && d <= endOfToday;
+    }).length;
+
+    const thisWeekEventsCount = events.filter((e) => {
+      const d = new Date(e.eventDate);
+      return d >= startOfToday && d <= endOfWeek;
+    }).length;
+
+    return {
+      events,
+      stats: {
+        totalUpcoming,
+        todayEventsCount,
+        thisWeekEventsCount,
+      },
+      updatedAt: new Date().toISOString(),
+    };
+  },
 };
+
