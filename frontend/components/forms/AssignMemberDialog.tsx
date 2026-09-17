@@ -451,9 +451,9 @@ export function AssignMemberDialog({
                       .map((p) => p.name);
 
                     return (
-                      <div key={row.id} className="grid grid-cols-12 gap-2 p-2.5 items-center hover:bg-muted/20">
+                      <div key={row.id} className="grid grid-cols-12 gap-2 p-2.5 items-start hover:bg-muted/20">
                         {/* STT */}
-                        <div className="col-span-1 text-center text-xs text-muted-foreground font-medium">
+                        <div className="col-span-1 h-9 flex items-center justify-center text-xs text-muted-foreground font-medium">
                           {idx + 1}
                         </div>
 
@@ -486,7 +486,7 @@ export function AssignMemberDialog({
                             </SelectContent>
                           </Select>
                           {selectedMember?.teams && selectedMember.teams.length > 0 && (
-                            <span className="text-[10px] text-muted-foreground block truncate mt-0.5">
+                            <span className="text-[10px] text-muted-foreground block truncate mt-1 px-1">
                               {selectedMember.teams.map((t) => t.name).join(', ')}
                             </span>
                           )}
@@ -592,7 +592,7 @@ export function AssignMemberDialog({
                         </div>
 
                         {/* Nút xóa dòng */}
-                        <div className="col-span-1 text-right">
+                        <div className="col-span-1 h-9 flex items-center justify-end">
                           <Button
                             type="button"
                             variant="ghost"

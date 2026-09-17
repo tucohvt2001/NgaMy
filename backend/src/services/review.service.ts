@@ -99,7 +99,7 @@ export const reviewService = {
 
     return {
       review,
-      message: `Đoàn Nghệ Thuật Lân Sư Rồng Nga My Thượng xin chân thành cảm ơn quý khách ${input.customerName}! Sự hài lòng của quý khách là niềm tự hào to lớn của toàn thể anh em trong đoàn. Kính chúc quý khách tài lộc, bình an và vạn sự cát tường!`,
+      message: `Đoàn Nghệ Thuật Lân Sư Rồng Nga My Thượng xin chân thành cảm ơn quý khách ${input.customerName}! Sự hài lòng của quý khách là niềm tự hào to lớn của toàn thể thành viên trong đoàn. Kính chúc quý khách tài lộc, bình an và vạn sự cát tường!`,
     };
   },
 

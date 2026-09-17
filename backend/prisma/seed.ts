@@ -419,7 +419,7 @@ async function main(): Promise<void> {
       paymentMethod: 'CASH',
       status: 'COMPLETED',
       payerOrReceiver: 'Nhà xe Minh Quân & Quán ăn Hoa Mai',
-      description: 'Tiền xe và ăn tối cho đoàn 15 anh em sau show diễn',
+      description: 'Tiền xe và ăn tối cho đoàn 15 thành viên sau show diễn',
       createdBy: adminUser.id,
     },
     {

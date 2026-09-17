@@ -56,7 +56,7 @@ interface PriorityInfo {
 function getEventPriorityInfo(dateStr: string): PriorityInfo {
   const evDate = new Date(dateStr);
   const now = new Date();
-  
+
   const evMidnight = new Date(evDate.getFullYear(), evDate.getMonth(), evDate.getDate()).getTime();
   const nowMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
   const diffDays = Math.round((evMidnight - nowMidnight) / (1000 * 60 * 60 * 24));
@@ -198,10 +198,10 @@ export default function PublicShowsPage() {
 
     const memberLines =
       event.eventMembers && event.eventMembers.length > 0
-        ? `\n👥 QUÂN SỐ BIỂU DIỄN (${event.eventMembers.length} anh em):\n` +
-          event.eventMembers
-            .map((m, idx) => `  ${idx + 1}. ${m.member.fullName} [${m.position.name}]`)
-            .join('\n')
+        ? `\n👥 QUÂN SỐ BIỂU DIỄN (${event.eventMembers.length} thành viên):\n` +
+        event.eventMembers
+          .map((m, idx) => `  ${idx + 1}. ${m.member.fullName} [${m.position.name}]`)
+          .join('\n')
         : '';
 
     const shareText =
@@ -334,11 +334,10 @@ export default function PublicShowsPage() {
               variant={filter === 'all' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setFilter('all')}
-              className={`h-8 text-xs rounded-xl px-3 font-bold shrink-0 ${
-                filter === 'all'
-                  ? 'bg-gradient-to-r from-red-600 to-amber-500 text-white shadow-sm shadow-amber-500/20'
-                  : 'border-border/80'
-              }`}
+              className={`h-8 text-xs rounded-xl px-3 font-bold shrink-0 ${filter === 'all'
+                ? 'bg-gradient-to-r from-red-600 to-amber-500 text-white shadow-sm shadow-amber-500/20'
+                : 'border-border/80'
+                }`}
             >
               Tất cả ({stats.totalUpcoming})
             </Button>
@@ -346,11 +345,10 @@ export default function PublicShowsPage() {
               variant={filter === 'today' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setFilter('today')}
-              className={`h-8 text-xs rounded-xl px-3 font-bold shrink-0 ${
-                filter === 'today'
-                  ? 'bg-red-600 text-white shadow-sm shadow-red-500/30'
-                  : 'border-red-500/30 text-red-600 dark:text-red-400'
-              }`}
+              className={`h-8 text-xs rounded-xl px-3 font-bold shrink-0 ${filter === 'today'
+                ? 'bg-red-600 text-white shadow-sm shadow-red-500/30'
+                : 'border-red-500/30 text-red-600 dark:text-red-400'
+                }`}
             >
               🔥 Hôm nay ({stats.todayEventsCount})
             </Button>
@@ -358,11 +356,10 @@ export default function PublicShowsPage() {
               variant={filter === 'week' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setFilter('week')}
-              className={`h-8 text-xs rounded-xl px-3 font-bold shrink-0 ${
-                filter === 'week'
-                  ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-500/30'
-                  : 'border-border/80'
-              }`}
+              className={`h-8 text-xs rounded-xl px-3 font-bold shrink-0 ${filter === 'week'
+                ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-500/30'
+                : 'border-border/80'
+                }`}
             >
               ⚡ Tuần này ({stats.thisWeekEventsCount})
             </Button>
@@ -370,11 +367,10 @@ export default function PublicShowsPage() {
               variant={filter === 'month' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setFilter('month')}
-              className={`h-8 text-xs rounded-xl px-3 font-bold shrink-0 ${
-                filter === 'month'
-                  ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/30'
-                  : 'border-border/80'
-              }`}
+              className={`h-8 text-xs rounded-xl px-3 font-bold shrink-0 ${filter === 'month'
+                ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/30'
+                : 'border-border/80'
+                }`}
             >
               📅 Tháng này
             </Button>
@@ -386,7 +382,7 @@ export default function PublicShowsPage() {
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Tìm tên show, địa chỉ, anh em tham gia..."
+              placeholder="Tìm tên show, địa chỉ, thành viên tham gia..."
               className="h-8 pl-8 text-xs rounded-xl bg-card border-amber-500/30 focus-visible:ring-amber-500 w-full"
             />
           </div>
@@ -560,7 +556,7 @@ export default function PublicShowsPage() {
                         <div className="flex items-center justify-between text-xs">
                           <span className="font-black text-foreground flex items-center gap-1.5">
                             <Users className="size-4 text-amber-500" />
-                            Quân số xuất trận ({event.eventMembers.length} anh em):
+                            Quân số xuất trận ({event.eventMembers.length} thành viên):
                           </span>
                         </div>
 
