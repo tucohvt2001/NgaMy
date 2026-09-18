@@ -1,7 +1,18 @@
 'use client';
 
 import * as React from 'react';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, X, Sparkles, ArrowRight, Check } from 'lucide-react';
+import {
+  Calendar as CalendarIcon,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  X,
+  Sparkles,
+  ArrowRight,
+  Check,
+  Plus,
+  Minus,
+} from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -19,6 +30,8 @@ interface EventTimeRangePickerProps {
 const HOURS_24 = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
 const MINUTES = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
 const WEEKDAYS = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+
+const QUICK_TIMES = ['08:00', '09:00', '14:00', '16:00', '18:00', '19:30', '20:00'];
 
 export function EventTimeRangePicker({
   startDateIso,
@@ -80,7 +93,7 @@ export function EventTimeRangePicker({
   const endHourRef = React.useRef<HTMLDivElement>(null);
   const endMinRef = React.useRef<HTMLDivElement>(null);
 
-  // Auto scroll when popover opens, mobileStep changes, or activeTab changes
+  // Auto scroll in desktop lists
   React.useEffect(() => {
     if (open) {
       const timer = setTimeout(() => {
@@ -186,7 +199,6 @@ export function EventTimeRangePicker({
       nextEnd.setHours(parsedEnd.getHours(), parsedEnd.getMinutes(), 0, 0);
     }
     emitChange(d, nextEnd);
-    // On mobile, auto-advance to time step after picking a day
     setMobileStep('time');
   };
 
@@ -236,6 +248,32 @@ export function EventTimeRangePicker({
     emitChange(start, newEnd);
   };
 
+  // Adjust hours by delta (+1 / -1)
+  const adjustHour = (target: 'start' | 'end', delta: number) => {
+    if (target === 'start') {
+      const current = parseInt(startHour, 10) || 0;
+      const next = (current + delta + 24) % 24;
+      handleSelectStartHour(String(next).padStart(2, '0'));
+    } else {
+      const current = parseInt(endHour || startHour, 10) || 0;
+      const next = (current + delta + 24) % 24;
+      handleSelectEndHour(String(next).padStart(2, '0'));
+    }
+  };
+
+  // Adjust minutes by delta (+5 / -5 / +15)
+  const adjustMinute = (target: 'start' | 'end', delta: number) => {
+    if (target === 'start') {
+      const current = parseInt(startMinute, 10) || 0;
+      const next = (current + delta + 60) % 60;
+      handleSelectStartMinute(String(next).padStart(2, '0'));
+    } else {
+      const current = parseInt(endMinute || startMinute, 10) || 0;
+      const next = (current + delta + 60) % 60;
+      handleSelectEndMinute(String(next).padStart(2, '0'));
+    }
+  };
+
   const handleAddDuration = (minutesToAdd: number) => {
     const base = parsedStart || new Date(viewYear, viewMonth, selectedDay || new Date().getDate());
     const start = new Date(base);
@@ -244,6 +282,28 @@ export function EventTimeRangePicker({
     const newEnd = new Date(start.getTime() + minutesToAdd * 60 * 1000);
     emitChange(start, newEnd);
     setActiveTab('end');
+  };
+
+  const handleApplyQuickTime = (timeStr: string) => {
+    const [h, m] = timeStr.split(':');
+    if (activeTab === 'start') {
+      const base = parsedStart || new Date(viewYear, viewMonth, selectedDay || new Date().getDate());
+      const newStart = new Date(base);
+      newStart.setHours(parseInt(h, 10), parseInt(m, 10), 0, 0);
+
+      let nextEnd = parsedEnd;
+      if (parsedEnd) {
+        nextEnd = new Date(newStart);
+        nextEnd.setHours(parsedEnd.getHours(), parsedEnd.getMinutes(), 0, 0);
+      }
+      emitChange(newStart, nextEnd);
+    } else {
+      const base = parsedStart || new Date(viewYear, viewMonth, selectedDay || new Date().getDate());
+      const newEnd = new Date(base);
+      newEnd.setHours(parseInt(h, 10), parseInt(m, 10), 0, 0);
+      const start = parsedStart || base;
+      emitChange(start, newEnd);
+    }
   };
 
   const handleClearEndTime = () => {
@@ -279,8 +339,11 @@ export function EventTimeRangePicker({
     return `${day}/${month}/${year}  •  ${sh}:${sm}`;
   }, [parsedStart, parsedEnd]);
 
+  const currentDisplayHour = activeTab === 'start' ? startHour : (endHour || startHour);
+  const currentDisplayMin = activeTab === 'start' ? startMinute : (endMinute || startMinute);
+
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover modal={false} open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
           type="button"
@@ -520,132 +583,251 @@ export function EventTimeRangePicker({
               )}
             </div>
 
-            {/* Active Time Selector with touch-pan-y */}
-            {activeTab === 'start' ? (
-              <div className="flex flex-col flex-1">
-                <div className="text-[11px] font-semibold text-muted-foreground text-center mb-1">
-                  Chọn giờ bắt đầu
-                </div>
-                <div className="grid grid-cols-2 gap-2 flex-1">
-                  {/* Hours */}
-                  <div className="flex flex-col">
-                    <span className="text-[10px] text-center font-medium text-muted-foreground mb-1">Giờ</span>
-                    <div
-                      ref={startHourRef}
-                      className="h-[160px] sm:h-[155px] overflow-y-auto pr-1 space-y-1 touch-pan-y overscroll-contain"
-                      style={{ WebkitOverflowScrolling: 'touch' }}
+            {/* MOBILE INTERACTIVE WHEEL & STEPPER (Displayed on mobile screens) */}
+            <div className="sm:hidden p-3 bg-background/80 border border-border/80 rounded-2xl mb-2.5 shadow-inner">
+              <div className="text-[11px] text-center font-bold text-muted-foreground mb-2">
+                {activeTab === 'start' ? 'Chạm số để chọn giờ bắt đầu' : 'Chạm số để chọn giờ kết thúc'}
+              </div>
+              <div className="flex items-center justify-center gap-4">
+                {/* Hour Stepper with Native Wheel Dropdown */}
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground">Giờ (00-23)</span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => adjustHour(activeTab, -1)}
+                      className="size-8 rounded-lg bg-muted hover:bg-muted/80 text-foreground flex items-center justify-center font-bold active:scale-90 transition-transform"
                     >
-                      {HOURS_24.map((h) => {
-                        const isSel = h === startHour;
-                        return (
-                          <button
-                            key={h}
-                            type="button"
-                            data-selected={isSel}
-                            onClick={() => handleSelectStartHour(h)}
-                            className={cn(
-                              'w-full py-1 text-center font-mono text-xs rounded-md transition-colors',
-                              isSel ? 'bg-amber-600 text-white font-bold' : 'hover:bg-amber-500/15 text-foreground'
-                            )}
-                          >
-                            {h}
-                          </button>
-                        );
-                      })}
+                      <Minus className="size-3.5" />
+                    </button>
+                    <div className="relative">
+                      <div className="size-12 rounded-xl bg-amber-500/15 border-2 border-amber-500/50 flex items-center justify-center font-mono text-2xl font-black text-amber-600 dark:text-amber-400 shadow-sm">
+                        {currentDisplayHour}
+                      </div>
+                      <select
+                        aria-label="Chọn giờ"
+                        value={currentDisplayHour}
+                        onChange={(e) => {
+                          if (activeTab === 'start') handleSelectStartHour(e.target.value);
+                          else handleSelectEndHour(e.target.value);
+                        }}
+                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full text-base"
+                      >
+                        {HOURS_24.map((h) => (
+                          <option key={h} value={h}>
+                            {h} giờ
+                          </option>
+                        ))}
+                      </select>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => adjustHour(activeTab, 1)}
+                      className="size-8 rounded-lg bg-muted hover:bg-muted/80 text-foreground flex items-center justify-center font-bold active:scale-90 transition-transform"
+                    >
+                      <Plus className="size-3.5" />
+                    </button>
                   </div>
-                  {/* Minutes */}
-                  <div className="flex flex-col">
-                    <span className="text-[10px] text-center font-medium text-muted-foreground mb-1">Phút</span>
-                    <div
-                      ref={startMinRef}
-                      className="h-[160px] sm:h-[155px] overflow-y-auto pr-1 space-y-1 touch-pan-y overscroll-contain"
-                      style={{ WebkitOverflowScrolling: 'touch' }}
+                </div>
+
+                <div className="text-2xl font-black font-mono text-muted-foreground mt-4">:</div>
+
+                {/* Minute Stepper with Native Wheel Dropdown */}
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground">Phút (00-59)</span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => adjustMinute(activeTab, -5)}
+                      className="size-8 rounded-lg bg-muted hover:bg-muted/80 text-foreground flex items-center justify-center font-bold active:scale-90 transition-transform"
                     >
-                      {MINUTES.map((m) => {
-                        const isSel = m === startMinute;
-                        return (
-                          <button
-                            key={m}
-                            type="button"
-                            data-selected={isSel}
-                            onClick={() => handleSelectStartMinute(m)}
-                            className={cn(
-                              'w-full py-1 text-center font-mono text-xs rounded-md transition-colors',
-                              isSel ? 'bg-amber-600 text-white font-bold' : 'hover:bg-amber-500/15 text-foreground'
-                            )}
-                          >
-                            {m}
-                          </button>
-                        );
-                      })}
+                      <Minus className="size-3.5" />
+                    </button>
+                    <div className="relative">
+                      <div className="size-12 rounded-xl bg-amber-500/15 border-2 border-amber-500/50 flex items-center justify-center font-mono text-2xl font-black text-amber-600 dark:text-amber-400 shadow-sm">
+                        {currentDisplayMin}
+                      </div>
+                      <select
+                        aria-label="Chọn phút"
+                        value={currentDisplayMin}
+                        onChange={(e) => {
+                          if (activeTab === 'start') handleSelectStartMinute(e.target.value);
+                          else handleSelectEndMinute(e.target.value);
+                        }}
+                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full text-base"
+                      >
+                        {MINUTES.map((m) => (
+                          <option key={m} value={m}>
+                            {m} phút
+                          </option>
+                        ))}
+                      </select>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => adjustMinute(activeTab, 5)}
+                      className="size-8 rounded-lg bg-muted hover:bg-muted/80 text-foreground flex items-center justify-center font-bold active:scale-90 transition-transform"
+                    >
+                      <Plus className="size-3.5" />
+                    </button>
                   </div>
                 </div>
               </div>
-            ) : (
-              <div className="flex flex-col flex-1">
-                <div className="text-[11px] font-semibold text-muted-foreground text-center mb-1">
-                  Chọn giờ kết thúc (dự kiến)
-                </div>
-                <div className="grid grid-cols-2 gap-2 flex-1">
-                  {/* End Hours */}
-                  <div className="flex flex-col">
-                    <span className="text-[10px] text-center font-medium text-muted-foreground mb-1">Giờ</span>
-                    <div
-                      ref={endHourRef}
-                      className="h-[160px] sm:h-[155px] overflow-y-auto pr-1 space-y-1 touch-pan-y overscroll-contain"
-                      style={{ WebkitOverflowScrolling: 'touch' }}
+
+              {/* Quick Pick Time Chips on Mobile */}
+              <div className="mt-3 pt-2 border-t border-border/50">
+                <div className="text-[10px] font-bold text-muted-foreground mb-1.5 text-center">Khung giờ phổ biến:</div>
+                <div className="flex items-center justify-center gap-1 flex-wrap">
+                  {QUICK_TIMES.map((qt) => (
+                    <button
+                      key={qt}
+                      type="button"
+                      onClick={() => handleApplyQuickTime(qt)}
+                      className="text-[11px] font-mono font-bold bg-muted hover:bg-amber-500/20 px-2 py-0.5 rounded-md border border-border/60 transition-colors"
                     >
-                      {HOURS_24.map((h) => {
-                        const isSel = h === endHour;
-                        return (
-                          <button
-                            key={h}
-                            type="button"
-                            data-selected={isSel}
-                            onClick={() => handleSelectEndHour(h)}
-                            className={cn(
-                              'w-full py-1 text-center font-mono text-xs rounded-md transition-colors',
-                              isSel ? 'bg-blue-600 text-white font-bold' : 'hover:bg-blue-500/15 text-foreground'
-                            )}
-                          >
-                            {h}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                  {/* End Minutes */}
-                  <div className="flex flex-col">
-                    <span className="text-[10px] text-center font-medium text-muted-foreground mb-1">Phút</span>
-                    <div
-                      ref={endMinRef}
-                      className="h-[160px] sm:h-[155px] overflow-y-auto pr-1 space-y-1 touch-pan-y overscroll-contain"
-                      style={{ WebkitOverflowScrolling: 'touch' }}
-                    >
-                      {MINUTES.map((m) => {
-                        const isSel = m === endMinute;
-                        return (
-                          <button
-                            key={m}
-                            type="button"
-                            data-selected={isSel}
-                            onClick={() => handleSelectEndMinute(m)}
-                            className={cn(
-                              'w-full py-1 text-center font-mono text-xs rounded-md transition-colors',
-                              isSel ? 'bg-blue-600 text-white font-bold' : 'hover:bg-blue-500/15 text-foreground'
-                            )}
-                          >
-                            {m}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
+                      {qt}
+                    </button>
+                  ))}
                 </div>
               </div>
-            )}
+            </div>
+
+            {/* DESKTOP 24H SCROLL LISTS (Displayed on desktop/tablet) */}
+            <div className="hidden sm:flex flex-col flex-1">
+              {activeTab === 'start' ? (
+                <div className="flex flex-col flex-1">
+                  <div className="text-[11px] font-semibold text-muted-foreground text-center mb-1">
+                    Chọn giờ bắt đầu
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 flex-1">
+                    {/* Hours */}
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-center font-medium text-muted-foreground mb-1">Giờ</span>
+                      <div
+                        ref={startHourRef}
+                        onTouchStart={(e) => e.stopPropagation()}
+                        onTouchMove={(e) => e.stopPropagation()}
+                        className="h-[155px] overflow-y-auto pr-1 space-y-1 touch-pan-y overscroll-contain"
+                        style={{ WebkitOverflowScrolling: 'touch' }}
+                      >
+                        {HOURS_24.map((h) => {
+                          const isSel = h === startHour;
+                          return (
+                            <button
+                              key={h}
+                              type="button"
+                              data-selected={isSel}
+                              onClick={() => handleSelectStartHour(h)}
+                              className={cn(
+                                'w-full py-0.5 text-center font-mono text-xs rounded-md transition-colors',
+                                isSel ? 'bg-amber-600 text-white font-bold' : 'hover:bg-amber-500/15 text-foreground'
+                              )}
+                            >
+                              {h}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    {/* Minutes */}
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-center font-medium text-muted-foreground mb-1">Phút</span>
+                      <div
+                        ref={startMinRef}
+                        onTouchStart={(e) => e.stopPropagation()}
+                        onTouchMove={(e) => e.stopPropagation()}
+                        className="h-[155px] overflow-y-auto pr-1 space-y-1 touch-pan-y overscroll-contain"
+                        style={{ WebkitOverflowScrolling: 'touch' }}
+                      >
+                        {MINUTES.map((m) => {
+                          const isSel = m === startMinute;
+                          return (
+                            <button
+                              key={m}
+                              type="button"
+                              data-selected={isSel}
+                              onClick={() => handleSelectStartMinute(m)}
+                              className={cn(
+                                'w-full py-0.5 text-center font-mono text-xs rounded-md transition-colors',
+                                isSel ? 'bg-amber-600 text-white font-bold' : 'hover:bg-amber-500/15 text-foreground'
+                              )}
+                            >
+                              {m}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col flex-1">
+                  <div className="text-[11px] font-semibold text-muted-foreground text-center mb-1">
+                    Chọn giờ kết thúc (dự kiến)
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 flex-1">
+                    {/* End Hours */}
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-center font-medium text-muted-foreground mb-1">Giờ</span>
+                      <div
+                        ref={endHourRef}
+                        onTouchStart={(e) => e.stopPropagation()}
+                        onTouchMove={(e) => e.stopPropagation()}
+                        className="h-[155px] overflow-y-auto pr-1 space-y-1 touch-pan-y overscroll-contain"
+                        style={{ WebkitOverflowScrolling: 'touch' }}
+                      >
+                        {HOURS_24.map((h) => {
+                          const isSel = h === endHour;
+                          return (
+                            <button
+                              key={h}
+                              type="button"
+                              data-selected={isSel}
+                              onClick={() => handleSelectEndHour(h)}
+                              className={cn(
+                                'w-full py-0.5 text-center font-mono text-xs rounded-md transition-colors',
+                                isSel ? 'bg-blue-600 text-white font-bold' : 'hover:bg-blue-500/15 text-foreground'
+                              )}
+                            >
+                              {h}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    {/* End Minutes */}
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-center font-medium text-muted-foreground mb-1">Phút</span>
+                      <div
+                        ref={endMinRef}
+                        onTouchStart={(e) => e.stopPropagation()}
+                        onTouchMove={(e) => e.stopPropagation()}
+                        className="h-[155px] overflow-y-auto pr-1 space-y-1 touch-pan-y overscroll-contain"
+                        style={{ WebkitOverflowScrolling: 'touch' }}
+                      >
+                        {MINUTES.map((m) => {
+                          const isSel = m === endMinute;
+                          return (
+                            <button
+                              key={m}
+                              type="button"
+                              data-selected={isSel}
+                              onClick={() => handleSelectEndMinute(m)}
+                              className={cn(
+                                'w-full py-0.5 text-center font-mono text-xs rounded-md transition-colors',
+                                isSel ? 'bg-blue-600 text-white font-bold' : 'hover:bg-blue-500/15 text-foreground'
+                              )}
+                            >
+                              {m}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Bottom action bar */}
             <div className="pt-2 mt-2 border-t border-border/40 flex items-center justify-between">

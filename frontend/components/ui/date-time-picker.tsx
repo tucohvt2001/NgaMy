@@ -191,7 +191,7 @@ export function DateTimePicker({
   }, [parsedDate]);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover modal={false} open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
           type="button"
@@ -211,7 +211,8 @@ export function DateTimePicker({
       </PopoverTrigger>
       <PopoverContent
         align="start"
-        className="w-auto p-0 border-2 border-amber-500/40 shadow-2xl rounded-2xl overflow-hidden bg-white dark:bg-neutral-950 text-slate-900 dark:text-white z-[200]"
+        sideOffset={4}
+        className="w-[calc(100vw-32px)] sm:w-auto p-0 border-2 border-amber-500/40 shadow-2xl rounded-2xl overflow-hidden bg-white dark:bg-neutral-950 text-slate-900 dark:text-white z-[200] max-h-[85vh] sm:max-h-none overflow-y-auto"
       >
         <div className="flex flex-col sm:flex-row divide-y sm:divide-y-0 sm:divide-x divide-border/60">
           {/* Calendar Panel (Left) */}
@@ -315,7 +316,10 @@ export function DateTimePicker({
                 </span>
                 <div
                   ref={hourScrollRef}
-                  className="h-[200px] overflow-y-auto pr-1 space-y-1 scrollbar-thin"
+                  onTouchStart={(e) => e.stopPropagation()}
+                  onTouchMove={(e) => e.stopPropagation()}
+                  className="h-[200px] overflow-y-auto pr-1 space-y-1 scrollbar-thin touch-pan-y overscroll-contain"
+                  style={{ WebkitOverflowScrolling: 'touch' }}
                 >
                   {HOURS_24.map((h) => {
                     const isSel = h === selectedHour;
@@ -346,7 +350,10 @@ export function DateTimePicker({
                 </span>
                 <div
                   ref={minuteScrollRef}
-                  className="h-[200px] overflow-y-auto pr-1 space-y-1 scrollbar-thin"
+                  onTouchStart={(e) => e.stopPropagation()}
+                  onTouchMove={(e) => e.stopPropagation()}
+                  className="h-[200px] overflow-y-auto pr-1 space-y-1 scrollbar-thin touch-pan-y overscroll-contain"
+                  style={{ WebkitOverflowScrolling: 'touch' }}
                 >
                   {MINUTES.map((m) => {
                     const isSel = m === selectedMinute;
