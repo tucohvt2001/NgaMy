@@ -524,6 +524,7 @@ export default function PublicShowsPage() {
                           <div>
                             <p className="font-black text-lg tracking-tight">
                               {formatTime24h(evDate)}
+                              {event.endTime ? ` - ${formatTime24h(new Date(event.endTime))}` : ''}
                             </p>
                             <p className="text-xs font-semibold capitalize opacity-95">
                               {formatDisplayDateWithWeekday24h(evDate)}

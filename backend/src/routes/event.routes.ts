@@ -81,17 +81,33 @@ router.get('/events/stats', authorize(PERMISSIONS.EVENT_READ), eventController.s
  *     responses:
  *       200: { description: Cập nhật thành công }
  *   delete:
- *     summary: Hủy sự kiện
+ *     summary: Xóa sự kiện
  *     tags: [Events]
  *     security: [{ bearerAuth: [] }]
  *     responses:
- *       200: { description: Hủy thành công }
+ *       200: { description: Xóa thành công }
  */
 router
   .route('/events/:id')
   .get(authorize(PERMISSIONS.EVENT_READ), eventController.getById)
   .put(authorize(PERMISSIONS.EVENT_UPDATE), validate({ body: updateEventSchema }), eventController.update)
   .delete(authorize(PERMISSIONS.EVENT_DELETE), eventController.remove);
+
+/**
+ * @openapi
+ * /events/{id}/cancel:
+ *   post:
+ *     summary: Hủy sự kiện (chỉ cho phép khi chưa phân công và chưa dự toán)
+ *     tags: [Events]
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200: { description: Hủy sự kiện thành công }
+ */
+router.post(
+  '/events/:id/cancel',
+  authorize(PERMISSIONS.EVENT_UPDATE),
+  eventController.cancel
+);
 
 /**
  * @openapi

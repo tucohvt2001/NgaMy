@@ -50,22 +50,22 @@ export default function PublicBookingPage() {
         </div>
       </header>
 
-      {/* 3. MAIN FORM CARD GỌN GÀNG */}
-      <main className="relative z-10 flex-1 max-w-2xl w-full mx-auto px-4 py-6 sm:py-8 space-y-3">
-        <div className="text-center space-y-1">
-          <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-gradient-to-r from-red-600/30 via-amber-500/30 to-red-600/30 border border-amber-400/50 text-yellow-300 text-xs font-bold backdrop-blur-md">
-            <Flame className="size-3 text-red-500 fill-red-500" />
+      {/* 3. MAIN FORM CARD RỘNG RÃI & SANG TRỌNG */}
+      <main className="relative z-10 flex-1 max-w-3xl sm:max-w-4xl w-full mx-auto px-4 py-8 sm:py-10 space-y-5">
+        <div className="text-center space-y-2">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-gradient-to-r from-red-600/30 via-amber-500/30 to-red-600/30 border border-amber-400/50 text-yellow-300 text-xs sm:text-sm font-bold backdrop-blur-md shadow-sm">
+            <Flame className="size-3.5 text-red-500 fill-red-500" />
             <span>ĐĂNG KÝ BIỂU DIỄN & TRANG TRÍ LÂN SƯ RỒNG</span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-black text-white uppercase tracking-tight drop-shadow-md">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-white uppercase tracking-tight drop-shadow-md">
             Đặt Lịch Sự Kiện Trực Tuyến
           </h1>
-          <p className="text-xs text-slate-300">
+          <p className="text-xs sm:text-sm text-slate-300 max-w-lg mx-auto">
             Quý khách điền thông tin bên dưới, hệ thống hỗ trợ tìm kiếm vị trí bản đồ / GPS nhanh chóng.
           </p>
         </div>
 
-        <Card className="p-4 sm:p-6 rounded-3xl border-2 border-amber-500/50 bg-black/75 backdrop-blur-xl shadow-2xl shadow-amber-500/10">
+        <Card className="p-6 sm:p-8 md:p-10 rounded-3xl border-2 border-amber-500/50 bg-black/80 backdrop-blur-xl shadow-2xl shadow-amber-500/10">
           <BookingForm />
         </Card>
       </main>

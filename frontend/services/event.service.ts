@@ -50,6 +50,11 @@ export const eventService = {
   },
 
   async cancel(id: string) {
+    const res = await apiClient.post<ApiSuccessResponse<EventItem>>(`/events/${id}/cancel`);
+    return res.data.data;
+  },
+
+  async delete(id: string) {
     await apiClient.delete(`/events/${id}`);
   },
 

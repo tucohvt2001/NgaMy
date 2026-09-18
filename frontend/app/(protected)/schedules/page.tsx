@@ -29,6 +29,7 @@ import {
   MoreHorizontal,
   Globe,
   MapPin,
+  Trash2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -66,7 +67,14 @@ import { ConfirmDialog } from '@/components/forms/ConfirmDialog';
 import { EventFormDialog } from '@/components/forms/EventFormDialog';
 import { EventSettlementDialog } from '@/components/forms/EventSettlementDialog';
 import { EventReviewShareDialog } from '@/components/forms/EventReviewShareDialog';
-import { useCancelEvent, useCreateEvent, useEvents, useUpdateEvent, useEventStats } from '@/hooks/useEvents';
+import {
+  useCancelEvent,
+  useDeleteEvent,
+  useCreateEvent,
+  useEvents,
+  useUpdateEvent,
+  useEventStats,
+} from '@/hooks/useEvents';
 import { EventItem } from '@/types/models';
 import { EVENT_STATUSES, STATUS_LABELS, EVENT_TYPE_LABELS } from '@/types/enums';
 import { EventInput } from '@/services/event.service';
@@ -93,6 +101,7 @@ export default function SchedulesPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<EventItem | null>(null);
   const [confirmEvent, setConfirmEvent] = useState<EventItem | null>(null);
+  const [deleteConfirmEvent, setDeleteConfirmEvent] = useState<EventItem | null>(null);
   const [settlementEvent, setSettlementEvent] = useState<EventItem | null>(null);
   const [settlementOpen, setSettlementOpen] = useState(false);
   const [reviewShareEvent, setReviewShareEvent] = useState<EventItem | null>(null);
@@ -109,6 +118,7 @@ export default function SchedulesPage() {
   const createMutation = useCreateEvent();
   const updateMutation = useUpdateEvent();
   const cancelMutation = useCancelEvent();
+  const deleteMutation = useDeleteEvent();
 
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -621,8 +631,8 @@ export default function SchedulesPage() {
                 <TableRow className="bg-muted/40">
                   <TableHead className="w-32">Mã sự kiện</TableHead>
                   <TableHead>Tên sự kiện</TableHead>
-                  <TableHead>Địa điểm</TableHead>
-                  <TableHead className="w-44">Thời gian diễn</TableHead>
+                  <TableHead className="max-w-[200px] md:max-w-[260px]">Địa điểm</TableHead>
+                  <TableHead className="w-48">Thời gian diễn</TableHead>
                   <TableHead className="w-36">Giá trị hợp đồng</TableHead>
                   <TableHead className="w-36">Dự toán quỹ</TableHead>
                   <TableHead className="w-36">Trạng thái</TableHead>
@@ -708,8 +718,13 @@ export default function SchedulesPage() {
                           </div>
                         )}
                       </TableCell>
-                      <TableCell className="text-xs">
-                        <div>{cleanLocation}</div>
+                      <TableCell className="text-xs max-w-[200px] md:max-w-[260px]">
+                        <div
+                          className="truncate text-foreground font-medium"
+                          title={cleanLocation}
+                        >
+                          {cleanLocation}
+                        </div>
                         {mapLink && (
                           <a
                             href={mapLink}
@@ -754,8 +769,12 @@ export default function SchedulesPage() {
                             </Badge>
                           )}
                         </div>
-                        <div className="text-[11px] text-muted-foreground mt-0.5">
-                          {formatTime24h(evDate)}
+                        <div className="text-[11px] text-muted-foreground mt-0.5 flex items-center gap-1">
+                          <Clock className="size-3 text-amber-500 shrink-0" />
+                          <span>
+                            {formatTime24h(evDate)}
+                            {event.endTime ? ` - ${formatTime24h(new Date(event.endTime))}` : ''}
+                          </span>
                         </div>
                       </TableCell>
                       <TableCell className="text-xs">
@@ -879,12 +898,51 @@ export default function SchedulesPage() {
 
                             <DropdownMenuSeparator />
 
+                            {/* HỦY SỰ KIỆN: Chỉ cho phép với show CHƯA có phân công và CHƯA có dự toán */}
+                            {event.status !== 'CANCELLED' && (
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  const memberCount = event._count?.eventMembers || 0;
+                                  const salaryConfigCount = event._count?.salaryConfigs || 0;
+                                  const txCount = event._count?.transactions || 0;
+
+                                  if (memberCount > 0) {
+                                    toast.error(
+                                      `Không thể hủy show đã phân công (${memberCount} người). Vui lòng hủy/xóa phân công trước khi hủy.`
+                                    );
+                                    return;
+                                  }
+                                  if (salaryConfigCount > 0 || txCount > 0) {
+                                    toast.error(
+                                      'Không thể hủy show đã lập dự toán hoặc đã có phiếu thu chi.'
+                                    );
+                                    return;
+                                  }
+                                  setConfirmEvent(event);
+                                }}
+                                className="cursor-pointer gap-2 text-amber-600 focus:text-amber-600 focus:bg-amber-500/10"
+                              >
+                                <Ban className="size-4" />
+                                <span>Hủy sự kiện</span>
+                              </DropdownMenuItem>
+                            )}
+
+                            {/* XÓA SỰ KIỆN: Xóa hoàn toàn sự kiện khỏi cơ sở dữ liệu */}
                             <DropdownMenuItem
-                              onClick={() => setConfirmEvent(event)}
-                              className="cursor-pointer gap-2 text-destructive focus:text-destructive focus:bg-destructive/10"
+                              onClick={() => {
+                                const txCount = event._count?.transactions || 0;
+                                if (txCount > 0) {
+                                  toast.error(
+                                    `Không thể xóa sự kiện đã phát sinh ${txCount} phiếu thu chi trong sổ quỹ. Vui lòng kiểm tra sổ quỹ trước.`
+                                  );
+                                  return;
+                                }
+                                setDeleteConfirmEvent(event);
+                              }}
+                              className="cursor-pointer gap-2 text-rose-600 focus:text-rose-600 focus:bg-rose-500/10 font-medium"
                             >
-                              <Ban className="size-4" />
-                              <span>Hủy sự kiện</span>
+                              <Trash2 className="size-4" />
+                              <span>Xóa sự kiện</span>
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -924,17 +982,34 @@ export default function SchedulesPage() {
         event={reviewShareEvent}
       />
 
+      {/* DIALOG XÁC NHẬN HỦY SỰ KIỆN */}
       <ConfirmDialog
         open={!!confirmEvent}
         onOpenChange={(open) => !open && setConfirmEvent(null)}
         title="Hủy sự kiện"
-        description={`Bạn có chắc muốn hủy sự kiện "${confirmEvent?.name}"?`}
+        description={`Bạn có chắc muốn chuyển sự kiện "${confirmEvent?.name}" (${confirmEvent?.eventCode}) sang trạng thái Đã hủy?`}
         onConfirm={() => {
           if (confirmEvent) {
             cancelMutation.mutate(confirmEvent.id, { onSuccess: () => setConfirmEvent(null) });
           }
         }}
         isLoading={cancelMutation.isPending}
+      />
+
+      {/* DIALOG XÁC NHẬN XÓA SỰ KIỆN VĨNH VIỄN */}
+      <ConfirmDialog
+        open={!!deleteConfirmEvent}
+        onOpenChange={(open) => !open && setDeleteConfirmEvent(null)}
+        title="Xóa sự kiện vĩnh viễn"
+        description={`Bạn có chắc muốn xóa vĩnh viễn sự kiện "${deleteConfirmEvent?.name}" (${deleteConfirmEvent?.eventCode})? Toàn bộ dữ liệu phân công và điểm danh của sự kiện này sẽ bị xóa và không thể khôi phục.`}
+        onConfirm={() => {
+          if (deleteConfirmEvent) {
+            deleteMutation.mutate(deleteConfirmEvent.id, {
+              onSuccess: () => setDeleteConfirmEvent(null),
+            });
+          }
+        }}
+        isLoading={deleteMutation.isPending}
       />
     </div>
   );

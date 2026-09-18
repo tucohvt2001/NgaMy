@@ -27,9 +27,14 @@ export const eventController = {
     sendSuccess(res, event, 'Cập nhật sự kiện thành công');
   }),
 
+  cancel: asyncHandler(async (req: Request, res: Response) => {
+    const result = await eventService.cancel(req.params.id);
+    sendSuccess(res, result, 'Hủy sự kiện thành công');
+  }),
+
   remove: asyncHandler(async (req: Request, res: Response) => {
-    await eventService.cancel(req.params.id);
-    sendSuccess(res, null, 'Hủy sự kiện thành công');
+    const result = await eventService.delete(req.params.id);
+    sendSuccess(res, result, 'Xóa sự kiện thành công');
   }),
 
   stats: asyncHandler(async (req: Request, res: Response) => {

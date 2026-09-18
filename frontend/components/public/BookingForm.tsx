@@ -331,52 +331,55 @@ export function BookingForm({ onSuccess }: BookingFormProps) {
     );
   }
 
-  // ================= VIEW FORM ĐƠN GIẢN =================
+  // ================= VIEW FORM ĐƠN GIẢN & TO RÕ =================
   return (
-    <form onSubmit={handleSubmit} className="space-y-3.5 text-white">
+    <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 text-white">
       {/* 1. THÔNG TIN KHÁCH HÀNG */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <Label className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
-            <User className="size-3.5 text-amber-400" />
-            Họ tên / Đơn vị tổ chức <span className="text-red-400">*</span>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+        <div className="space-y-1.5">
+          <Label className="text-xs sm:text-sm font-bold text-amber-300 flex items-center gap-1.5">
+            <User className="size-4 text-amber-400" />
+            Họ tên <span className="text-red-400">*</span>
           </Label>
           <Input
             placeholder="VD: Anh Minh / Shop Mai Vàng..."
             value={customerName}
             onChange={(e) => setCustomerName(e.target.value)}
-            className="h-9 text-xs rounded-xl bg-black/40 border-white/20 text-white placeholder:text-slate-400 focus-visible:ring-amber-400"
+            className="h-11 sm:h-12 text-sm sm:text-base rounded-2xl bg-black/50 border-white/20 text-white placeholder:text-slate-400 focus-visible:ring-amber-400"
             required
           />
         </div>
 
-        <div className="space-y-1">
-          <Label className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
-            <Phone className="size-3.5 text-emerald-400" />
-            Số điện thoại (Zalo) <span className="text-red-400">*</span>
+        <div className="space-y-1.5">
+          <Label className="text-xs sm:text-sm font-bold text-amber-300 flex items-center gap-1.5">
+            <Phone className="size-4 text-emerald-400" />
+            Số điện thoại <span className="text-red-400">*</span>
           </Label>
           <Input
             type="tel"
             placeholder="VD: 0988 123 456"
             value={customerPhone}
             onChange={(e) => setCustomerPhone(e.target.value)}
-            className="h-9 text-xs rounded-xl bg-black/40 border-white/20 text-white placeholder:text-slate-400 focus-visible:ring-amber-400"
+            className="h-11 sm:h-12 text-sm sm:text-base rounded-2xl bg-black/50 border-white/20 text-white placeholder:text-slate-400 focus-visible:ring-amber-400 font-mono"
             required
           />
         </div>
       </div>
 
       {/* 2. LOẠI SỰ KIỆN & THỜI GIAN TỔ CHỨC */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <Label className="text-xs font-bold text-amber-300">Loại sự kiện / Dịch vụ</Label>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+        <div className="space-y-1.5">
+          <Label className="text-xs sm:text-sm font-bold text-amber-300 flex items-center gap-1.5">
+            <Sparkles className="size-4 text-amber-400" />
+            Loại sự kiện
+          </Label>
           <Select value={eventType} onValueChange={setEventType}>
-            <SelectTrigger className="h-9 text-xs rounded-xl bg-black/40 border-white/20 text-white">
+            <SelectTrigger className="h-11 sm:h-12 text-sm sm:text-base rounded-2xl bg-black/50 border-white/20 text-white">
               <SelectValue placeholder="Chọn loại sự kiện" />
             </SelectTrigger>
             <SelectContent className="bg-neutral-900 border-amber-500/40 text-white">
               {EVENT_TYPE_OPTIONS.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value} className="text-xs focus:bg-amber-500/20">
+                <SelectItem key={opt.value} value={opt.value} className="text-xs sm:text-sm py-2.5 focus:bg-amber-500/20">
                   {opt.label}
                 </SelectItem>
               ))}
@@ -384,10 +387,10 @@ export function BookingForm({ onSuccess }: BookingFormProps) {
           </Select>
         </div>
 
-        <div className="space-y-1">
-          <Label className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
-            <CalendarIcon className="size-3.5 text-red-400" />
-            Thời gian tổ chức (Ngày & Giờ) <span className="text-red-400">*</span>
+        <div className="space-y-1.5">
+          <Label className="text-xs sm:text-sm font-bold text-amber-300 flex items-center gap-1.5">
+            <CalendarIcon className="size-4 text-red-400" />
+            Thời gian diễn <span className="text-red-400">*</span>
           </Label>
           <DateTimePicker
             value={eventDateTime}
@@ -408,61 +411,42 @@ export function BookingForm({ onSuccess }: BookingFormProps) {
               }
             }}
             placeholder="Chọn ngày và giờ (24h)..."
-            className="h-9 text-xs rounded-xl bg-black/40 border-white/20 text-white hover:bg-black/60 focus-visible:ring-amber-400"
+            className="h-11 sm:h-12 text-sm sm:text-base rounded-2xl bg-black/50 border-white/20 text-white hover:bg-black/60 focus-visible:ring-amber-400"
           />
         </div>
       </div>
 
-      {/* 3. ĐỊA ĐIỂM & TÌM KIẾM VỊ TRÍ BẢN ĐỒ / GPS */}
-      <div className="space-y-1 relative" ref={suggestionsBoxRef}>
+      {/* 3. ĐỊA CHỈ & VỊ TRÍ BẢN ĐỒ */}
+      <div className="space-y-1.5 relative" ref={suggestionsBoxRef}>
         <div className="flex items-center justify-between">
-          <Label className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
-            <MapPin className="size-3.5 text-red-400" />
-            Địa chỉ / Tìm vị trí bản đồ <span className="text-red-400">*</span>
+          <Label className="text-xs sm:text-sm font-bold text-amber-300 flex items-center gap-1.5">
+            <MapPin className="size-4 text-red-400" />
+            Địa chỉ <span className="text-red-400">*</span>
           </Label>
 
-          <div className="flex items-center gap-1.5">
-            {/* NÚT MỞ BẢN ĐỒ TƯƠNG TÁC */}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setMapPickerOpen(true)}
-              className="h-6 text-[11px] rounded-lg px-2 gap-1 border-amber-400/60 bg-gradient-to-r from-amber-500/25 to-red-500/25 text-yellow-300 hover:bg-amber-500/35 font-bold shadow-xs"
-            >
-              <span>🗺️ Mở Bản Đồ</span>
-            </Button>
-
-            {/* NÚT LẤY GPS */}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleGetDeviceLocation}
-              disabled={isGettingGps}
-              className="h-6 text-[11px] rounded-lg px-2 gap-1 border-white/20 bg-black/40 text-amber-200 hover:bg-white/10 font-bold"
-            >
-              {isGettingGps ? (
-                <Loader2 className="size-3 animate-spin text-amber-400" />
-              ) : (
-                <Compass className="size-3 text-red-400" />
-              )}
-              <span>{isGettingGps ? 'Định vị...' : '📍 GPS'}</span>
-            </Button>
-          </div>
+          {/* NÚT MỞ BẢN ĐỒ */}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setMapPickerOpen(true)}
+            className="h-7 text-xs rounded-xl px-2.5 gap-1 border-amber-400/60 bg-gradient-to-r from-amber-500/25 to-red-500/25 text-yellow-300 hover:bg-amber-500/35 font-bold shadow-xs"
+          >
+            <span>🗺️ Mở Bản Đồ</span>
+          </Button>
         </div>
 
         {/* Ô INPUT TÌM KIẾM ĐỊA CHỈ */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
+          <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
           <Input
-            placeholder="Gõ tên đường, phường/xã, địa điểm... (VD: 128 Nguyễn Trãi, Chợ Bến Thành...)"
+            placeholder="Gõ tên đường, phường/xã, địa điểm... (VD: 128 Nguyễn Trãi...)"
             value={searchQuery || address}
             onChange={(e) => handleSearchAddressChange(e.target.value)}
             onFocus={() => {
               if (suggestions.length > 0) setShowSuggestions(true);
             }}
-            className="h-9 pl-9 pr-8 text-xs rounded-xl bg-black/40 border-white/20 text-white placeholder:text-slate-400 focus-visible:ring-amber-400"
+            className="h-11 sm:h-12 pl-10 pr-9 text-sm sm:text-base rounded-2xl bg-black/50 border-white/20 text-white placeholder:text-slate-400 focus-visible:ring-amber-400"
             required
           />
           {(searchQuery || address) && (
@@ -474,23 +458,23 @@ export function BookingForm({ onSuccess }: BookingFormProps) {
                 setSuggestions([]);
                 setShowSuggestions(false);
               }}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1"
             >
-              <X className="size-3.5" />
+              <X className="size-4" />
             </button>
           )}
         </div>
 
         {/* DROPDOWN GỢI Ý ĐỊA ĐIỂM (NOMINATIM SEARCH) */}
         {showSuggestions && suggestions.length > 0 && (
-          <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-neutral-900 border border-amber-500/40 rounded-2xl shadow-2xl overflow-hidden divide-y divide-white/10 text-xs max-h-52 overflow-y-auto">
+          <div className="absolute z-50 left-0 right-0 top-full mt-1.5 bg-neutral-900 border border-amber-500/40 rounded-2xl shadow-2xl overflow-hidden divide-y divide-white/10 text-xs sm:text-sm max-h-56 overflow-y-auto">
             {suggestions.map((item) => (
               <div
                 key={item.place_id}
                 onClick={() => handleSelectSuggestion(item)}
-                className="p-2.5 hover:bg-amber-500/20 cursor-pointer flex items-start gap-2 text-slate-200 hover:text-white transition-colors"
+                className="p-3 hover:bg-amber-500/20 cursor-pointer flex items-start gap-2.5 text-slate-200 hover:text-white transition-colors"
               >
-                <MapPin className="size-3.5 text-amber-400 shrink-0 mt-0.5" />
+                <MapPin className="size-4 text-amber-400 shrink-0 mt-0.5" />
                 <span className="leading-snug">{item.display_name}</span>
               </div>
             ))}
@@ -499,16 +483,16 @@ export function BookingForm({ onSuccess }: BookingFormProps) {
 
         {/* HIỂN THỊ VỊ TRÍ ĐÃ CHỌN & LINK GOOGLE MAPS */}
         {mapUrl && (
-          <div className="flex items-center justify-between text-[11px] p-2 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-200">
-            <span className="flex items-center gap-1 font-medium">
-              <CheckCircle2 className="size-3 text-emerald-400" />
+          <div className="flex items-center justify-between text-xs p-2.5 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-200">
+            <span className="flex items-center gap-1.5 font-medium">
+              <CheckCircle2 className="size-3.5 text-emerald-400" />
               Đã ghim vị trí toạ độ bản đồ
             </span>
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => setMapPickerOpen(true)}
-                className="text-amber-300 hover:underline font-semibold text-[11px]"
+                className="text-amber-300 hover:underline font-semibold text-xs"
               >
                 Đổi vị trí
               </button>
@@ -519,7 +503,7 @@ export function BookingForm({ onSuccess }: BookingFormProps) {
                 rel="noopener noreferrer"
                 className="text-yellow-300 hover:underline flex items-center gap-1 font-bold"
               >
-                <ExternalLink className="size-3" />
+                <ExternalLink className="size-3.5" />
                 Google Maps
               </a>
             </div>
@@ -528,40 +512,40 @@ export function BookingForm({ onSuccess }: BookingFormProps) {
       </div>
 
       {/* 4. GHI CHÚ YÊU CẦU */}
-      <div className="space-y-1">
-        <Label className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
-          <MessageSquare className="size-3.5 text-amber-400" />
-          Yêu cầu thêm (Số lượng lân, màu sắc, trang trí, giờ đón khách...)
+      <div className="space-y-1.5">
+        <Label className="text-xs sm:text-sm font-bold text-amber-300 flex items-center gap-1.5">
+          <MessageSquare className="size-4 text-amber-400" />
+          Yêu cầu thêm (nếu có)
         </Label>
         <Textarea
           rows={2}
           placeholder="VD: Cần 2 lân vàng đỏ, 1 thần tài, múa mở màn lúc 8h sáng, có thêm trống hội..."
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          className="text-xs rounded-xl bg-black/40 border-white/20 text-white placeholder:text-slate-400 resize-none focus-visible:ring-amber-400"
+          className="text-sm sm:text-base rounded-2xl bg-black/50 border-white/20 text-white placeholder:text-slate-400 resize-none focus-visible:ring-amber-400 p-3.5"
         />
       </div>
 
       {/* NÚT GỬI ĐẶT LỊCH */}
-      <div className="pt-2">
+      <div className="pt-3 space-y-2">
         <Button
           type="submit"
           disabled={submitMutation.isPending}
-          className="w-full h-10 rounded-xl font-bold text-xs bg-gradient-to-r from-red-600 via-amber-500 to-yellow-500 hover:from-red-700 hover:to-amber-600 text-white shadow-xl shadow-amber-500/25 gap-2 border border-yellow-300/40"
+          className="w-full h-12 sm:h-13 rounded-2xl font-black text-sm sm:text-base bg-gradient-to-r from-red-600 via-amber-500 to-yellow-500 hover:from-red-700 hover:to-amber-600 text-white shadow-xl shadow-amber-500/25 gap-2 border border-yellow-300/40 transition-all hover:scale-[1.01] active:scale-[0.99]"
         >
           {submitMutation.isPending ? (
             <>
-              <Loader2 className="size-3.5 animate-spin" />
+              <Loader2 className="size-4 animate-spin" />
               <span>Đang gửi thông tin...</span>
             </>
           ) : (
             <>
-              <Send className="size-3.5" />
+              <Send className="size-4" />
               <span>🏮 GỬI YÊU CẦU ĐẶT LỊCH</span>
             </>
           )}
         </Button>
-        <p className="text-[11px] text-center text-slate-300 mt-1.5">
+        <p className="text-xs text-center text-slate-300">
           Ban Quản Trị đoàn sẽ liên hệ lại với quý khách qua Số điện thoại / Zalo để tư vấn chi tiết chương trình.
         </p>
       </div>

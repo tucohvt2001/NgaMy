@@ -80,6 +80,8 @@ export const eventService = {
       ...rest,
       eventCode,
       eventDate: new Date(input.eventDate),
+      startTime: input.startTime ? new Date(input.startTime) : (input.eventDate ? new Date(input.eventDate) : undefined),
+      endTime: input.endTime ? new Date(input.endTime) : undefined,
       creator: { connect: { id: createdBy } },
     });
   },
@@ -96,6 +98,15 @@ export const eventService = {
     const dataToUpdate: any = { ...input };
     if (input.eventDate) {
       dataToUpdate.eventDate = new Date(input.eventDate);
+      if (!input.startTime) {
+        dataToUpdate.startTime = new Date(input.eventDate);
+      }
+    }
+    if (input.startTime !== undefined) {
+      dataToUpdate.startTime = input.startTime ? new Date(input.startTime) : null;
+    }
+    if (input.endTime !== undefined) {
+      dataToUpdate.endTime = input.endTime ? new Date(input.endTime) : null;
     }
     if (!dataToUpdate.eventCode) {
       delete dataToUpdate.eventCode;
@@ -103,10 +114,97 @@ export const eventService = {
     return eventRepository.update(id, dataToUpdate);
   },
 
-  // Hủy sự kiện thay vì xóa cứng để giữ lại lịch sử phân công/chấm công/tiền công
+  // Hủy sự kiện: Chỉ cho phép thao tác với show CHƯA có phân công và CHƯA có dự toán/phiếu thu chi
   async cancel(id: string) {
-    await this.getById(id);
+    const event = await prisma.event.findUnique({
+      where: { id },
+      include: {
+        _count: {
+          select: {
+            eventMembers: true,
+            salaryConfigs: true,
+            salaryDetails: true,
+            transactions: true,
+          },
+        },
+      },
+    });
+
+    if (!event) {
+      throw AppError.notFound('Không tìm thấy sự kiện');
+    }
+
+    if (event.status === 'CANCELLED') {
+      throw AppError.badRequest('Sự kiện này đã ở trạng thái Đã hủy');
+    }
+
+    // 1. Kiểm tra phân công nhân sự
+    if (event._count.eventMembers > 0) {
+      throw AppError.badRequest(
+        `Không thể hủy sự kiện đã phân công nhân sự (${event._count.eventMembers} thành viên). Vui lòng hủy/xóa phân công trước khi hủy show.`
+      );
+    }
+
+    // 2. Kiểm tra dự toán tiền công & giao dịch sổ quỹ
+    if (
+      event._count.salaryConfigs > 0 ||
+      event._count.salaryDetails > 0 ||
+      event._count.transactions > 0
+    ) {
+      throw AppError.badRequest(
+        'Không thể hủy sự kiện đã được lập dự toán tiền công hoặc đã có phiếu thu chi.'
+      );
+    }
+
     return eventRepository.update(id, { status: 'CANCELLED' });
+  },
+
+  // Xóa sự kiện: Xóa hoàn toàn sự kiện khỏi cơ sở dữ liệu
+  async delete(id: string) {
+    const event = await prisma.event.findUnique({
+      where: { id },
+      include: {
+        _count: {
+          select: {
+            eventMembers: true,
+            salaryConfigs: true,
+            salaryDetails: true,
+            transactions: true,
+          },
+        },
+      },
+    });
+
+    if (!event) {
+      throw AppError.notFound('Không tìm thấy sự kiện');
+    }
+
+    // Kiểm tra ràng buộc tài chính trong sổ quỹ và bảng lương
+    if (event._count.transactions > 0) {
+      throw AppError.badRequest(
+        `Không thể xóa sự kiện đã phát sinh ${event._count.transactions} phiếu thu chi trong sổ quỹ. Vui lòng kiểm tra và xử lý phiếu thu chi trước.`
+      );
+    }
+
+    if (event._count.salaryDetails > 0) {
+      throw AppError.badRequest(
+        'Không thể xóa sự kiện đã được tính vào bảng lương thành viên.'
+      );
+    }
+
+    // Thực hiện xóa an toàn các dữ liệu phụ thuộc
+    return prisma.$transaction(async (tx) => {
+      // Xóa cấu hình lương theo sự kiện (nếu có)
+      await tx.salaryConfig.deleteMany({ where: { eventId: id } });
+      // Xóa đánh giá sự kiện (nếu có)
+      await tx.eventReview.deleteMany({ where: { eventId: id } });
+      // Xóa điểm danh (nếu có)
+      await tx.attendance.deleteMany({ where: { eventId: id } });
+      // Xóa phân công thành viên (nếu có)
+      await tx.eventMember.deleteMany({ where: { eventId: id } });
+      // Xóa sự kiện
+      return tx.event.delete({ where: { id } });
+    });
   },
 
   async getStats(targetYear?: number) {

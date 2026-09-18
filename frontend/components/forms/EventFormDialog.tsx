@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { DateTimePicker } from '@/components/ui/date-time-picker';
+import { EventTimeRangePicker } from '@/components/ui/event-time-range-picker';
 import { EventItem } from '@/types/models';
 import { EVENT_STATUSES, STATUS_LABELS, EVENT_TYPES, EVENT_TYPE_LABELS } from '@/types/enums';
 import { EventInput } from '@/services/event.service';
@@ -22,6 +22,7 @@ const eventSchema = z.object({
   name: z.string().min(1, 'Vui lòng nhập tên sự kiện'),
   eventType: z.string().optional(),
   eventDate: z.string().min(1, 'Vui lòng chọn ngày giờ diễn'),
+  endTime: z.string().optional().nullable(),
   location: z.string().min(1, 'Vui lòng nhập địa điểm'),
   customerName: z.string().optional(),
   customerPhone: z.string().optional(),
@@ -48,12 +49,15 @@ export function EventFormDialog({ open, onOpenChange, event, onSubmit, isLoading
     register,
     handleSubmit,
     control,
+    setValue,
     reset,
     formState: { errors },
   } = useForm<EventFormValues>({ resolver: zodResolver(eventSchema) });
 
   const contractVal = useWatch({ control, name: 'contractValue' }) || 0;
   const depositVal = useWatch({ control, name: 'depositAmount' }) || 0;
+  const eventDateVal = useWatch({ control, name: 'eventDate' });
+  const endTimeVal = useWatch({ control, name: 'endTime' });
   const remainingAmount = Math.max(0, Number(contractVal) - Number(depositVal));
 
   useEffect(() => {
@@ -63,6 +67,7 @@ export function EventFormDialog({ open, onOpenChange, event, onSubmit, isLoading
         name: event?.name ?? '',
         eventType: event?.eventType ?? 'OTHER',
         eventDate: event?.eventDate ? new Date(event.eventDate).toISOString() : new Date().toISOString(),
+        endTime: event?.endTime ? new Date(event.endTime).toISOString() : '',
         location: event?.location ?? '',
         customerName: event?.customerName ?? '',
         customerPhone: event?.customerPhone ?? '',
@@ -78,11 +83,20 @@ export function EventFormDialog({ open, onOpenChange, event, onSubmit, isLoading
     const dateObj = new Date(values.eventDate);
     const validDateIso = !isNaN(dateObj.getTime()) ? dateObj.toISOString() : new Date().toISOString();
 
+    let validEndTimeIso: string | undefined = undefined;
+    if (values.endTime) {
+      const endObj = new Date(values.endTime);
+      if (!isNaN(endObj.getTime())) {
+        validEndTimeIso = endObj.toISOString();
+      }
+    }
+
     const payload: EventInput = {
       name: values.name.trim(),
       eventType: values.eventType || 'OTHER',
       location: values.location.trim(),
       eventDate: validDateIso,
+      endTime: validEndTimeIso,
       customerName: values.customerName?.trim() || undefined,
       customerPhone: values.customerPhone?.trim() || undefined,
       contractValue:
@@ -128,34 +142,6 @@ export function EventFormDialog({ open, onOpenChange, event, onSubmit, isLoading
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="eventDate" className="text-xs font-semibold">
-                Thời gian diễn *
-              </Label>
-              <Controller
-                control={control}
-                name="eventDate"
-                render={({ field }) => (
-                  <DateTimePicker
-                    id="eventDate"
-                    value={field.value}
-                    onChange={field.onChange}
-                    placeholder="Chọn ngày & giờ (24h)..."
-                  />
-                )}
-              />
-              {errors.eventDate && <p className="text-xs text-destructive">{errors.eventDate.message}</p>}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="name" className="text-xs font-semibold">
-                Tên sự kiện *
-              </Label>
-              <Input id="name" placeholder="vd: Khai trương Thẩm mỹ viện..." {...register('name')} />
-              {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
-            </div>
-            <div className="space-y-2">
               <Label className="text-xs font-semibold">Loại sự kiện *</Label>
               <Controller
                 control={control}
@@ -188,6 +174,31 @@ export function EventFormDialog({ open, onOpenChange, event, onSubmit, isLoading
                 )}
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="eventTimeRange" className="text-xs font-semibold flex items-center justify-between">
+              <span>Thời gian diễn (Ngày & Khung giờ) *</span>
+              <span className="text-[10px] text-muted-foreground font-normal">Chỉ trong ngày</span>
+            </Label>
+            <EventTimeRangePicker
+              id="eventTimeRange"
+              startDateIso={eventDateVal}
+              endDateIso={endTimeVal}
+              onChange={(startIso, endIso) => {
+                setValue('eventDate', startIso, { shouldValidate: true, shouldDirty: true });
+                setValue('endTime', endIso || '', { shouldValidate: true, shouldDirty: true });
+              }}
+            />
+            {errors.eventDate && <p className="text-xs text-destructive">{errors.eventDate.message}</p>}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="name" className="text-xs font-semibold">
+              Tên sự kiện *
+            </Label>
+            <Input id="name" placeholder="vd: Khai trương Thẩm mỹ viện..." {...register('name')} />
+            {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
           </div>
 
           <div className="space-y-2">

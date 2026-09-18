@@ -68,6 +68,22 @@ export function MapPickerDialog({
   const [isSearching, setIsSearching] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const searchBoxRef = useRef<HTMLDivElement | null>(null);
+
+  // Close suggestions on click or touch outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent | TouchEvent) {
+      if (searchBoxRef.current && !searchBoxRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, []);
 
   // GPS locating
   const [isLocating, setIsLocating] = useState(false);
@@ -134,14 +150,20 @@ export function MapPickerDialog({
         )
         .addTo(map);
 
-      // Custom Icon
+      // Custom Icon with clear drag instruction note
       const customIcon = L.divIcon({
         className: 'custom-map-pin',
-        html: `<div style="transform: translate(-50%, -100%); display: flex; flex-direction: column; align-items: center; cursor: grab;">
-          <div style="background: linear-gradient(135deg, #dc2626, #f59e0b); color: white; padding: 6px 12px; border-radius: 9999px; font-size: 11px; font-weight: 800; box-shadow: 0 4px 14px rgba(0,0,0,0.4); border: 2px solid #ffffff; white-space: nowrap; display: flex; align-items: center; gap: 4px;">
-            <span>🦁 Điểm diễn</span>
+        html: `<div style="transform: translate(-50%, -100%); display: flex; flex-direction: column; align-items: center; cursor: grab; user-select: none;">
+          <div style="background: linear-gradient(135deg, #dc2626, #ea580c); color: white; padding: 5px 12px; border-radius: 18px; font-size: 12px; font-weight: 800; box-shadow: 0 6px 20px rgba(0,0,0,0.5); border: 2.5px solid #ffffff; white-space: nowrap; display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center;">
+            <div style="display: flex; align-items: center; gap: 4px; font-weight: 900;">
+              <span>🦁</span>
+              <span>Điểm diễn</span>
+            </div>
+            <span style="font-size: 9.5px; font-weight: 700; color: #fef08a; background: rgba(0,0,0,0.35); padding: 1px 6px; border-radius: 6px; letter-spacing: -0.2px;">
+              📍 Kéo ghim tới điểm tổ chức sự kiện
+            </span>
           </div>
-          <div style="width: 0; height: 0; border-left: 7px solid transparent; border-right: 7px solid transparent; border-top: 9px solid #dc2626; margin-top: -1px;"></div>
+          <div style="width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-top: 10px solid #ea580c; margin-top: -1px;"></div>
         </div>`,
         iconSize: [0, 0],
         iconAnchor: [0, 0],
@@ -154,6 +176,9 @@ export function MapPickerDialog({
       markerRef.current = marker;
 
       // Handle marker drag
+      marker.on('dragstart', () => {
+        setShowSuggestions(false);
+      });
       marker.on('dragend', () => {
         const position = marker.getLatLng();
         if (isMounted) {
@@ -165,6 +190,7 @@ export function MapPickerDialog({
 
       // Handle click anywhere on map
       map.on('click', (e: any) => {
+        setShowSuggestions(false);
         const clickedLat = e.latlng.lat;
         const clickedLng = e.latlng.lng;
         marker.setLatLng([clickedLat, clickedLng]);
@@ -173,6 +199,10 @@ export function MapPickerDialog({
           setLng(clickedLng);
           reverseGeocode(clickedLat, clickedLng);
         }
+      });
+
+      map.on('movestart', () => {
+        setShowSuggestions(false);
       });
 
       // If initial address is empty, reverse geocode now
@@ -300,6 +330,8 @@ export function MapPickerDialog({
       e.preventDefault();
       if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
       executeSearch(searchQuery);
+    } else if (e.key === 'Escape' || e.key === 'Tab') {
+      setShowSuggestions(false);
     }
   };
 
@@ -384,8 +416,16 @@ export function MapPickerDialog({
         </DialogHeader>
 
         {/* Search bar & GPS inside Dialog */}
-        <div className="p-3 bg-black/60 border-b border-white/10 flex items-center gap-2 relative z-[500]">
-          <div className="relative flex-1">
+        <div className="p-3 bg-black/60 border-b border-white/10 flex items-center gap-2 relative z-[1500]">
+          <div
+            ref={searchBoxRef}
+            className="relative flex-1"
+            onBlur={(e) => {
+              if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                setShowSuggestions(false);
+              }
+            }}
+          >
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-slate-400" />
             <Input
               placeholder="Gõ tên đường, địa danh, toà nhà... (Enter để tìm)"
@@ -415,7 +455,7 @@ export function MapPickerDialog({
 
             {/* Suggestions dropdown */}
             {showSuggestions && suggestions.length > 0 && (
-              <div className="absolute left-0 right-0 top-full mt-1 bg-neutral-900 border border-amber-500/40 rounded-2xl shadow-2xl overflow-hidden divide-y divide-white/10 text-xs max-h-52 overflow-y-auto z-[1000]">
+              <div className="absolute left-0 right-0 top-full mt-1 bg-neutral-900 border border-amber-500/40 rounded-2xl shadow-2xl overflow-hidden divide-y divide-white/10 text-xs max-h-52 overflow-y-auto z-[2000]">
                 {suggestions.map((item) => (
                   <div
                     key={item.place_id}
@@ -452,8 +492,9 @@ export function MapPickerDialog({
           <div ref={mapContainerRef} className="w-full h-full" />
 
           {/* Hint Overlay */}
-          <div className="absolute top-2 left-2 z-10 bg-black/70 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/15 text-[10px] text-slate-300 pointer-events-none">
-            💡 Nhấp vào bản đồ hoặc kéo ghim để đổi vị trí
+          <div className="absolute top-2 left-2 z-10 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-xl border border-amber-400/40 text-[11px] text-yellow-200 font-semibold shadow-lg pointer-events-none flex items-center gap-1.5">
+            <span>📍</span>
+            <span>Kéo thả ghim 🦁 tới đúng điểm tổ chức sự kiện</span>
           </div>
         </div>
 

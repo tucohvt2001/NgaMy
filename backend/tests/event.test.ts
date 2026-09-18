@@ -5,6 +5,8 @@ import { createTestUser, createTestMember } from './helpers';
 
 const app = createApp();
 
+jest.setTimeout(30000);
+
 describe('Event & Assignment API', () => {
   let adminToken: string;
   let positionId: string;
@@ -15,7 +17,7 @@ describe('Event & Assignment API', () => {
     const { token } = await createTestUser({ username: 'event_admin', roleName: 'ADMIN' });
     adminToken = token;
 
-    const position = await prisma.position.create({ data: { name: 'Vị trí test event' } });
+    const position = await prisma.position.create({ data: { name: `Vị trí test ${Date.now()}` } });
     positionId = position.id;
 
     const member = await createTestMember({ fullName: 'Thành viên sự kiện' });
@@ -79,13 +81,41 @@ describe('Event & Assignment API', () => {
     expect(res.body.data.status).toBe('CONFIRMED');
   });
 
-  it('hủy sự kiện', async () => {
-    const res = await request(app).delete(`/api/events/${eventId}`).set('Authorization', `Bearer ${adminToken}`);
+  it('chặn hủy sự kiện khi đã có phân công nhân sự', async () => {
+    const res = await request(app)
+      .post(`/api/events/${eventId}/cancel`)
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(res.status).toBe(400);
+    expect(res.body.message).toContain('Không thể hủy sự kiện đã phân công nhân sự');
+  });
+
+  it('xóa phân công và hủy sự kiện thành công', async () => {
+    // Xóa phân công trước
+    await request(app)
+      .delete(`/api/events/${eventId}/members/${memberId}`)
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    // Hủy sự kiện
+    const res = await request(app)
+      .post(`/api/events/${eventId}/cancel`)
+      .set('Authorization', `Bearer ${adminToken}`);
     expect(res.status).toBe(200);
 
     const check = await request(app)
       .get(`/api/events/${eventId}`)
       .set('Authorization', `Bearer ${adminToken}`);
     expect(check.body.data.status).toBe('CANCELLED');
+  });
+
+  it('xóa sự kiện thành công', async () => {
+    const res = await request(app)
+      .delete(`/api/events/${eventId}`)
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(res.status).toBe(200);
+
+    const check = await request(app)
+      .get(`/api/events/${eventId}`)
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(check.status).toBe(404);
   });
 });

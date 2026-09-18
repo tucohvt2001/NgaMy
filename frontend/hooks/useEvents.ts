@@ -53,6 +53,20 @@ export function useCancelEvent() {
     onSuccess: () => {
       toast.success('Hủy sự kiện thành công');
       queryClient.invalidateQueries({ queryKey: ['events'] });
+      queryClient.invalidateQueries({ queryKey: ['events-stats'] });
+    },
+    onError: (error) => toast.error(getErrorMessage(error)),
+  });
+}
+
+export function useDeleteEvent() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => eventService.delete(id),
+    onSuccess: () => {
+      toast.success('Xóa sự kiện thành công');
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+      queryClient.invalidateQueries({ queryKey: ['events-stats'] });
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   });
