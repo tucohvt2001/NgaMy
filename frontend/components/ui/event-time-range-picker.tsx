@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, X, Sparkles, ArrowRight } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, X, Sparkles, ArrowRight, Check } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -30,6 +30,7 @@ export function EventTimeRangePicker({
   id,
 }: EventTimeRangePickerProps) {
   const [open, setOpen] = React.useState(false);
+  const [mobileStep, setMobileStep] = React.useState<'date' | 'time'>('date');
   const [activeTab, setActiveTab] = React.useState<'start' | 'end'>('start');
 
   // Parse start date
@@ -54,6 +55,13 @@ export function EventTimeRangePicker({
     }
   }, [parsedStart, open]);
 
+  // Reset mobile step when popover opens
+  React.useEffect(() => {
+    if (open) {
+      setMobileStep(parsedStart ? 'time' : 'date');
+    }
+  }, [open, parsedStart]);
+
   const selectedYear = parsedStart?.getFullYear();
   const selectedMonth = parsedStart?.getMonth();
   const selectedDay = parsedStart?.getDate();
@@ -72,32 +80,33 @@ export function EventTimeRangePicker({
   const endHourRef = React.useRef<HTMLDivElement>(null);
   const endMinRef = React.useRef<HTMLDivElement>(null);
 
-  // Auto scroll when popover opens or activeTab changes
+  // Auto scroll when popover opens, mobileStep changes, or activeTab changes
   React.useEffect(() => {
     if (open) {
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         if (activeTab === 'start') {
           if (startHourRef.current) {
             const el = startHourRef.current.querySelector('[data-selected="true"]') as HTMLElement;
-            if (el) startHourRef.current.scrollTop = el.offsetTop - 60;
+            if (el) startHourRef.current.scrollTop = el.offsetTop - 50;
           }
           if (startMinRef.current) {
             const el = startMinRef.current.querySelector('[data-selected="true"]') as HTMLElement;
-            if (el) startMinRef.current.scrollTop = el.offsetTop - 60;
+            if (el) startMinRef.current.scrollTop = el.offsetTop - 50;
           }
         } else {
           if (endHourRef.current) {
             const el = endHourRef.current.querySelector('[data-selected="true"]') as HTMLElement;
-            if (el) endHourRef.current.scrollTop = el.offsetTop - 60;
+            if (el) endHourRef.current.scrollTop = el.offsetTop - 50;
           }
           if (endMinRef.current) {
             const el = endMinRef.current.querySelector('[data-selected="true"]') as HTMLElement;
-            if (el) endMinRef.current.scrollTop = el.offsetTop - 60;
+            if (el) endMinRef.current.scrollTop = el.offsetTop - 50;
           }
         }
-      }, 60);
+      }, 70);
+      return () => clearTimeout(timer);
     }
-  }, [open, activeTab]);
+  }, [open, activeTab, mobileStep]);
 
   // Calendar days
   const calendarDays = React.useMemo(() => {
@@ -177,6 +186,8 @@ export function EventTimeRangePicker({
       nextEnd.setHours(parsedEnd.getHours(), parsedEnd.getMinutes(), 0, 0);
     }
     emitChange(d, nextEnd);
+    // On mobile, auto-advance to time step after picking a day
+    setMobileStep('time');
   };
 
   const handleSelectStartHour = (h: string) => {
@@ -247,6 +258,7 @@ export function EventTimeRangePicker({
     const start = new Date(now);
     start.setHours(now.getHours(), now.getMinutes(), 0, 0);
     emitChange(start, null);
+    setMobileStep('time');
   };
 
   // Display text formatted
@@ -297,11 +309,52 @@ export function EventTimeRangePicker({
       </PopoverTrigger>
       <PopoverContent
         align="start"
-        className="w-auto p-0 border-2 border-amber-500/40 shadow-2xl rounded-2xl overflow-hidden bg-white dark:bg-neutral-950 text-slate-900 dark:text-white z-[200]"
+        sideOffset={4}
+        className="w-[calc(100vw-32px)] sm:w-auto p-0 border-2 border-amber-500/40 shadow-2xl rounded-2xl overflow-hidden bg-white dark:bg-neutral-950 text-slate-900 dark:text-white z-[200] max-h-[88vh] sm:max-h-none overflow-y-auto"
       >
+        {/* MOBILE STEP SWITCHER (<sm) */}
+        <div className="sm:hidden grid grid-cols-2 p-1.5 bg-muted/80 border-b border-border/60 gap-1 text-xs font-bold">
+          <button
+            type="button"
+            onClick={() => setMobileStep('date')}
+            className={cn(
+              'py-1.5 px-2 rounded-lg transition-all flex items-center justify-center gap-1.5',
+              mobileStep === 'date'
+                ? 'bg-amber-500 text-white shadow-xs'
+                : 'bg-background/70 text-muted-foreground hover:text-foreground'
+            )}
+          >
+            <CalendarIcon className="size-3.5" />
+            <span>1. Chọn Ngày</span>
+            {parsedStart && (
+              <span className="font-mono text-[10px] opacity-90">
+                ({String(parsedStart.getDate()).padStart(2, '0')}/{String(parsedStart.getMonth() + 1).padStart(2, '0')})
+              </span>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileStep('time')}
+            className={cn(
+              'py-1.5 px-2 rounded-lg transition-all flex items-center justify-center gap-1.5',
+              mobileStep === 'time'
+                ? 'bg-amber-500 text-white shadow-xs'
+                : 'bg-background/70 text-muted-foreground hover:text-foreground'
+            )}
+          >
+            <Clock className="size-3.5" />
+            <span>2. Khung Giờ</span>
+            {parsedStart && (
+              <span className="font-mono text-[10px] opacity-90">
+                ({startHour}:{startMinute})
+              </span>
+            )}
+          </button>
+        </div>
+
         <div className="flex flex-col sm:flex-row divide-y sm:divide-y-0 sm:divide-x divide-border/60">
-          {/* Calendar Panel (Left) */}
-          <div className="p-3 w-[270px]">
+          {/* Calendar Panel (Step 1 on Mobile, Left Column on Desktop) */}
+          <div className={cn('p-3 w-full sm:w-[270px]', mobileStep !== 'date' && 'hidden sm:block')}>
             <div className="flex items-center justify-between pb-2 mb-2 border-b border-border/40">
               <span className="text-xs font-bold text-foreground">
                 Tháng {viewMonth + 1}, {viewYear}
@@ -366,16 +419,25 @@ export function EventTimeRangePicker({
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="h-7 text-[11px] px-2 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
+                className="h-7 text-[11px] px-2 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 font-bold"
                 onClick={handleSetToday}
               >
                 Hôm nay
               </Button>
               <Button
                 type="button"
+                variant="default"
+                size="sm"
+                className="h-7 text-[11px] px-3 font-bold bg-amber-500 hover:bg-amber-600 text-white sm:hidden"
+                onClick={() => setMobileStep('time')}
+              >
+                Tiếp: Chọn giờ ➔
+              </Button>
+              <Button
+                type="button"
                 variant="ghost"
                 size="sm"
-                className="h-7 text-[11px] px-2 text-muted-foreground hover:text-foreground font-semibold"
+                className="h-7 text-[11px] px-2 text-muted-foreground hover:text-foreground font-semibold hidden sm:inline-flex"
                 onClick={() => setOpen(false)}
               >
                 Xong
@@ -383,8 +445,8 @@ export function EventTimeRangePicker({
             </div>
           </div>
 
-          {/* Time & Duration Panel (Right) */}
-          <div className="p-3 bg-muted/20 flex flex-col w-[280px]">
+          {/* Time & Duration Panel (Step 2 on Mobile, Right Column on Desktop) */}
+          <div className={cn('p-3 bg-muted/20 flex flex-col w-full sm:w-[280px]', mobileStep !== 'time' && 'hidden sm:flex')}>
             {/* Tab switch between Start Time and End Time */}
             <div className="grid grid-cols-2 p-1 bg-muted/80 rounded-xl mb-2.5 text-xs font-semibold gap-1">
               <button
@@ -458,7 +520,7 @@ export function EventTimeRangePicker({
               )}
             </div>
 
-            {/* Active Time Selector */}
+            {/* Active Time Selector with touch-pan-y */}
             {activeTab === 'start' ? (
               <div className="flex flex-col flex-1">
                 <div className="text-[11px] font-semibold text-muted-foreground text-center mb-1">
@@ -468,7 +530,11 @@ export function EventTimeRangePicker({
                   {/* Hours */}
                   <div className="flex flex-col">
                     <span className="text-[10px] text-center font-medium text-muted-foreground mb-1">Giờ</span>
-                    <div ref={startHourRef} className="h-[155px] overflow-y-auto pr-1 space-y-1 scrollbar-thin">
+                    <div
+                      ref={startHourRef}
+                      className="h-[160px] sm:h-[155px] overflow-y-auto pr-1 space-y-1 touch-pan-y overscroll-contain"
+                      style={{ WebkitOverflowScrolling: 'touch' }}
+                    >
                       {HOURS_24.map((h) => {
                         const isSel = h === startHour;
                         return (
@@ -478,7 +544,7 @@ export function EventTimeRangePicker({
                             data-selected={isSel}
                             onClick={() => handleSelectStartHour(h)}
                             className={cn(
-                              'w-full py-0.5 text-center font-mono text-xs rounded-md transition-colors',
+                              'w-full py-1 text-center font-mono text-xs rounded-md transition-colors',
                               isSel ? 'bg-amber-600 text-white font-bold' : 'hover:bg-amber-500/15 text-foreground'
                             )}
                           >
@@ -491,7 +557,11 @@ export function EventTimeRangePicker({
                   {/* Minutes */}
                   <div className="flex flex-col">
                     <span className="text-[10px] text-center font-medium text-muted-foreground mb-1">Phút</span>
-                    <div ref={startMinRef} className="h-[155px] overflow-y-auto pr-1 space-y-1 scrollbar-thin">
+                    <div
+                      ref={startMinRef}
+                      className="h-[160px] sm:h-[155px] overflow-y-auto pr-1 space-y-1 touch-pan-y overscroll-contain"
+                      style={{ WebkitOverflowScrolling: 'touch' }}
+                    >
                       {MINUTES.map((m) => {
                         const isSel = m === startMinute;
                         return (
@@ -501,7 +571,7 @@ export function EventTimeRangePicker({
                             data-selected={isSel}
                             onClick={() => handleSelectStartMinute(m)}
                             className={cn(
-                              'w-full py-0.5 text-center font-mono text-xs rounded-md transition-colors',
+                              'w-full py-1 text-center font-mono text-xs rounded-md transition-colors',
                               isSel ? 'bg-amber-600 text-white font-bold' : 'hover:bg-amber-500/15 text-foreground'
                             )}
                           >
@@ -522,7 +592,11 @@ export function EventTimeRangePicker({
                   {/* End Hours */}
                   <div className="flex flex-col">
                     <span className="text-[10px] text-center font-medium text-muted-foreground mb-1">Giờ</span>
-                    <div ref={endHourRef} className="h-[155px] overflow-y-auto pr-1 space-y-1 scrollbar-thin">
+                    <div
+                      ref={endHourRef}
+                      className="h-[160px] sm:h-[155px] overflow-y-auto pr-1 space-y-1 touch-pan-y overscroll-contain"
+                      style={{ WebkitOverflowScrolling: 'touch' }}
+                    >
                       {HOURS_24.map((h) => {
                         const isSel = h === endHour;
                         return (
@@ -532,7 +606,7 @@ export function EventTimeRangePicker({
                             data-selected={isSel}
                             onClick={() => handleSelectEndHour(h)}
                             className={cn(
-                              'w-full py-0.5 text-center font-mono text-xs rounded-md transition-colors',
+                              'w-full py-1 text-center font-mono text-xs rounded-md transition-colors',
                               isSel ? 'bg-blue-600 text-white font-bold' : 'hover:bg-blue-500/15 text-foreground'
                             )}
                           >
@@ -545,7 +619,11 @@ export function EventTimeRangePicker({
                   {/* End Minutes */}
                   <div className="flex flex-col">
                     <span className="text-[10px] text-center font-medium text-muted-foreground mb-1">Phút</span>
-                    <div ref={endMinRef} className="h-[155px] overflow-y-auto pr-1 space-y-1 scrollbar-thin">
+                    <div
+                      ref={endMinRef}
+                      className="h-[160px] sm:h-[155px] overflow-y-auto pr-1 space-y-1 touch-pan-y overscroll-contain"
+                      style={{ WebkitOverflowScrolling: 'touch' }}
+                    >
                       {MINUTES.map((m) => {
                         const isSel = m === endMinute;
                         return (
@@ -555,7 +633,7 @@ export function EventTimeRangePicker({
                             data-selected={isSel}
                             onClick={() => handleSelectEndMinute(m)}
                             className={cn(
-                              'w-full py-0.5 text-center font-mono text-xs rounded-md transition-colors',
+                              'w-full py-1 text-center font-mono text-xs rounded-md transition-colors',
                               isSel ? 'bg-blue-600 text-white font-bold' : 'hover:bg-blue-500/15 text-foreground'
                             )}
                           >
@@ -568,6 +646,29 @@ export function EventTimeRangePicker({
                 </div>
               </div>
             )}
+
+            {/* Bottom action bar */}
+            <div className="pt-2 mt-2 border-t border-border/40 flex items-center justify-between">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 text-[11px] px-2 text-muted-foreground hover:text-foreground sm:hidden"
+                onClick={() => setMobileStep('date')}
+              >
+                ⬅ Đổi ngày
+              </Button>
+              <Button
+                type="button"
+                variant="default"
+                size="sm"
+                className="h-7 text-[11px] px-3 ml-auto font-bold bg-amber-500 hover:bg-amber-600 text-white flex items-center gap-1"
+                onClick={() => setOpen(false)}
+              >
+                <Check className="size-3.5" />
+                <span>Hoàn tất</span>
+              </Button>
+            </div>
           </div>
         </div>
       </PopoverContent>
