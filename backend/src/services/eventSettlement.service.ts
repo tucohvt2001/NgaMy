@@ -324,7 +324,7 @@ export const eventSettlementService = {
               where: { id: existing.id },
               data: {
                 amount,
-                note: payout.note || `Tiền công dự kiến show ${event.name}`,
+                note: payout.note,
                 isActive: true,
               },
             });
@@ -334,7 +334,7 @@ export const eventSettlementService = {
                 eventId,
                 memberId: payout.memberId,
                 amount,
-                note: payout.note || `Tiền công dự kiến show ${event.name}`,
+                note: payout.note,
                 isActive: true,
               },
             });

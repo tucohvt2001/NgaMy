@@ -141,50 +141,89 @@ export const attendanceService = {
   },
 
   async batchRecordByAdmin(userId: string, input: AdminBatchAttendanceInput) {
-    const event = await prisma.event.findUnique({ where: { id: input.eventId } });
+    const event = await prisma.event.findUnique({ where: { id: input.eventId }, select: { id: true } });
     if (!event) {
       throw AppError.notFound('Không tìm thấy sự kiện');
     }
 
+    if (!input.items || input.items.length === 0) {
+      return [];
+    }
+
     const now = new Date();
+    const memberIds = input.items.map((i) => i.memberId);
 
-    const results = await prisma.$transaction(
-      input.items.map((item) =>
-        prisma.attendance.upsert({
-          where: {
-            eventId_memberId: {
-              eventId: input.eventId,
-              memberId: item.memberId,
+    // 1. Lấy tất cả bản ghi điểm danh hiện có của sự kiện trong 1 câu truy vấn duy nhất
+    const existingAttendances = await prisma.attendance.findMany({
+      where: {
+        eventId: input.eventId,
+        memberId: { in: memberIds },
+      },
+      select: { id: true, memberId: true },
+    });
+
+    const existingMap = new Map(existingAttendances.map((a) => [a.memberId, a.id]));
+
+    const toCreate: Array<{
+      eventId: string;
+      memberId: string;
+      status: string;
+      checkInTime: Date | null;
+      checkOutTime: Date | null;
+      note: string | null;
+      confirmedBy: string;
+      confirmedAt: Date;
+    }> = [];
+
+    const updateOperations: any[] = [];
+
+    for (const item of input.items) {
+      const checkInTime = item.checkInTime ? new Date(item.checkInTime) : null;
+      const checkOutTime = item.checkOutTime ? new Date(item.checkOutTime) : null;
+      const note = item.note || null;
+      const existingId = existingMap.get(item.memberId);
+
+      if (existingId) {
+        updateOperations.push(
+          prisma.attendance.update({
+            where: { id: existingId },
+            data: {
+              status: item.status,
+              checkInTime,
+              checkOutTime,
+              note,
+              confirmedBy: userId,
+              confirmedAt: now,
             },
-          },
-          create: {
-            eventId: input.eventId,
-            memberId: item.memberId,
-            status: item.status,
-            checkInTime: item.checkInTime ? new Date(item.checkInTime) : null,
-            checkOutTime: item.checkOutTime ? new Date(item.checkOutTime) : null,
-            note: item.note,
-            confirmedBy: userId,
-            confirmedAt: now,
-          },
-          update: {
-            status: item.status,
-            checkInTime: item.checkInTime ? new Date(item.checkInTime) : null,
-            checkOutTime: item.checkOutTime ? new Date(item.checkOutTime) : null,
-            note: item.note,
-            confirmedBy: userId,
-            confirmedAt: now,
-          },
-          include: {
-            event: true,
-            member: true,
-            confirmedByUser: { select: { id: true, username: true } },
-          },
-        }),
-      ),
-    );
+          }),
+        );
+      } else {
+        toCreate.push({
+          eventId: input.eventId,
+          memberId: item.memberId,
+          status: item.status,
+          checkInTime,
+          checkOutTime,
+          note,
+          confirmedBy: userId,
+          confirmedAt: now,
+        });
+      }
+    }
 
-    return results;
+    const txOperations: any[] = [];
+    if (toCreate.length > 0) {
+      txOperations.push(prisma.attendance.createMany({ data: toCreate }));
+    }
+    if (updateOperations.length > 0) {
+      txOperations.push(...updateOperations);
+    }
+
+    if (txOperations.length > 0) {
+      await prisma.$transaction(txOperations);
+    }
+
+    return { count: input.items.length };
   },
 
   async delete(id: string) {

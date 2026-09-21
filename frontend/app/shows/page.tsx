@@ -208,12 +208,11 @@ export default function PublicShowsPage() {
       `🦁 LỊCH DIỄN - CLB LÂN SƯ RỒNG NGA MY THƯỢNG 🦁\n` +
       `━━━━━━━━━━━━━━━━━━━━\n` +
       `🎪 Sự kiện: ${event.name} (${event.eventCode})\n` +
-      `⏰ Thời gian: ${timeFormatted} - ${dateFormatted}\n` +
+      `⏰ Thời gian: ${dateFormatted}\n` +
       `📍 Địa điểm: ${event.location}\n` +
       `${memberLines ? memberLines + '\n' : ''}` +
       (event.description ? `📝 Dặn dò: ${event.description}\n` : '') +
-      `━━━━━━━━━━━━━━━━━━━━\n` +
-      `🔗 Xem chi tiết & sơ đồ: ${showUrl}`;
+      `━━━━━━━━━━━━━━━━━━━━`;
 
     try {
       await navigator.clipboard.writeText(shareText);

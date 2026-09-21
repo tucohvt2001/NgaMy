@@ -305,7 +305,8 @@ export default function TransactionsPage() {
       {/* Bộ Lọc & Tìm Kiếm */}
       <Card className="shadow-xs">
         <CardContent className="p-4 space-y-3">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6">
+          {/* Hàng 1: Tìm kiếm, Sự kiện, Loại phiếu, Danh mục */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-6">
             {/* Search */}
             <div className="relative sm:col-span-2">
               <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -385,70 +386,75 @@ export default function TransactionsPage() {
                 </SelectContent>
               </Select>
             </div>
+          </div>
 
-            {/* Phương thức */}
-            <div>
-              <Select
-                value={paymentMethod}
-                onValueChange={(val) => {
-                  setPaymentMethod(val);
-                  setPage(1);
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Hình thức" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ALL_VALUE}>Tất cả hình thức</SelectItem>
-                  {PAYMENT_METHODS.map((pm) => (
-                    <SelectItem key={pm} value={pm}>
-                      {PAYMENT_METHOD_LABELS[pm]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {/* Hàng 2: Tất cả hình thức, Khoảng thời gian (Từ - Đến), Nút đặt lại */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t">
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Phương thức */}
+              <div className="w-44 sm:w-48">
+                <Select
+                  value={paymentMethod}
+                  onValueChange={(val) => {
+                    setPaymentMethod(val);
+                    setPage(1);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Hình thức" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={ALL_VALUE}>Tất cả hình thức</SelectItem>
+                    {PAYMENT_METHODS.map((pm) => (
+                      <SelectItem key={pm} value={pm}>
+                        {PAYMENT_METHOD_LABELS[pm]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Hàng lọc ngày */}
+              <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+                <span className="font-medium whitespace-nowrap">Khoảng thời gian:</span>
+                <div className="flex items-center gap-1.5">
+                  <span>Từ</span>
+                  <Input
+                    type="date"
+                    value={fromDate}
+                    onChange={(e) => {
+                      setFromDate(e.target.value);
+                      setPage(1);
+                    }}
+                    className="h-9 text-xs w-36 bg-background"
+                  />
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span>Đến</span>
+                  <Input
+                    type="date"
+                    value={toDate}
+                    onChange={(e) => {
+                      setToDate(e.target.value);
+                      setPage(1);
+                    }}
+                    className="h-9 text-xs w-36 bg-background"
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Nút đặt lại */}
-            <div className="flex items-center gap-2">
+            <div>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleResetFilters}
-                className="w-full text-xs text-muted-foreground"
+                className="text-xs text-muted-foreground hover:text-foreground h-9"
               >
                 <RefreshCw className="mr-1.5 size-3.5" />
                 Đặt lại
               </Button>
-            </div>
-          </div>
-
-          {/* Hàng lọc ngày */}
-          <div className="flex flex-wrap items-center gap-3 pt-1 border-t text-xs text-muted-foreground">
-            <span className="font-medium">Khoảng thời gian:</span>
-            <div className="flex items-center gap-1.5">
-              <span>Từ</span>
-              <Input
-                type="date"
-                value={fromDate}
-                onChange={(e) => {
-                  setFromDate(e.target.value);
-                  setPage(1);
-                }}
-                className="h-8 text-xs w-36"
-              />
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span>Đến</span>
-              <Input
-                type="date"
-                value={toDate}
-                onChange={(e) => {
-                  setToDate(e.target.value);
-                  setPage(1);
-                }}
-                className="h-8 text-xs w-36"
-              />
             </div>
           </div>
         </CardContent>
