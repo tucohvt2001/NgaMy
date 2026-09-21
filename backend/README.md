@@ -58,17 +58,6 @@ npm run dev
 - Swagger: http://localhost:5000/api-docs
 - Health check: http://localhost:5000/api/health
 
-## Test
-
-```bash
-npm test
-```
-
-Test dùng chung `DATABASE_URL` trong `.env` (khuyến nghị trỏ sang schema/DB riêng cho test, xem
-`tests/globalSetup.js`), tự động chạy migrate trước khi test. Bao gồm test cho: login, member CRUD,
-team CRUD, event CRUD + phân công, check-in/check-out, duyệt nghỉ phép, tính tiền công, và authorization
-(35 test).
-
 ## Docker
 
 Chạy toàn bộ backend + PostgreSQL bằng Docker Compose (từ thư mục gốc `Web/`):
@@ -94,5 +83,4 @@ docker compose up -d --build
 - Auth JWT + phân quyền theo permission (kiểm tra ở backend, không chỉ ẩn UI)
 - CRUD đầy đủ: thành viên, đội/nhóm, chức vụ, tài khoản, sự kiện, phân công, chấm công, nghỉ phép, tiền công
 - Dashboard + báo cáo (kèm export Excel báo cáo tiền công)
-- 35 test tự động (Jest + Supertest)
 - Swagger tại `/api-docs`, Docker Compose, seed dữ liệu demo
