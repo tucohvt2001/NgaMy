@@ -43,6 +43,7 @@ export interface PublicScheduleResponse {
 
 export interface PublicScheduleParams {
   search?: string;
+  date?: string;
   filter?: 'all' | 'today' | 'week' | 'month';
 }
 

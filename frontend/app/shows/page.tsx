@@ -30,6 +30,7 @@ import {
   Drum,
   Volume2,
   PartyPopper,
+  RotateCcw,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -178,12 +179,12 @@ function getPositionBadge(positionName: string) {
 
 export default function PublicShowsPage() {
   const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState<'all' | 'today' | 'week' | 'month'>('all');
+  const [selectedDate, setSelectedDate] = useState<string>('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const { data, isLoading, isFetching, refetch } = usePublicSchedules({
     search: search || undefined,
-    filter,
+    date: selectedDate || undefined,
   });
 
   const events = data?.events || [];
@@ -337,52 +338,32 @@ export default function PublicShowsPage() {
       {/* 3. Search & Filter Bar */}
       <section className="px-4 py-2.5 sticky top-[57px] z-30 bg-background/95 backdrop-blur-2xl border-b border-amber-500/20 shadow-xs">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
-          {/* Filter Pills */}
-          <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 scrollbar-none">
-            <Button
-              variant={filter === 'all' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setFilter('all')}
-              className={`h-8 text-xs rounded-xl px-3 font-bold shrink-0 ${filter === 'all'
-                ? 'bg-gradient-to-r from-red-600 to-amber-500 text-white shadow-sm shadow-amber-500/20'
-                : 'border-border/80'
-                }`}
-            >
-              Tất cả ({stats.totalUpcoming})
-            </Button>
-            <Button
-              variant={filter === 'today' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setFilter('today')}
-              className={`h-8 text-xs rounded-xl px-3 font-bold shrink-0 ${filter === 'today'
-                ? 'bg-red-600 text-white shadow-sm shadow-red-500/30'
-                : 'border-red-500/30 text-red-600 dark:text-red-400'
-                }`}
-            >
-              🔥 Hôm nay ({stats.todayEventsCount})
-            </Button>
-            <Button
-              variant={filter === 'week' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setFilter('week')}
-              className={`h-8 text-xs rounded-xl px-3 font-bold shrink-0 ${filter === 'week'
-                ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-500/30'
-                : 'border-border/80'
-                }`}
-            >
-              ⚡ Tuần này ({stats.thisWeekEventsCount})
-            </Button>
-            <Button
-              variant={filter === 'month' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setFilter('month')}
-              className={`h-8 text-xs rounded-xl px-3 font-bold shrink-0 ${filter === 'month'
-                ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/30'
-                : 'border-border/80'
-                }`}
-            >
-              📅 Tháng này
-            </Button>
+          {/* Combobox / Ô chọn Ngày tháng năm */}
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <span className="text-xs font-bold text-foreground/80 shrink-0">Ngày diễn:</span>
+            <Input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="h-9 text-xs rounded-xl bg-card border-amber-500/30 focus-visible:ring-amber-500 w-full sm:w-44 font-medium cursor-pointer"
+              title="Lọc theo ngày diễn (Ngày/Tháng/Năm)"
+            />
+
+            {(selectedDate || search) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSelectedDate('');
+                  setSearch('');
+                }}
+                className="h-9 px-2.5 text-xs rounded-xl text-muted-foreground hover:text-foreground shrink-0"
+                title="Đặt lại bộ lọc"
+              >
+                <RotateCcw className="size-3.5 mr-1" />
+                Đặt lại
+              </Button>
+            )}
           </div>
 
           {/* Search Input */}
@@ -392,7 +373,7 @@ export default function PublicShowsPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Tìm tên show, địa chỉ, thành viên tham gia..."
-              className="h-8 pl-8 text-xs rounded-xl bg-card border-amber-500/30 focus-visible:ring-amber-500 w-full"
+              className="h-9 pl-8 text-xs rounded-xl bg-card border-amber-500/30 focus-visible:ring-amber-500 w-full"
             />
           </div>
         </div>

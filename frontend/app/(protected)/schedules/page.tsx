@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import {
   Plus,
@@ -30,6 +30,7 @@ import {
   Globe,
   MapPin,
   Trash2,
+  RotateCcw,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -89,15 +90,33 @@ function formatDate(value: string) {
   return new Date(value).toLocaleDateString('vi-VN');
 }
 
+function getDayRange(dateStr: string): { fromDate?: string; toDate?: string } {
+  if (!dateStr) return {};
+  const parts = dateStr.split('-');
+  if (parts.length !== 3) return {};
+  const year = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10) - 1;
+  const day = parseInt(parts[2], 10);
+
+  const start = new Date(year, month, day, 0, 0, 0, 0);
+  const end = new Date(year, month, day, 23, 59, 59, 999);
+
+  return {
+    fromDate: start.toISOString(),
+    toDate: end.toISOString(),
+  };
+}
+
 export default function SchedulesPage() {
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
   const [showCharts, setShowCharts] = useState(true);
 
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(20);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<string | undefined>();
-  const [settlementFilter, setSettlementFilter] = useState<string>(ALL_VALUE);
+  const [selectedDate, setSelectedDate] = useState<string>('');
   const [formOpen, setFormOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<EventItem | null>(null);
   const [confirmEvent, setConfirmEvent] = useState<EventItem | null>(null);
@@ -106,11 +125,15 @@ export default function SchedulesPage() {
   const [settlementOpen, setSettlementOpen] = useState(false);
   const [reviewShareEvent, setReviewShareEvent] = useState<EventItem | null>(null);
 
+  const dateRange = useMemo(() => getDayRange(selectedDate), [selectedDate]);
+
   const { data, isLoading } = useEvents({
     page,
-    limit: 10,
+    limit,
     search: search || undefined,
     status: status as EventItem['status'] | undefined,
+    fromDate: dateRange.fromDate,
+    toDate: dateRange.toDate,
   });
 
   const { data: stats, isLoading: loadingStats } = useEventStats(selectedYear);
@@ -155,14 +178,7 @@ export default function SchedulesPage() {
     );
   };
 
-  const filteredItems = data?.items.filter((item) => {
-    const isSettled = (item._count?.transactions ?? 0) > 0 || item.status === 'COMPLETED';
-    const hasDraft = !isSettled && (item._count?.salaryConfigs ?? 0) > 0;
-    if (settlementFilter === 'SETTLED') return isSettled;
-    if (settlementFilter === 'DRAFT') return hasDraft;
-    if (settlementFilter === 'UNSETTLED') return !isSettled && !hasDraft;
-    return true;
-  }) ?? [];
+  const filteredItems = data?.items ?? [];
 
   return (
     <div className="space-y-5 pb-8">
@@ -528,12 +544,12 @@ export default function SchedulesPage() {
         </Button>
       </div>
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Tìm theo tên sự kiện, mã sự kiện hoặc địa điểm..."
-            className="pl-9 rounded-xl"
+            className="pl-9 rounded-xl h-10"
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
@@ -541,81 +557,40 @@ export default function SchedulesPage() {
             }}
           />
         </div>
-        <Select
-          value={status ?? ALL_VALUE}
-          onValueChange={(v) => {
-            setStatus(v === ALL_VALUE ? undefined : v);
-            setPage(1);
-          }}
-        >
-          <SelectTrigger className="sm:w-48 rounded-xl">
-            <SelectValue placeholder="Tất cả trạng thái" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL_VALUE}>Tất cả trạng thái</SelectItem>
-            {EVENT_STATUSES.map((s) => (
-              <SelectItem key={s} value={s}>
-                {STATUS_LABELS[s]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
 
-        <Select
-          value={settlementFilter}
-          onValueChange={(v) => {
-            setSettlementFilter(v);
-            setPage(1);
-          }}
-        >
-          <SelectTrigger className="sm:w-48 rounded-xl">
-            <SelectValue placeholder="Tất cả dự toán" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL_VALUE}>Tất cả dự toán</SelectItem>
-            <SelectItem value="SETTLED">🟢 Đã dự toán</SelectItem>
-            <SelectItem value="DRAFT">📝 Bản nháp dự toán</SelectItem>
-            <SelectItem value="UNSETTLED">🟡 Chưa dự toán</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+          {/* Ô chọn Ngày tháng năm */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-bold text-foreground/80 shrink-0">Ngày diễn:</span>
+            <Input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => {
+                setSelectedDate(e.target.value);
+                setPage(1);
+              }}
+              className="h-10 rounded-xl text-xs w-40 font-medium cursor-pointer"
+              title="Lọc theo ngày diễn (Ngày/Tháng/Năm)"
+            />
+          </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground px-3 py-2 bg-muted/20 rounded-xl border">
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="font-bold text-foreground">Màu ưu tiên:</span>
-          <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-300 font-bold border border-amber-500/30">
-            <span className="size-2 rounded-full bg-amber-500 animate-pulse" />
-            Hôm nay
-          </span>
-          <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-semibold border border-emerald-500/30">
-            <span className="size-2 rounded-full bg-emerald-500" />
-            Ngày mai
-          </span>
-          <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-700 dark:text-blue-300 font-semibold border border-blue-500/30">
-            <span className="size-2 rounded-full bg-blue-500" />
-            2 - 3 ngày
-          </span>
-          <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-700 dark:text-purple-300 font-medium border border-purple-500/30">
-            <span className="size-2 rounded-full bg-purple-500" />
-            Tuần này
-          </span>
-          <span className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-md text-slate-500">
-            <span className="size-2 rounded-full bg-slate-400" />
-            Đã qua
-          </span>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <span className="font-semibold text-foreground">Sổ quỹ:</span>
-          <span className="flex items-center gap-1 text-emerald-700 dark:text-emerald-400 font-medium">
-            <CheckCircle2 className="size-3.5" /> Đã dự toán
-          </span>
-          <span className="flex items-center gap-1 text-purple-700 dark:text-purple-400 font-medium">
-            <FileText className="size-3.5" /> Bản nháp
-          </span>
-          <span className="flex items-center gap-1 text-amber-700 dark:text-amber-400 font-medium">
-            <AlertCircle className="size-3.5" /> Chưa dự toán
-          </span>
+          {(selectedDate || search || status) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setSelectedDate('');
+                setSearch('');
+                setStatus(undefined);
+                setPage(1);
+              }}
+              className="h-10 px-2.5 text-xs rounded-xl text-muted-foreground hover:text-foreground"
+              title="Đặt lại bộ lọc"
+            >
+              <RotateCcw className="size-3.5 mr-1" />
+              Đặt lại
+            </Button>
+          )}
         </div>
       </div>
 
@@ -952,12 +927,37 @@ export default function SchedulesPage() {
                 })}
               </TableBody>
             </Table>
-            <PaginationBar
-              page={data.pagination.page}
-              totalPages={data.pagination.totalPages}
-              total={data.pagination.total}
-              onPageChange={setPage}
-            />
+            {/* Phân trang & Tùy chọn số lượng dòng */}
+            <div className="p-3 border-t flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span>Hiển thị</span>
+                <Select
+                  value={String(limit)}
+                  onValueChange={(v) => {
+                    setLimit(Number(v));
+                    setPage(1);
+                  }}
+                >
+                  <SelectTrigger className="h-7 w-16 text-xs rounded-lg bg-background">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10" className="text-xs">10</SelectItem>
+                    <SelectItem value="20" className="text-xs">20</SelectItem>
+                    <SelectItem value="50" className="text-xs">50</SelectItem>
+                    <SelectItem value="100" className="text-xs">100</SelectItem>
+                  </SelectContent>
+                </Select>
+                <span>sự kiện / trang</span>
+              </div>
+
+              <PaginationBar
+                page={data.pagination.page}
+                totalPages={data.pagination.totalPages}
+                total={data.pagination.total}
+                onPageChange={setPage}
+              />
+            </div>
           </>
         )}
       </div>
