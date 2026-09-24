@@ -44,6 +44,14 @@ export const eventRepository = {
       take: params.take,
       include: {
         creator: { select: { id: true, username: true } },
+        transactions: {
+          where: { type: 'INCOME', category: 'EVENT_REVENUE' },
+          select: { amount: true, tipAmount: true },
+        },
+        salaryConfigs: {
+          where: { memberId: null, positionId: null },
+          select: { amount: true, note: true },
+        },
         _count: { select: { eventMembers: true, transactions: true, salaryConfigs: true } },
       },
       orderBy: { eventDate: 'desc' },
@@ -59,6 +67,14 @@ export const eventRepository = {
       where: { id },
       include: {
         creator: { select: { id: true, username: true } },
+        transactions: {
+          where: { type: 'INCOME', category: 'EVENT_REVENUE' },
+          select: { amount: true, tipAmount: true },
+        },
+        salaryConfigs: {
+          where: { memberId: null, positionId: null },
+          select: { amount: true, note: true },
+        },
         eventMembers: { include: { member: true, position: true } },
         _count: { select: { eventMembers: true, transactions: true, salaryConfigs: true } },
       },

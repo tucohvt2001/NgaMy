@@ -491,11 +491,10 @@ export default function SchedulesPage() {
             setStatus(status === 'DRAFT' ? undefined : 'DRAFT');
             setPage(1);
           }}
-          className={`h-8 text-xs rounded-xl font-bold gap-1.5 ${
-            status === 'DRAFT'
+          className={`h-8 text-xs rounded-xl font-bold gap-1.5 ${status === 'DRAFT'
               ? 'bg-amber-500 text-black shadow-xs shadow-amber-500/20'
               : 'border-amber-500/40 text-amber-800 dark:text-amber-200 hover:bg-amber-500/10'
-          }`}
+            }`}
         >
           <span className="size-2 rounded-full bg-amber-500 animate-pulse" />
           <span>⏳ Show chờ duyệt</span>
@@ -508,9 +507,8 @@ export default function SchedulesPage() {
             setStatus(status === 'CONFIRMED' ? undefined : 'CONFIRMED');
             setPage(1);
           }}
-          className={`h-8 text-xs rounded-xl font-semibold ${
-            status === 'CONFIRMED' ? 'bg-blue-600 text-white' : ''
-          }`}
+          className={`h-8 text-xs rounded-xl font-semibold ${status === 'CONFIRMED' ? 'bg-blue-600 text-white' : ''
+            }`}
         >
           ✅ Đã duyệt
         </Button>
@@ -522,9 +520,8 @@ export default function SchedulesPage() {
             setStatus(status === 'IN_PROGRESS' ? undefined : 'IN_PROGRESS');
             setPage(1);
           }}
-          className={`h-8 text-xs rounded-xl font-semibold ${
-            status === 'IN_PROGRESS' ? 'bg-amber-600 text-white' : ''
-          }`}
+          className={`h-8 text-xs rounded-xl font-semibold ${status === 'IN_PROGRESS' ? 'bg-amber-600 text-white' : ''
+            }`}
         >
           ⚡ Đang diễn
         </Button>
@@ -536,9 +533,8 @@ export default function SchedulesPage() {
             setStatus(status === 'COMPLETED' ? undefined : 'COMPLETED');
             setPage(1);
           }}
-          className={`h-8 text-xs rounded-xl font-semibold ${
-            status === 'COMPLETED' ? 'bg-emerald-600 text-white' : ''
-          }`}
+          className={`h-8 text-xs rounded-xl font-semibold ${status === 'COMPLETED' ? 'bg-emerald-600 text-white' : ''
+            }`}
         >
           🟢 Hoàn thành ({stats?.completedEvents ?? 0})
         </Button>
@@ -608,7 +604,7 @@ export default function SchedulesPage() {
                   <TableHead>Tên sự kiện</TableHead>
                   <TableHead className="max-w-[200px] md:max-w-[260px]">Địa điểm</TableHead>
                   <TableHead className="w-48">Thời gian diễn</TableHead>
-                  <TableHead className="w-36">Giá trị hợp đồng</TableHead>
+                  <TableHead className="w-40">Tổng thu</TableHead>
                   <TableHead className="w-36">Dự toán quỹ</TableHead>
                   <TableHead className="w-36">Trạng thái</TableHead>
                   <TableHead className="text-right w-20">Thao tác</TableHead>
@@ -618,7 +614,7 @@ export default function SchedulesPage() {
                 {filteredItems.map((event) => {
                   const evDate = new Date(event.eventDate);
                   const now = new Date();
-                  
+
                   const evMidnight = new Date(evDate.getFullYear(), evDate.getMonth(), evDate.getDate()).getTime();
                   const nowMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
                   const diffDays = Math.round((evMidnight - nowMidnight) / (1000 * 60 * 60 * 24));
@@ -753,14 +749,31 @@ export default function SchedulesPage() {
                         </div>
                       </TableCell>
                       <TableCell className="text-xs">
-                        <div className="font-semibold text-emerald-600 dark:text-emerald-400">
-                          {event.contractValue ? formatCurrency(Number(event.contractValue)) : '0 đ'}
-                        </div>
-                        {(event.depositAmount ?? 0) > 0 && (
-                          <div className="text-[10px] text-amber-600 dark:text-amber-400 font-medium mt-0.5">
-                            Đã cọc: {formatCurrency(Number(event.depositAmount))}
-                          </div>
-                        )}
+                        {(() => {
+                          const tip = Number(event.tipAmount) || 0;
+                          const contract = Number(event.contractValue) || 0;
+                          const total = (event.totalRevenue !== undefined && event.totalRevenue !== null)
+                            ? Number(event.totalRevenue)
+                            : (contract + tip);
+
+                          return (
+                            <div className="space-y-0.5">
+                              <div className="font-bold text-emerald-600 dark:text-emerald-400">
+                                {total > 0 ? formatCurrency(total) : '0 đ'}
+                              </div>
+                              {tip > 0 && (
+                                <div className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+                                  +{formatCurrency(tip)} lộc
+                                </div>
+                              )}
+                              {(event.depositAmount ?? 0) > 0 && (
+                                <div className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+                                  Đã cọc: {formatCurrency(Number(event.depositAmount))}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </TableCell>
                       <TableCell>
                         {isSettled ? (

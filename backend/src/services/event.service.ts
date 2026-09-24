@@ -3,6 +3,36 @@ import { AppError } from '../utils/AppError';
 import { eventRepository } from '../repositories/event.repository';
 import { CreateEventInput, ListEventQuery, UpdateEventInput, PublicBookingInput } from '../validators/event.validator';
 
+function attachEventRevenue(ev: any) {
+  let tipAmount = 0;
+  const contractValue = Number(ev.contractValue) || 0;
+  let totalRevenue = contractValue;
+
+  if (ev.transactions && ev.transactions.length > 0) {
+    tipAmount = ev.transactions.reduce((sum: number, t: any) => sum + (Number(t.tipAmount) || 0), 0);
+    totalRevenue = contractValue + tipAmount;
+  } else if (ev.salaryConfigs && ev.salaryConfigs.length > 0) {
+    const draftConfig = ev.salaryConfigs[0];
+    if (draftConfig.note) {
+      try {
+        const parsed = JSON.parse(draftConfig.note);
+        tipAmount = Number(parsed.tipAmount) || Number(draftConfig.amount) || 0;
+      } catch {
+        tipAmount = Number(draftConfig.amount) || 0;
+      }
+    } else {
+      tipAmount = Number(draftConfig.amount) || 0;
+    }
+    totalRevenue = contractValue + tipAmount;
+  }
+
+  return {
+    ...ev,
+    tipAmount,
+    totalRevenue,
+  };
+}
+
 export const eventService = {
   async generateEventCode(targetDate?: Date): Promise<string> {
     const d = targetDate ? new Date(targetDate) : new Date();
@@ -48,10 +78,12 @@ export const eventService = {
       toDate: query.toDate,
     };
 
-    const [items, total] = await Promise.all([
+    const [rawItems, total] = await Promise.all([
       eventRepository.findMany({ skip, take: limit, ...filters }),
       eventRepository.count(filters),
     ]);
+
+    const items = rawItems.map(attachEventRevenue);
 
     return { items, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } };
   },
@@ -61,7 +93,7 @@ export const eventService = {
     if (!event) {
       throw AppError.notFound('Không tìm thấy sự kiện');
     }
-    return event;
+    return attachEventRevenue(event);
   },
 
   async create(input: CreateEventInput, createdBy: string) {

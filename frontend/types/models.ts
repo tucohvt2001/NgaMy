@@ -121,6 +121,8 @@ export interface EventItem {
   customerPhone?: string | null;
   contractValue?: number | null;
   depositAmount?: number | null;
+  tipAmount?: number | null;
+  totalRevenue?: number | null;
   status: EventStatus;
   description?: string | null;
   createdBy: string;
