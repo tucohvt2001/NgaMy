@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useEventSettlement, useSettleEvent } from '@/hooks/useEventSettlement';
+import { toast } from 'sonner';
 import { EventItem, EventSettlementInput, MemberPayoutItem, EventExpenseItem } from '@/types/models';
 import {
   PAYMENT_METHODS,
@@ -78,7 +79,7 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
   const [tipAmount, setTipAmount] = useState<number>(0);
   const [payer, setPayer] = useState<string>('');
   const [incomePaymentMethod, setIncomePaymentMethod] = useState<PaymentMethod>('CASH');
-  const [createIncomeVoucher, setCreateIncomeVoucher] = useState<boolean>(true);
+  const [createIncomeVoucher, setCreateIncomeVoucher] = useState<boolean>(false);
   const [markCompleted, setMarkCompleted] = useState<boolean>(false);
   const [notes, setNotes] = useState<string>('');
 
@@ -95,7 +96,7 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
       setTipAmount(0);
       setPayer(event.customerName || '');
       setIncomePaymentMethod('CASH');
-      setCreateIncomeVoucher(true);
+      setCreateIncomeVoucher(false);
       setMarkCompleted(event.status === 'COMPLETED');
       setNotes('');
       setExpenses([]);
@@ -106,19 +107,44 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
   }, [event, open]);
 
   useEffect(() => {
-    if (overview?.members) {
-      setPayouts(
-        overview.members.map((m) => ({
-          memberId: m.memberId,
-          amount: m.payoutAmount ?? 0,
-          positionName: m.positionName,
-          paymentMethod: 'CASH' as PaymentMethod,
-          note: m.payoutNote ?? '',
-          isPaid: m.isPaid ?? false,
-        }))
-      );
+    if (overview) {
+      // Khôi phục toàn bộ dữ liệu bản nháp nếu đã từng lưu trước đó
+      if (overview.draftData) {
+        const d = overview.draftData;
+        if (d.contractAmount !== undefined && d.contractAmount > 0) {
+          setContractAmount(d.contractAmount);
+        } else if (event?.contractValue !== undefined) {
+          setContractAmount(event.contractValue);
+        }
+        setTipAmount(d.tipAmount ?? 0);
+        if (d.payer) setPayer(d.payer);
+        if (d.paymentMethod) setIncomePaymentMethod(d.paymentMethod);
+        if (d.isPaidRevenue !== undefined) {
+          setCreateIncomeVoucher(Boolean(d.isPaidRevenue));
+        }
+        if (d.expenses && Array.isArray(d.expenses) && d.expenses.length > 0) {
+          setExpenses(d.expenses);
+        }
+        if (d.notes) setNotes(d.notes);
+      } else {
+        // Nếu chưa từng có bản nháp, mặc định kiểm tra xem đã có phiếu thu trước đó hay chưa
+        setCreateIncomeVoucher(overview.settledIncome > 0);
+      }
+
+      if (overview.members) {
+        setPayouts(
+          overview.members.map((m) => ({
+            memberId: m.memberId,
+            amount: m.payoutAmount ?? 0,
+            positionName: m.positionName,
+            paymentMethod: 'CASH' as PaymentMethod,
+            note: m.payoutNote ?? '',
+            isPaid: m.isPaid ?? false,
+          }))
+        );
+      }
     }
-  }, [overview]);
+  }, [overview, event]);
 
   // Cập nhật tiền công 1 thành viên (chỉ cho phép nếu chưa thanh toán)
   const handlePayoutChange = (memberId: string, field: keyof PayoutItemState, value: any) => {
@@ -215,6 +241,10 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
 
   const handleExecuteSubmit = (isDraft: boolean) => {
     if (!event) return;
+    if (!isDraft && !createIncomeVoucher) {
+      toast.error('Không thể xác nhận dự toán khi khách chưa thanh toán. Vui lòng tick chọn "Đã thanh toán" hoặc bấm "Lưu Bản Nháp" để tiếp tục theo dõi.');
+      return;
+    }
     setIsDraftSubmitting(isDraft);
 
     const payload: EventSettlementInput = {
@@ -307,25 +337,27 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
 
             {/* PHẦN 1: DOANH THU SHOW DIỄN (THU TIỀN) */}
             <div className="p-4 rounded-2xl border bg-card shadow-2xs space-y-4">
-              <div className="flex items-center justify-between border-b pb-2">
+              <div className="flex items-center justify-between border-b pb-2 flex-wrap gap-2">
                 <h3 className="font-bold text-sm flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
                   <ArrowDownLeft className="size-4" /> 1. Doanh Thu Show Diễn (Thu Tiền)
                 </h3>
-                <label className="flex items-center gap-2 text-xs cursor-pointer">
+                <label className="flex items-center gap-2 text-xs cursor-pointer select-none font-semibold">
                   <input
                     type="checkbox"
                     checked={createIncomeVoucher}
                     onChange={(e) => setCreateIncomeVoucher(e.target.checked)}
-                    className="rounded text-emerald-600 focus:ring-emerald-500"
+                    className="size-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
                   />
-                  <span className="font-medium">Lập Phiếu Thu Doanh Thu vào Sổ Quỹ</span>
+                  <span className="font-bold text-foreground">
+                    Đã thanh toán
+                  </span>
                 </label>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                 {/* Tiền Hợp Đồng */}
                 <div className="space-y-1.5 md:col-span-1">
-                  <Label htmlFor="contractAmount" className="text-xs">Tiền show (Hợp đồng) *</Label>
+                  <Label htmlFor="contractAmount" className="text-xs font-semibold">Tiền show (Hợp đồng) *</Label>
                   <MoneyInput
                     id="contractAmount"
                     value={contractAmount}
@@ -351,29 +383,29 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
 
                 {/* Người nộp / Khách hàng */}
                 <div className="space-y-1.5 md:col-span-1">
-                  <Label htmlFor="payer" className="text-xs">Khách hàng / Người thanh toán</Label>
+                  <Label htmlFor="payer" className="text-xs font-semibold">Khách hàng / Người thanh toán</Label>
                   <Input
                     id="payer"
                     value={payer}
                     onChange={(e) => setPayer(e.target.value)}
                     placeholder="Tên khách hàng..."
-                    className="rounded-xl"
+                    className="rounded-xl text-xs h-9"
                   />
                 </div>
 
                 {/* Phương thức thu */}
                 <div className="space-y-1.5 md:col-span-1">
-                  <Label className="text-xs">Hình thức thu</Label>
+                  <Label className="text-xs font-semibold">Hình thức thu</Label>
                   <Select
                     value={incomePaymentMethod}
                     onValueChange={(v: PaymentMethod) => setIncomePaymentMethod(v)}
                   >
-                    <SelectTrigger className="rounded-xl">
+                    <SelectTrigger className="rounded-xl h-9 text-xs">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       {PAYMENT_METHODS.map((pm) => (
-                        <SelectItem key={pm} value={pm}>
+                        <SelectItem key={pm} value={pm} className="text-xs">
                           {PAYMENT_METHOD_LABELS[pm]}
                         </SelectItem>
                       ))}
@@ -383,16 +415,31 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
               </div>
 
               {/* Box Tổng Doanh Thu */}
-              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between">
+              <div className={`p-3 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${
+                createIncomeVoucher
+                  ? 'bg-emerald-500/10 border-emerald-500/30'
+                  : 'bg-amber-500/10 border-amber-500/30'
+              }`}>
                 <div>
-                  <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300">
-                    TỔNG THU SHOW DIỄN:
-                  </span>
-                  <span className="text-[11px] text-muted-foreground ml-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-bold text-foreground">
+                      TỔNG THU SHOW DIỄN:
+                    </span>
+                    {createIncomeVoucher ? (
+                      <Badge className="bg-emerald-600 text-white text-[10px] font-bold">
+                        🟢 Đã thanh toán
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/40 text-[10px] font-bold">
+                        🟡 Chưa thanh toán (Chờ thu)
+                      </Badge>
+                    )}
+                  </div>
+                  <span className="text-[11px] text-muted-foreground">
                     (Tiền show {formatCurrency(contractAmount)} + Lộc {formatCurrency(tipAmount)})
                   </span>
                 </div>
-                <span className="text-lg font-black text-emerald-600 dark:text-emerald-400">
+                <span className={`text-lg font-black ${createIncomeVoucher ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
                   {formatCurrency(totalIncome)}
                 </span>
               </div>
@@ -720,7 +767,15 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
 
             <Button
               type="button"
-              onClick={() => setConfirmModalOpen(true)}
+              onClick={() => {
+                if (!createIncomeVoucher) {
+                  toast.error(
+                    'Không thể xác nhận dự toán khi khách chưa thanh toán. Vui lòng tick chọn "Đã thanh toán" hoặc bấm "Lưu Bản Nháp" để tiếp tục theo dõi.'
+                  );
+                  return;
+                }
+                setConfirmModalOpen(true);
+              }}
               disabled={settleMutation.isPending}
               className="bg-amber-600 hover:bg-amber-700 text-white font-bold gap-1.5 rounded-xl text-xs shadow-md shadow-amber-600/20"
             >

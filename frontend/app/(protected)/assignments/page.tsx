@@ -15,6 +15,7 @@ import {
   Shield,
   X,
   UserCheck,
+  Copy,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,6 +26,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { LoadingState, EmptyState } from '@/components/tables/States';
 import { ConfirmDialog } from '@/components/forms/ConfirmDialog';
 import { AssignMemberDialog } from '@/components/forms/AssignMemberDialog';
+import { CopyEventLineupDialog } from '@/components/forms/CopyEventLineupDialog';
 import { useBatchAssignMembers, useEventMembers, useEvents, useRemoveAssignment } from '@/hooks/useEvents';
 import { EventMember } from '@/types/models';
 import { STATUS_LABELS } from '@/types/enums';
@@ -55,6 +57,7 @@ function AssignmentsContent() {
   const { data: eventsData } = useEvents({ page: 1, limit: 100 });
   const { data: assignments, isLoading } = useEventMembers(eventId);
   const [formOpen, setFormOpen] = useState(false);
+  const [copyDialogOpen, setCopyDialogOpen] = useState(false);
   const [search, setSearch] = useState('');
 
   // Dialog xác nhận xóa
@@ -73,6 +76,13 @@ function AssignmentsContent() {
   const currentEvent = useMemo(() => {
     return eventsData?.items.find((e) => e.id === eventId);
   }, [eventsData?.items, eventId]);
+
+  // Chỉ hiển thị các sự kiện đang chuẩn bị / chưa hoàn thành và chưa hủy để phân công
+  const assignableEvents = useMemo(() => {
+    return (eventsData?.items ?? []).filter(
+      (e) => e.status !== 'COMPLETED' && e.status !== 'CANCELLED',
+    );
+  }, [eventsData?.items]);
 
   // Gom nhóm danh sách phân công theo từng thành viên (1 người -> nhiều vai trò)
   const groupedAssignments: GroupedMemberAssignment[] = useMemo(() => {
@@ -105,10 +115,10 @@ function AssignmentsContent() {
     const term = search.toLowerCase().trim();
     return groupedAssignments.filter(
       (g) =>
-        g.member.fullName.toLowerCase().includes(term) ||
-        g.member.memberCode.toLowerCase().includes(term) ||
-        g.member.phone?.toLowerCase().includes(term) ||
-        g.roles.some((r) => r.position.name.toLowerCase().includes(term)),
+        g.member?.fullName?.toLowerCase().includes(term) ||
+        g.member?.memberCode?.toLowerCase().includes(term) ||
+        g.member?.phone?.toLowerCase().includes(term) ||
+        g.roles.some((r) => r.position?.name?.toLowerCase().includes(term)),
     );
   }, [groupedAssignments, search]);
 
@@ -155,13 +165,24 @@ function AssignmentsContent() {
         </div>
 
         {eventId && (
-          <Button
-            onClick={() => setFormOpen(true)}
-            className="rounded-2xl bg-amber-500 hover:bg-amber-600 text-black font-bold text-xs gap-2 shadow-md shadow-amber-500/20"
-          >
-            <Plus className="size-4" />
-            Phân công thành viên
-          </Button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              variant="outline"
+              onClick={() => setCopyDialogOpen(true)}
+              className="rounded-2xl border-amber-500/40 text-amber-900 dark:text-amber-200 hover:bg-amber-500/10 font-bold text-xs gap-1.5 h-9"
+            >
+              <Copy className="size-3.5 text-amber-600 dark:text-amber-400" />
+              Lấy đội hình show khác
+            </Button>
+
+            <Button
+              onClick={() => setFormOpen(true)}
+              className="rounded-2xl bg-amber-500 hover:bg-amber-600 text-black font-bold text-xs gap-1.5 shadow-xs shadow-amber-500/20 h-9"
+            >
+              <Plus className="size-4" />
+              Phân công thành viên
+            </Button>
+          </div>
         )}
       </div>
 
@@ -176,10 +197,10 @@ function AssignmentsContent() {
               <SelectValue placeholder="-- Chọn sự kiện để phân công --" />
             </SelectTrigger>
             <SelectContent className="max-h-72">
-              {eventsData?.items.map((event) => (
+              {assignableEvents.map((event) => (
                 <SelectItem key={event.id} value={event.id} className="text-xs">
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-amber-600 dark:text-amber-400">{event.eventCode}</span>
+                    <span className="font-mono font-bold text-amber-600 dark:text-amber-400">{event.eventCode}</span>
                     <span>-</span>
                     <span className="font-bold">{event.name}</span>
                     <span className="text-muted-foreground">({formatDate(event.eventDate)})</span>
@@ -333,13 +354,13 @@ function AssignmentsContent() {
                         <TableCell>
                           <div className="flex items-center gap-2.5">
                             <div className="size-8 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 font-bold flex items-center justify-center text-xs shrink-0">
-                              {item.member.fullName.charAt(0).toUpperCase()}
+                              {(item.member?.fullName?.charAt(0) || '?').toUpperCase()}
                             </div>
                             <div>
-                              <p className="font-bold text-xs text-foreground">{item.member.fullName}</p>
+                              <p className="font-bold text-xs text-foreground">{item.member?.fullName || 'Thành viên'}</p>
                               <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-mono mt-0.5">
-                                <span>{item.member.memberCode}</span>
-                                {item.member.phone && (
+                                <span>{item.member?.memberCode || ''}</span>
+                                {item.member?.phone && (
                                   <>
                                     <span>•</span>
                                     <span>{item.member.phone}</span>
@@ -359,11 +380,11 @@ function AssignmentsContent() {
                                 variant="secondary"
                                 className="pl-2.5 pr-1.5 py-1 rounded-xl text-xs flex items-center gap-1.5 bg-amber-500/10 text-amber-900 dark:text-amber-200 border border-amber-500/30 group hover:border-amber-500/50 transition-colors"
                               >
-                                <span className="font-bold">{r.position.name}</span>
+                                <span className="font-bold">{r.position?.name || 'Vai trò'}</span>
                                 <button
                                   type="button"
                                   onClick={() => handleRemoveSingleRole(r, item.member)}
-                                  title={`Hủy vai trò "${r.position.name}" của ${item.member.fullName}`}
+                                  title={`Hủy vai trò "${r.position?.name || 'này'}" của ${item.member?.fullName || ''}`}
                                   className="size-4 rounded-full bg-amber-500/20 hover:bg-rose-500 hover:text-white flex items-center justify-center text-amber-800 dark:text-amber-200 transition-colors"
                                 >
                                   <X className="size-2.5 stroke-[2.5]" />
@@ -462,6 +483,17 @@ function AssignmentsContent() {
         }}
         isLoading={removeMutation.isPending}
       />
+
+      {/* Modal Sao Chép Đội Hình Từ Show Khác */}
+      {eventId && (
+        <CopyEventLineupDialog
+          open={copyDialogOpen}
+          onOpenChange={setCopyDialogOpen}
+          targetEventId={eventId}
+          targetEventName={currentEvent?.name}
+          existingCount={totalUniqueMembers}
+        />
+      )}
     </div>
   );
 }

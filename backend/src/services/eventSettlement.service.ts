@@ -189,6 +189,17 @@ export const eventSettlementService = {
       };
     });
 
+    // Kiểm tra xem có bản ghi lưu nháp tạm thời (SalaryConfig với memberId null)
+    const draftConfig = existingSalaryConfigs.find((sc) => !sc.memberId && !sc.positionId);
+    let draftData: any = null;
+    if (draftConfig?.note) {
+      try {
+        draftData = JSON.parse(draftConfig.note);
+      } catch {
+        draftData = null;
+      }
+    }
+
     return {
       event,
       members: memberOverviewList,
@@ -196,6 +207,7 @@ export const eventSettlementService = {
       settledIncome,
       settledExpense,
       isSettled: existingTransactions.length > 0 || existingSalaryConfigs.length > 0,
+      draftData,
     };
   },
 
@@ -206,6 +218,15 @@ export const eventSettlementService = {
 
     if (!event) {
       throw AppError.notFound('Không tìm thấy sự kiện');
+    }
+
+    const isDraft = Boolean(input.isDraft);
+
+    // Không cho phép xác nhận dự toán show chính thức nếu chưa tick "Đã thanh toán"
+    if (!isDraft && !input.createIncomeVoucher) {
+      throw AppError.badRequest(
+        'Không thể xác nhận dự toán khi khách chưa thanh toán (chưa tick "Đã thanh toán"). Vui lòng bấm "Lưu Bản Nháp" để tiếp tục theo dõi hoặc đánh dấu đã thanh toán trước khi chốt dự toán.'
+      );
     }
 
     // Kiểm tra danh sách thành viên đã được thanh toán tiền công cho sự kiện này
@@ -223,12 +244,13 @@ export const eventSettlementService = {
     const txDate = input.settlementDate ? new Date(input.settlementDate) : new Date();
     const createdTransactions: any[] = [];
 
-    const isDraft = Boolean(input.isDraft);
-
     // 1. Cập nhật thông tin sự kiện nếu có yêu cầu
     const eventUpdateData: any = {};
     if (input.contractAmount !== undefined) {
       eventUpdateData.contractValue = input.contractAmount;
+    }
+    if (input.payer) {
+      eventUpdateData.customerName = input.payer;
     }
     if (!isDraft && input.markEventCompleted && event.status !== 'COMPLETED') {
       eventUpdateData.status = 'COMPLETED';
@@ -238,6 +260,49 @@ export const eventSettlementService = {
       await prisma.event.update({
         where: { id: eventId },
         data: eventUpdateData,
+      });
+    }
+
+    // Lưu / xóa bản nháp tạm thời
+    if (isDraft) {
+      const draftPayload = {
+        contractAmount: input.contractAmount || 0,
+        tipAmount: input.tipAmount || 0,
+        payer: input.payer || event.customerName || '',
+        paymentMethod: input.paymentMethod || 'CASH',
+        isPaidRevenue: Boolean(input.createIncomeVoucher),
+        expenses: input.expenses || [],
+        notes: input.notes || '',
+        settlementDate: input.settlementDate || null,
+      };
+
+      const existingDraftConfig = await prisma.salaryConfig.findFirst({
+        where: { eventId, memberId: null, positionId: null },
+      });
+
+      if (existingDraftConfig) {
+        await prisma.salaryConfig.update({
+          where: { id: existingDraftConfig.id },
+          data: {
+            amount: input.tipAmount || 0,
+            note: JSON.stringify(draftPayload),
+            isActive: true,
+          },
+        });
+      } else {
+        await prisma.salaryConfig.create({
+          data: {
+            eventId,
+            amount: input.tipAmount || 0,
+            note: JSON.stringify(draftPayload),
+            isActive: true,
+          },
+        });
+      }
+    } else {
+      // Khi đã chính thức xác nhận dự toán: Xóa bản nháp tạm
+      await prisma.salaryConfig.deleteMany({
+        where: { eventId, memberId: null, positionId: null },
       });
     }
 

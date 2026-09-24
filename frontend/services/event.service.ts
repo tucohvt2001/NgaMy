@@ -102,14 +102,14 @@ export const eventMemberService = {
     return res.data.data;
   },
 
-  async batchAssign(eventId: string, assignments: AssignMemberInput[]) {
+  async batchAssign(eventId: string, assignments: AssignMemberInput[], replaceExisting?: boolean) {
     const res = await apiClient.post<
       ApiSuccessResponse<{
         count: number;
         items: EventMember[];
         warnings: { memberName?: string; warnings: string[] }[];
       }>
-    >(`/events/${eventId}/members/batch`, { assignments });
+    >(`/events/${eventId}/members/batch`, { assignments, replaceExisting });
     return res.data.data;
   },
 

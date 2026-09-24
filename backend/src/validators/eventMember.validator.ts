@@ -11,6 +11,7 @@ export const createEventMemberSchema = z.object({
 export type CreateEventMemberInput = z.infer<typeof createEventMemberSchema>;
 
 export const batchAssignMemberSchema = z.object({
+  replaceExisting: z.boolean().optional(),
   assignments: z
     .array(
       z.object({

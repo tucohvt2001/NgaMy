@@ -98,15 +98,21 @@ export function useAssignMember(eventId: string) {
 export function useBatchAssignMembers(eventId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (assignments: AssignMemberInput[]) => eventMemberService.batchAssign(eventId, assignments),
+    mutationFn: (param: AssignMemberInput[] | { assignments: AssignMemberInput[]; replaceExisting?: boolean }) => {
+      if (Array.isArray(param)) {
+        return eventMemberService.batchAssign(eventId, param);
+      }
+      return eventMemberService.batchAssign(eventId, param.assignments, param.replaceExisting);
+    },
     onSuccess: (data) => {
-      toast.success(`Đã phân công thành công ${data.count} thành viên`);
+      toast.success(`Đã lưu thành công ${data.count} lượt vai trò phân công`);
       if (data.warnings && data.warnings.length > 0) {
         data.warnings.forEach((w) => {
           w.warnings.forEach((warn) => toast.warning(`${w.memberName ? `${w.memberName}: ` : ''}${warn}`));
         });
       }
       queryClient.invalidateQueries({ queryKey: ['events', eventId, 'members'] });
+      queryClient.invalidateQueries({ queryKey: ['events'] });
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   });

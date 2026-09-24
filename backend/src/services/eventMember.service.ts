@@ -31,43 +31,114 @@ export const eventMemberService = {
     return { eventMember, warnings: [] };
   },
 
-  // Phân công hàng loạt (hỗ trợ 1 thành viên có thể nhận nhiều vai trò khác nhau trong cùng 1 show)
+  // Phân công hàng loạt (tối ưu hóa tốc độ, hỗ trợ 1 thành viên nhận nhiều vai trò, hỗ trợ thay thế đội hình)
   async batchAssign(eventId: string, input: BatchAssignMemberInput) {
     const event = await eventRepository.findById(eventId);
     if (!event) {
       throw AppError.notFound('Không tìm thấy sự kiện');
     }
 
-    // Thực thi toàn bộ phân công trong 1 transaction duy nhất
-    const items = await prisma.$transaction(
-      input.assignments.map((item) =>
-        prisma.eventMember.upsert({
-          where: {
-            eventId_memberId_positionId: {
-              eventId,
-              memberId: item.memberId,
-              positionId: item.positionId,
-            },
-          },
-          create: {
-            eventId,
-            memberId: item.memberId,
-            positionId: item.positionId,
-            status: item.status ?? 'ASSIGNED',
-            note: item.note,
-          },
-          update: {
-            status: item.status ?? 'ASSIGNED',
-            note: item.note,
-          },
-          include: { member: true, position: true },
-        }),
-      ),
+    if (!input.assignments || input.assignments.length === 0) {
+      return {
+        count: 0,
+        items: [],
+        warnings: [],
+      };
+    }
+
+    // Nếu chọn chế độ thay thế toàn bộ đội hình cũ
+    if (input.replaceExisting) {
+      await prisma.eventMember.deleteMany({ where: { eventId } });
+
+      const createData = input.assignments.map((item) => ({
+        eventId,
+        memberId: item.memberId,
+        positionId: item.positionId,
+        status: item.status ?? 'ASSIGNED',
+        note: item.note ?? null,
+      }));
+
+      const created = await prisma.eventMember.createMany({
+        data: createData,
+        skipDuplicates: true,
+      });
+
+      return {
+        count: created.count,
+        items: [],
+        warnings: [],
+      };
+    }
+
+    // Tối ưu gộp: Lấy toàn bộ phân công hiện có trong 1 query duy nhất
+    const memberIds = Array.from(new Set(input.assignments.map((a) => a.memberId)));
+    const existingAssignments = await prisma.eventMember.findMany({
+      where: {
+        eventId,
+        memberId: { in: memberIds },
+      },
+      select: {
+        id: true,
+        memberId: true,
+        positionId: true,
+      },
+    });
+
+    const existingMap = new Map(
+      existingAssignments.map((a) => [`${a.memberId}_${a.positionId}`, a.id]),
     );
 
+    const toCreate: Array<{
+      eventId: string;
+      memberId: string;
+      positionId: string;
+      status: string;
+      note: string | null;
+    }> = [];
+
+    const updateOps: any[] = [];
+
+    for (const item of input.assignments) {
+      const key = `${item.memberId}_${item.positionId}`;
+      const existingId = existingMap.get(key);
+
+      if (existingId) {
+        updateOps.push(
+          prisma.eventMember.update({
+            where: { id: existingId },
+            data: {
+              status: item.status ?? 'ASSIGNED',
+              note: item.note ?? null,
+            },
+            select: { id: true },
+          }),
+        );
+      } else {
+        toCreate.push({
+          eventId,
+          memberId: item.memberId,
+          positionId: item.positionId,
+          status: item.status ?? 'ASSIGNED',
+          note: item.note ?? null,
+        });
+      }
+    }
+
+    const txOps: any[] = [];
+    if (toCreate.length > 0) {
+      txOps.push(prisma.eventMember.createMany({ data: toCreate, skipDuplicates: true }));
+    }
+    if (updateOps.length > 0) {
+      txOps.push(...updateOps);
+    }
+
+    if (txOps.length > 0) {
+      await prisma.$transaction(txOps);
+    }
+
     return {
-      count: items.length,
-      items,
+      count: input.assignments.length,
+      items: [],
       warnings: [],
     };
   },

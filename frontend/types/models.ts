@@ -402,6 +402,17 @@ export interface EventSettlementMember {
   isPaid?: boolean;
 }
 
+export interface EventSettlementDraftData {
+  contractAmount?: number;
+  tipAmount?: number;
+  payer?: string;
+  paymentMethod?: 'CASH' | 'BANK_TRANSFER';
+  isPaidRevenue?: boolean;
+  expenses?: EventExpenseItem[];
+  notes?: string;
+  settlementDate?: string | null;
+}
+
 export interface EventSettlementOverview {
   event: EventItem;
   members: EventSettlementMember[];
@@ -409,6 +420,7 @@ export interface EventSettlementOverview {
   settledIncome: number;
   settledExpense: number;
   isSettled: boolean;
+  draftData?: EventSettlementDraftData | null;
 }
 
 export interface MemberPayoutItem {
