@@ -111,10 +111,10 @@ export function EventSettlementDialog({ open, onOpenChange, event }: EventSettle
       // Khôi phục toàn bộ dữ liệu bản nháp nếu đã từng lưu trước đó
       if (overview.draftData) {
         const d = overview.draftData;
-        if (d.contractAmount !== undefined && d.contractAmount > 0) {
+        if (d.contractAmount !== undefined && d.contractAmount !== null && d.contractAmount > 0) {
           setContractAmount(d.contractAmount);
-        } else if (event?.contractValue !== undefined) {
-          setContractAmount(event.contractValue);
+        } else if (event?.contractValue !== undefined && event?.contractValue !== null) {
+          setContractAmount(event.contractValue ?? 0);
         }
         setTipAmount(d.tipAmount ?? 0);
         if (d.payer) setPayer(d.payer);
