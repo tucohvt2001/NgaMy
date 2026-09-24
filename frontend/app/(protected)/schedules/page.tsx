@@ -763,12 +763,12 @@ export default function SchedulesPage() {
                               </div>
                               {tip > 0 && (
                                 <div className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
-                                  +{formatCurrency(tip)} lộc
+                                  ({formatCurrency(tip)} lộc)
                                 </div>
                               )}
                               {(event.depositAmount ?? 0) > 0 && (
                                 <div className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
-                                  Đã cọc: {formatCurrency(Number(event.depositAmount))}
+                                  (Đã cọc: {formatCurrency(Number(event.depositAmount))})
                                 </div>
                               )}
                             </div>
