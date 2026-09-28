@@ -30,6 +30,7 @@ export function useRecordAttendance() {
     onSuccess: (_, variables) => {
       toast.success('Chấm công thành công');
       queryClient.invalidateQueries({ queryKey: ['attendance'] });
+      queryClient.invalidateQueries({ queryKey: ['events'] });
       queryClient.invalidateQueries({ queryKey: ['reports'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     },
@@ -44,6 +45,7 @@ export function useBatchAttendance() {
     onSuccess: () => {
       toast.success('Lưu bảng chấm công thành công');
       queryClient.invalidateQueries({ queryKey: ['attendance'] });
+      queryClient.invalidateQueries({ queryKey: ['events'] });
       queryClient.invalidateQueries({ queryKey: ['reports'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     },
@@ -58,6 +60,7 @@ export function useDeleteAttendance() {
     onSuccess: () => {
       toast.success('Xóa bản ghi chấm công thành công');
       queryClient.invalidateQueries({ queryKey: ['attendance'] });
+      queryClient.invalidateQueries({ queryKey: ['events'] });
       queryClient.invalidateQueries({ queryKey: ['reports'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     },

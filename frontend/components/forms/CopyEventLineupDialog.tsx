@@ -62,7 +62,7 @@ export function CopyEventLineupDialog({
   targetEventName,
   existingCount = 0,
 }: CopyEventLineupDialogProps) {
-  const { data: eventsData, isLoading: loadingEvents } = useEvents({ page: 1, limit: 100 });
+  const { data: eventsData, isLoading: loadingEvents } = useEvents({ page: 1, limit: 200 });
   const [sourceEventId, setSourceEventId] = useState<string>('');
   const [selectedMemberIds, setSelectedMemberIds] = useState<Set<string>>(new Set());
   const [replaceExisting, setReplaceExisting] = useState<boolean>(false);
@@ -70,10 +70,10 @@ export function CopyEventLineupDialog({
   const { data: sourceMembers, isLoading: loadingMembers } = useEventMembers(sourceEventId || undefined);
   const batchAssignMutation = useBatchAssignMembers(targetEventId);
 
-  // Lọc danh sách show có thể sao chép (loại trừ show hiện tại, show đã hủy và show đã hoàn thành)
+  // Lọc danh sách show có thể sao chép (loại trừ show hiện tại và show đã hủy)
   const availableEvents = useMemo(() => {
     return (eventsData?.items ?? []).filter(
-      (e) => e.id !== targetEventId && e.status !== 'CANCELLED' && e.status !== 'COMPLETED'
+      (e) => e.id !== targetEventId && e.status !== 'CANCELLED'
     );
   }, [eventsData?.items, targetEventId]);
 

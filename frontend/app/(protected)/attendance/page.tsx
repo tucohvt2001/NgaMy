@@ -88,7 +88,7 @@ export default function AttendancePage() {
     user?.roleName === 'TEAM_LEADER';
 
   // Lấy danh sách sự kiện
-  const { data: eventsData, isLoading: loadingEvents } = useEvents({ page: 1, limit: 100 });
+  const { data: eventsData, isLoading: loadingEvents } = useEvents({ page: 1, limit: 200 });
 
   // Tự động chọn sự kiện đầu tiên nếu chưa chọn
   useEffect(() => {
@@ -403,25 +403,54 @@ export default function AttendancePage() {
                     ) : !eventsData?.items || eventsData.items.length === 0 ? (
                       <div className="p-2 text-center text-xs text-muted-foreground">Không có sự kiện nào</div>
                     ) : (
-                      eventsData.items.map((evt) => (
-                        <SelectItem key={evt.id} value={evt.id}>
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono text-xs text-muted-foreground">{evt.eventCode}</span>
-                            <span className="truncate">{evt.name}</span>
-                          </div>
-                        </SelectItem>
-                      ))
+                      eventsData.items.map((evt) => {
+                        const attendanceCount = evt._count?.attendances ?? 0;
+                        const isUnmarked = attendanceCount === 0;
+
+                        return (
+                          <SelectItem key={evt.id} value={evt.id} className="py-2 cursor-pointer">
+                            <div className="flex items-center justify-between w-full gap-2.5">
+                              <div className="flex items-center gap-2 truncate min-w-0">
+                                <span className="font-mono text-xs font-semibold text-amber-600 dark:text-amber-400 shrink-0">
+                                  {evt.eventCode}
+                                </span>
+                                <span className="truncate font-medium">{evt.name}</span>
+                              </div>
+                              {isUnmarked ? (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 shrink-0">
+                                  Chưa chấm
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
+                                  Đã chấm
+                                </span>
+                              )}
+                            </div>
+                          </SelectItem>
+                        );
+                      })
                     )}
                   </SelectContent>
                 </Select>
 
                 {selectedEvent && (
-                  <div className="rounded-md border bg-muted/30 p-3 space-y-2 text-xs">
-                    <div className="flex items-center justify-between">
-                      <span className="font-semibold text-foreground text-sm truncate">{selectedEvent.name}</span>
-                      <Badge variant="outline" className="text-[10px]">
-                        {STATUS_LABELS[selectedEvent.status] ?? selectedEvent.status}
-                      </Badge>
+                  <div className="rounded-xl border border-border/80 bg-muted/30 p-3 space-y-2 text-xs shadow-xs">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-bold text-foreground text-sm truncate">{selectedEvent.name}</span>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {(selectedEvent._count?.attendances ?? 0) === 0 ? (
+                          <Badge variant="outline" className="text-[10px] font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30">
+                            Chưa chấm công
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30">
+                            Đã chấm công
+                          </Badge>
+                        )}
+                        <Badge variant="outline" className="text-[10px]">
+                          {STATUS_LABELS[selectedEvent.status] ?? selectedEvent.status}
+                        </Badge>
+                      </div>
                     </div>
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Calendar className="size-3.5 shrink-0 text-primary" />

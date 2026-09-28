@@ -52,7 +52,7 @@ export const eventRepository = {
           where: { memberId: null, positionId: null },
           select: { amount: true, note: true },
         },
-        _count: { select: { eventMembers: true, transactions: true, salaryConfigs: true } },
+        _count: { select: { eventMembers: true, transactions: true, salaryConfigs: true, attendances: true } },
       },
       orderBy: { eventDate: 'desc' },
     });
@@ -76,7 +76,7 @@ export const eventRepository = {
           select: { amount: true, note: true },
         },
         eventMembers: { include: { member: true, position: true } },
-        _count: { select: { eventMembers: true, transactions: true, salaryConfigs: true } },
+        _count: { select: { eventMembers: true, transactions: true, salaryConfigs: true, attendances: true } },
       },
     });
   },

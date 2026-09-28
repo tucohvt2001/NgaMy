@@ -54,7 +54,7 @@ function AssignmentsContent() {
   const router = useRouter();
   const eventId = searchParams.get('eventId') ?? undefined;
 
-  const { data: eventsData } = useEvents({ page: 1, limit: 100 });
+  const { data: eventsData, isLoading: loadingEvents } = useEvents({ page: 1, limit: 200 });
   const { data: assignments, isLoading } = useEventMembers(eventId);
   const [formOpen, setFormOpen] = useState(false);
   const [copyDialogOpen, setCopyDialogOpen] = useState(false);
@@ -73,16 +73,15 @@ function AssignmentsContent() {
   const batchAssignMutation = useBatchAssignMembers(eventId ?? '');
   const removeMutation = useRemoveAssignment(eventId ?? '');
 
-  const currentEvent = useMemo(() => {
-    return eventsData?.items.find((e) => e.id === eventId);
-  }, [eventsData?.items, eventId]);
-
-  // Chỉ hiển thị các sự kiện đang chuẩn bị / chưa hoàn thành và chưa hủy để phân công
+  // Toàn bộ danh sách show (loại trừ đã hủy), ưu tiên show sắp diễn/mới nhất lên đầu
   const assignableEvents = useMemo(() => {
-    return (eventsData?.items ?? []).filter(
-      (e) => e.status !== 'COMPLETED' && e.status !== 'CANCELLED',
-    );
+    const list = [...(eventsData?.items ?? [])].filter((e) => e.status !== 'CANCELLED');
+    return list.sort((a, b) => new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime());
   }, [eventsData?.items]);
+
+  const currentEvent = useMemo(() => {
+    return (eventsData?.items ?? []).find((e) => e.id === eventId);
+  }, [eventsData?.items, eventId]);
 
   // Gom nhóm danh sách phân công theo từng thành viên (1 người -> nhiều vai trò)
   const groupedAssignments: GroupedMemberAssignment[] = useMemo(() => {
@@ -198,12 +197,21 @@ function AssignmentsContent() {
             </SelectTrigger>
             <SelectContent className="max-h-72">
               {assignableEvents.map((event) => (
-                <SelectItem key={event.id} value={event.id} className="text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono font-bold text-amber-600 dark:text-amber-400">{event.eventCode}</span>
-                    <span>-</span>
-                    <span className="font-bold">{event.name}</span>
-                    <span className="text-muted-foreground">({formatDate(event.eventDate)})</span>
+                <SelectItem key={event.id} value={event.id} className="text-xs py-2">
+                  <div className="flex items-center justify-between w-full gap-2.5">
+                    <div className="flex items-center gap-2 truncate min-w-0">
+                      <span className="font-mono font-bold text-amber-600 dark:text-amber-400 shrink-0">{event.eventCode}</span>
+                      <span className="text-muted-foreground">-</span>
+                      <span className="font-bold truncate">{event.name}</span>
+                      <span className="text-muted-foreground shrink-0">({formatDate(event.eventDate)})</span>
+                    </div>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold shrink-0 border ${
+                      event.status === 'COMPLETED'
+                        ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+                        : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20'
+                    }`}>
+                      {event.status === 'COMPLETED' ? 'Đã xong' : 'Sắp diễn'}
+                    </span>
                   </div>
                 </SelectItem>
               ))}
