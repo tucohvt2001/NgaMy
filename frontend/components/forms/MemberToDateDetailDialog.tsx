@@ -36,14 +36,12 @@ interface MemberToDateDetailDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   member: MemberSalaryToDateItem | null;
-  onOpenQr?: (member: MemberSalaryToDateItem) => void;
 }
 
 export function MemberToDateDetailDialog({
   open,
   onOpenChange,
   member,
-  onOpenQr,
 }: MemberToDateDetailDialogProps) {
   const [activeTab, setActiveTab] = useState<'events' | 'records'>('events');
 
@@ -78,34 +76,31 @@ export function MemberToDateDetailDialog({
                 </div>
               </div>
             </div>
-
-            {/* Thông tin thanh toán & Nút QR */}
-            {member.remainingAmount > 0 && member.bankAccount && onOpenQr && (
-              <Button
-                size="sm"
-                onClick={() => onOpenQr(member)}
-                className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-1.5 shadow-sm self-start sm:self-auto"
-              >
-                <QrCode className="size-3.5" />
-                Quét VietQR chi trả ({formatCurrency(member.remainingAmount)})
-              </Button>
-            )}
           </div>
         </DialogHeader>
 
         {/* 2. Tổng quan số liệu (KPI Cards) */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-5 bg-muted/20 border-b border-border/80 shrink-0">
+        <div className={`grid grid-cols-2 ${(member.deduction ?? 0) > 0 ? 'sm:grid-cols-5' : 'sm:grid-cols-4'} gap-2.5 p-5 bg-muted/20 border-b border-border/80 shrink-0`}>
           <div className="p-3 rounded-2xl bg-card border border-border/80 shadow-xs">
             <span className="text-[11px] font-medium text-muted-foreground block">Số show tham gia</span>
             <span className="text-base font-bold text-foreground mt-0.5 block">{member.totalEvents} show</span>
           </div>
 
           <div className="p-3 rounded-2xl bg-card border border-border/80 shadow-xs">
-            <span className="text-[11px] font-medium text-muted-foreground block">Tổng tiền công</span>
+            <span className="text-[11px] font-medium text-muted-foreground block">Tiền công show</span>
             <span className="text-base font-black text-foreground mt-0.5 block">
-              {formatCurrency(member.totalAmount)}
+              {formatCurrency(member.baseAmount ?? member.totalAmount)}
             </span>
           </div>
+
+          {(member.deduction ?? 0) > 0 && (
+            <div className="p-3 rounded-2xl bg-rose-500/10 border border-rose-500/30 shadow-xs">
+              <span className="text-[11px] font-medium text-rose-700 dark:text-rose-300 block">Khấu trừ</span>
+              <span className="text-base font-black text-rose-600 dark:text-rose-400 mt-0.5 block">
+                -{formatCurrency(member.deduction!)}
+              </span>
+            </div>
+          )}
 
           <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 shadow-xs">
             <span className="text-[11px] font-medium text-emerald-800 dark:text-emerald-300 block">Đã thanh toán</span>
@@ -234,7 +229,10 @@ export function MemberToDateDetailDialog({
                   <TableRow>
                     <TableHead className="w-12 text-center text-xs font-bold">STT</TableHead>
                     <TableHead className="text-xs font-bold">Kỳ lương</TableHead>
-                    <TableHead className="text-right text-xs font-bold">Tổng tiền (VNĐ)</TableHead>
+                    <TableHead className="text-right text-xs font-bold">Lương cơ bản</TableHead>
+                    <TableHead className="text-right text-xs font-bold">Phụ cấp/Thưởng</TableHead>
+                    <TableHead className="text-right text-xs font-bold text-rose-600 dark:text-rose-400">Khấu trừ</TableHead>
+                    <TableHead className="text-right text-xs font-bold">Thực nhận</TableHead>
                     <TableHead className="text-center text-xs font-bold">Trạng thái</TableHead>
                     <TableHead className="text-right text-xs font-bold">Ngày thanh toán</TableHead>
                   </TableRow>
@@ -242,7 +240,7 @@ export function MemberToDateDetailDialog({
                 <TableBody>
                   {member.salaryRecords.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="h-28 text-center text-xs text-muted-foreground">
+                      <TableCell colSpan={8} className="h-28 text-center text-xs text-muted-foreground">
                         Chưa có kỳ bảng lương tháng nào được lập cho thành viên này.
                       </TableCell>
                     </TableRow>
@@ -255,7 +253,16 @@ export function MemberToDateDetailDialog({
                         <TableCell className="font-bold text-xs text-foreground">
                           Tháng {rec.month}/{rec.year}
                         </TableCell>
-                        <TableCell className="text-right font-bold text-xs text-emerald-600 dark:text-emerald-400">
+                        <TableCell className="text-right text-xs text-muted-foreground">
+                          {formatCurrency(rec.baseAmount ?? 0)}
+                        </TableCell>
+                        <TableCell className="text-right text-xs text-emerald-600 dark:text-emerald-400">
+                          {(rec.allowance ?? 0) + (rec.bonus ?? 0) > 0 ? `+${formatCurrency((rec.allowance ?? 0) + (rec.bonus ?? 0))}` : '-'}
+                        </TableCell>
+                        <TableCell className="text-right text-xs font-bold text-rose-600 dark:text-rose-400">
+                          {(rec.deduction ?? 0) > 0 ? `-${formatCurrency(rec.deduction ?? 0)}` : '-'}
+                        </TableCell>
+                        <TableCell className="text-right font-black text-xs text-amber-600 dark:text-amber-400">
                           {formatCurrency(rec.totalAmount)}
                         </TableCell>
                         <TableCell className="text-center">

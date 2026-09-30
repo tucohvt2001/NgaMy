@@ -8,7 +8,6 @@ import {
   Calendar,
   Users,
   DollarSign,
-  QrCode,
   Eye,
   RefreshCw,
   Download,
@@ -31,9 +30,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useMemberSalariesToDate } from '@/hooks/useSalaries';
 import { useTeams } from '@/hooks/useTeams';
 import { MemberToDateDetailDialog } from '@/components/forms/MemberToDateDetailDialog';
-import { SalaryPaymentQrDialog } from '@/components/forms/SalaryPaymentQrDialog';
 import { MemberSalaryToDateItem } from '@/services/salary.service';
-import { SalaryRecord } from '@/types/models';
 import { toast } from 'sonner';
 
 function formatCurrency(val: number) {
@@ -49,7 +46,6 @@ export default function MemberSalariesToDatePage() {
   const [search, setSearch] = useState<string>('');
 
   const [selectedMember, setSelectedMember] = useState<MemberSalaryToDateItem | null>(null);
-  const [qrRecord, setQrRecord] = useState<SalaryRecord | null>(null);
 
   // Danh sách đội nhóm
   const { data: teams = [] } = useTeams();
@@ -91,42 +87,6 @@ export default function MemberSalariesToDatePage() {
     });
   }, [data?.members, debtFilter]);
 
-  // Xử lý mở VietQR thanh toán cho thành viên
-  const handleOpenQr = (member: MemberSalaryToDateItem) => {
-    if (!member.bankAccount) {
-      toast.error('Thành viên này chưa cập nhật số tài khoản ngân hàng');
-      return;
-    }
-
-    // Tạo đối tượng giả lập SalaryRecord để truyền vào SalaryPaymentQrDialog
-    const fakeRecord: SalaryRecord = {
-      id: `to_date_${member.memberId}`,
-      memberId: member.memberId,
-      month: new Date().getMonth() + 1,
-      year: new Date().getFullYear(),
-      totalSessions: member.totalEvents,
-      baseAmount: member.remainingAmount,
-      allowance: 0,
-      bonus: 0,
-      deduction: 0,
-      totalAmount: member.remainingAmount,
-      status: 'DRAFT',
-      member: {
-        id: member.memberId,
-        memberCode: member.memberCode,
-        fullName: member.fullName,
-        bankAccount: member.bankAccount,
-        bankName: member.bankName,
-        bankCode: member.bankCode,
-        bankBin: member.bankBin,
-        status: member.status,
-      } as any,
-      details: [],
-    };
-
-    setQrRecord(fakeRecord);
-  };
-
   // Xuất file CSV báo cáo thu nhập
   const handleExportCsv = () => {
     if (!filteredMembers || filteredMembers.length === 0) {
@@ -140,7 +100,9 @@ export default function MemberSalariesToDatePage() {
       'Họ và tên',
       'Đội nhóm',
       'Số show',
-      'Tổng tiền công (VNĐ)',
+      'Tiền show gốc (VNĐ)',
+      'Khấu trừ (VNĐ)',
+      'Tổng thực nhận (VNĐ)',
       'Đã thanh toán (VNĐ)',
       'Còn lại chưa chi (VNĐ)',
       'Số tài khoản',
@@ -153,6 +115,8 @@ export default function MemberSalariesToDatePage() {
       `"${m.fullName}"`,
       `"${m.teams.join(', ')}"`,
       m.totalEvents,
+      m.baseAmount ?? m.totalAmount,
+      m.deduction ?? 0,
       m.totalAmount,
       m.paidAmount,
       m.remainingAmount,
@@ -483,8 +447,15 @@ export default function MemberSalariesToDatePage() {
                       )}
                     </TableCell>
 
-                    <TableCell className="text-right font-bold text-xs text-foreground">
-                      {formatCurrency(member.totalAmount)}
+                    <TableCell className="text-right text-xs">
+                      <span className="font-bold text-foreground block">
+                        {formatCurrency(member.totalAmount)}
+                      </span>
+                      {(member.deduction ?? 0) > 0 && (
+                        <span className="text-[10px] text-rose-600 dark:text-rose-400 font-bold block">
+                          -Khấu trừ: {formatCurrency(member.deduction!)}
+                        </span>
+                      )}
                     </TableCell>
 
                     <TableCell className="text-right font-bold text-xs text-emerald-600 dark:text-emerald-400">
@@ -519,20 +490,7 @@ export default function MemberSalariesToDatePage() {
                     </TableCell>
 
                     <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        {member.remainingAmount > 0 && member.bankAccount && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleOpenQr(member)}
-                            className="h-8 px-2 rounded-xl text-emerald-700 dark:text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/10 text-xs font-bold gap-1 shadow-xs"
-                            title="Quét VietQR chi trả nhanh"
-                          >
-                            <QrCode className="size-3.5" />
-                            <span className="hidden sm:inline">QR</span>
-                          </Button>
-                        )}
-
+                      <div className="flex items-center justify-end">
                         <Button
                           variant="ghost"
                           size="sm"
@@ -557,18 +515,6 @@ export default function MemberSalariesToDatePage() {
         open={Boolean(selectedMember)}
         onOpenChange={(open) => !open && setSelectedMember(null)}
         member={selectedMember}
-        onOpenQr={handleOpenQr}
-      />
-
-      {/* 6. Dialog Quét VietQR Thanh Toán Nhanh */}
-      <SalaryPaymentQrDialog
-        open={Boolean(qrRecord)}
-        onOpenChange={(open) => !open && setQrRecord(null)}
-        record={qrRecord}
-        onConfirm={() => {
-          setQrRecord(null);
-          refetch();
-        }}
       />
     </div>
   );

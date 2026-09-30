@@ -121,6 +121,10 @@ export interface MemberSalaryToDateRecord {
   id: string;
   month: number;
   year: number;
+  baseAmount?: number;
+  allowance?: number;
+  bonus?: number;
+  deduction?: number;
   totalAmount: number;
   status: string;
   confirmedAt?: string | null;
@@ -140,6 +144,10 @@ export interface MemberSalaryToDateItem {
   teams: string[];
   positions: string[];
   totalEvents: number;
+  baseAmount?: number;
+  allowance?: number;
+  bonus?: number;
+  deduction?: number;
   totalAmount: number;
   paidAmount: number;
   remainingAmount: number;

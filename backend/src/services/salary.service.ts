@@ -600,14 +600,18 @@ export const salaryService = {
         return true;
       });
 
+      const totalAllowance = relevantSalaryRecords.reduce((sum, r) => sum + (r.allowance || 0), 0);
+      const totalBonus = relevantSalaryRecords.reduce((sum, r) => sum + (r.bonus || 0), 0);
+      const totalDeduction = relevantSalaryRecords.reduce((sum, r) => sum + (r.deduction || 0), 0);
+
       const paidFromSalaryRecords = relevantSalaryRecords
         .filter((r) => r.status === 'CONFIRMED')
         .reduce((sum, r) => sum + r.totalAmount, 0);
 
       const directTxPaid = txPaidByMember.get(member.id) || 0;
 
-      // Tổng thù lao CHUẨN XÁC theo các show trong khung thời gian
-      const totalAmount = totalEarnedFromEvents;
+      // Tổng thù lao = Tiền công các show + Phụ cấp + Thưởng - Khấu trừ
+      const totalAmount = Math.max(0, totalEarnedFromEvents + totalAllowance + totalBonus - totalDeduction);
       const paidAmount = Math.min(totalAmount, Math.max(paidFromSalaryRecords, directTxPaid));
       const remainingAmount = Math.max(0, totalAmount - paidAmount);
 
@@ -625,6 +629,10 @@ export const salaryService = {
         teams: member.teams.map((t) => t.name),
         positions: member.positions.map((p) => p.name),
         totalEvents: memberEvents.length,
+        baseAmount: totalEarnedFromEvents,
+        allowance: totalAllowance,
+        bonus: totalBonus,
+        deduction: totalDeduction,
         totalAmount,
         paidAmount,
         remainingAmount,
@@ -633,6 +641,10 @@ export const salaryService = {
           id: r.id,
           month: r.month,
           year: r.year,
+          baseAmount: r.baseAmount,
+          allowance: r.allowance,
+          bonus: r.bonus,
+          deduction: r.deduction,
           totalAmount: r.totalAmount,
           status: r.status,
           confirmedAt: r.confirmedAt,

@@ -287,7 +287,19 @@ function PublicPayrollContent() {
     text += `📅 Giai đoạn: ${fromText} - ${toText}\n`;
     text += `──────────────\n`;
     text += `🎪 Tổng số show: ${currentMember.totalEvents} show\n`;
-    text += `💰 Tổng thù lao: ${formatCurrency(currentMember.totalAmount)}\n`;
+    if (currentMember.baseAmount && currentMember.baseAmount !== currentMember.totalAmount) {
+      text += `💵 Tiền công show: ${formatCurrency(currentMember.baseAmount)}\n`;
+    }
+    if ((currentMember.allowance ?? 0) > 0) {
+      text += `➕ Phụ cấp: +${formatCurrency(currentMember.allowance!)}\n`;
+    }
+    if ((currentMember.bonus ?? 0) > 0) {
+      text += `🎁 Thưởng: +${formatCurrency(currentMember.bonus!)}\n`;
+    }
+    if ((currentMember.deduction ?? 0) > 0) {
+      text += `➖ Khấu trừ: -${formatCurrency(currentMember.deduction!)}\n`;
+    }
+    text += `💰 Tổng thực nhận: ${formatCurrency(currentMember.totalAmount)}\n`;
     text += `💳 Đã thanh toán: ${formatCurrency(currentMember.paidAmount)}\n`;
     text += `⏳ Còn lại: ${formatCurrency(currentMember.remainingAmount)}\n`;
 
@@ -626,8 +638,23 @@ function PublicPayrollContent() {
                         Mã: {currentMember.memberCode}
                       </Badge>
                       <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 font-bold text-xs">
-                        Tổng: {formatCurrency(currentMember.totalAmount)} • {currentMember.totalEvents} show
+                        Thực nhận: {formatCurrency(currentMember.totalAmount)} • {currentMember.totalEvents} show
                       </Badge>
+                      {(currentMember.deduction ?? 0) > 0 && (
+                        <Badge className="bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30 font-bold text-xs">
+                          Khấu trừ: -{formatCurrency(currentMember.deduction!)}
+                        </Badge>
+                      )}
+                      {(currentMember.bonus ?? 0) > 0 && (
+                        <Badge className="bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/30 font-bold text-xs">
+                          Thưởng: +{formatCurrency(currentMember.bonus!)}
+                        </Badge>
+                      )}
+                      {(currentMember.allowance ?? 0) > 0 && (
+                        <Badge className="bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-500/30 font-bold text-xs">
+                          Phụ cấp: +{formatCurrency(currentMember.allowance!)}
+                        </Badge>
+                      )}
                     </div>
 
                     <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
@@ -1016,7 +1043,12 @@ function PublicPayrollContent() {
                                 </Badge>
                               </TableCell>
                               <TableCell className="text-right font-black text-xs sm:text-sm text-foreground">
-                                {formatCurrency(m.totalAmount)}
+                                <div>{formatCurrency(m.totalAmount)}</div>
+                                {(m.deduction ?? 0) > 0 && (
+                                  <span className="text-[10px] text-rose-600 dark:text-rose-400 font-bold block">
+                                    -Khấu trừ: {formatCurrency(m.deduction!)}
+                                  </span>
+                                )}
                               </TableCell>
                               <TableCell className="text-right font-bold text-xs text-emerald-700 dark:text-emerald-400">
                                 {formatCurrency(m.paidAmount)}
@@ -1095,6 +1127,11 @@ function PublicPayrollContent() {
                             <div>
                               <p className="text-[9px] text-muted-foreground uppercase font-bold">Tổng thù lao</p>
                               <p className="font-bold text-foreground">{formatCurrency(m.totalAmount)}</p>
+                              {(m.deduction ?? 0) > 0 && (
+                                <p className="text-[9px] text-rose-600 dark:text-rose-400 font-bold">
+                                  -{formatCurrency(m.deduction!)}
+                                </p>
+                              )}
                             </div>
                             <div>
                               <p className="text-[9px] text-emerald-700 dark:text-emerald-400 uppercase font-bold">Đã nhận</p>
