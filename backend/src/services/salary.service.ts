@@ -376,8 +376,12 @@ export const salaryService = {
     toDate?: string;
     teamId?: string;
     search?: string;
+    memberId?: string;
   }) {
     const memberWhere: any = {};
+    if (params?.memberId) {
+      memberWhere.id = params.memberId;
+    }
     if (params?.teamId) {
       memberWhere.teams = { some: { id: params.teamId } };
     }
@@ -389,21 +393,42 @@ export const salaryService = {
       ];
     }
 
-    const members = await prisma.member.findMany({
-      where: memberWhere,
-      include: {
-        bank: true,
-        teams: { select: { id: true, name: true } },
-        positions: { select: { id: true, name: true } },
-      },
-      orderBy: { memberCode: 'asc' },
-    });
+    const [members, allActiveMembers] = await Promise.all([
+      prisma.member.findMany({
+        where: memberWhere,
+        include: {
+          bank: true,
+          teams: { select: { id: true, name: true } },
+          positions: { select: { id: true, name: true } },
+        },
+        orderBy: { memberCode: 'asc' },
+      }),
+      prisma.member.findMany({
+        where: { status: 'ACTIVE' },
+        select: {
+          id: true,
+          memberCode: true,
+          fullName: true,
+          avatar: true,
+          phone: true,
+          teams: { select: { id: true, name: true } },
+          positions: { select: { id: true, name: true } },
+        },
+        orderBy: { memberCode: 'asc' },
+      }),
+    ]);
 
     const dateFilter: any = {};
     if (params?.fromDate || params?.toDate) {
       dateFilter.eventDate = {};
-      if (params.fromDate) dateFilter.eventDate.gte = new Date(params.fromDate);
-      if (params.toDate) dateFilter.eventDate.lte = new Date(params.toDate);
+      if (params.fromDate) {
+        const fromStr = params.fromDate.length === 10 ? `${params.fromDate}T00:00:00.000` : params.fromDate;
+        dateFilter.eventDate.gte = new Date(fromStr);
+      }
+      if (params.toDate) {
+        const toStr = params.toDate.length === 10 ? `${params.toDate}T23:59:59.999` : params.toDate;
+        dateFilter.eventDate.lte = new Date(toStr);
+      }
     }
 
     // 1. Lấy tất cả sự kiện đã dự toán hoặc hoàn thành theo thời gian
@@ -412,6 +437,8 @@ export const salaryService = {
         OR: [
           { status: 'COMPLETED' },
           { transactions: { some: {} } },
+          { salaryConfigs: { some: {} } },
+          { attendances: { some: { status: { in: ['PRESENT', 'LATE'] } } } },
         ],
         ...dateFilter,
       },
@@ -423,13 +450,35 @@ export const salaryService = {
       orderBy: { eventDate: 'desc' },
     });
 
-    // 2. Lấy tất cả SalaryRecord trong phạm vi
+    // 2. Lấy tất cả SalaryRecord trong phạm vi ngày
     const salaryRecords = await prisma.salaryRecord.findMany({
       include: {
         details: { include: { event: true, position: true } },
       },
       orderBy: [{ year: 'desc' }, { month: 'desc' }],
     });
+
+    // 2.1 Lấy các giao dịch chi trả lương (SALARY_PAYOUT) trong phạm vi ngày
+    const txFilter: any = {
+      type: 'EXPENSE',
+      category: 'SALARY_PAYOUT',
+      status: 'COMPLETED',
+    };
+    if (params?.fromDate || params?.toDate) {
+      txFilter.transactionDate = {};
+      if (params.fromDate) txFilter.transactionDate.gte = dateFilter.eventDate?.gte || new Date(params.fromDate);
+      if (params.toDate) txFilter.transactionDate.lte = dateFilter.eventDate?.lte || new Date(params.toDate);
+    }
+    const salaryTransactions = await prisma.transaction.findMany({
+      where: txFilter,
+      select: { id: true, memberId: true, eventId: true, amount: true },
+    });
+    const txPaidByMember = new Map<string, number>();
+    for (const tx of salaryTransactions) {
+      if (tx.memberId) {
+        txPaidByMember.set(tx.memberId, (txPaidByMember.get(tx.memberId) || 0) + tx.amount);
+      }
+    }
 
     // 3. Lấy tất cả SalaryConfig active
     const configs = await prisma.salaryConfig.findMany({ where: { isActive: true } });
@@ -463,13 +512,15 @@ export const salaryService = {
     }
 
     const results = members.map((member) => {
-      // Gom tất cả show thành viên này đã tham gia
+      // Gom tất cả show thành viên này đã tham gia trong khung thời gian
       const memberEvents: Array<{
         eventId: string;
         eventCode: string;
         eventName: string;
         eventType: string | null;
         eventDate: string;
+        startTime?: string | null;
+        endTime?: string | null;
         location: string;
         roles: string[];
         amount: number;
@@ -526,6 +577,8 @@ export const salaryService = {
             eventName: ev.name,
             eventType: ev.eventType,
             eventDate: ev.eventDate.toISOString(),
+            startTime: ev.startTime ? ev.startTime.toISOString() : null,
+            endTime: ev.endTime ? ev.endTime.toISOString() : null,
             location: ev.location,
             roles: roles.length > 0 ? roles : ['Thành viên'],
             amount: showAmount,
@@ -536,16 +589,26 @@ export const salaryService = {
         }
       }
 
-      // Tổng hợp từ các bảng lương tháng của thành viên
+      // Lọc các bản ghi lương thuộc các tháng trong phạm vi ngày đã chọn
       const mRecords = recordsByMember.get(member.id) || [];
-      const totalFromSalaryRecords = mRecords.reduce((sum, r) => sum + r.totalAmount, 0);
-      const paidFromSalaryRecords = mRecords
+      const relevantSalaryRecords = mRecords.filter((r) => {
+        if (!params?.fromDate && !params?.toDate) return true;
+        const recStart = new Date(r.year, r.month - 1, 1);
+        const recEnd = new Date(r.year, r.month, 0, 23, 59, 59, 999);
+        if (params?.fromDate && recEnd < new Date(params.fromDate)) return false;
+        if (params?.toDate && recStart > new Date(params.toDate)) return false;
+        return true;
+      });
+
+      const paidFromSalaryRecords = relevantSalaryRecords
         .filter((r) => r.status === 'CONFIRMED')
         .reduce((sum, r) => sum + r.totalAmount, 0);
 
-      // Nếu có bảng lương tháng thì dùng tổng bảng lương, nếu không thì dùng tổng từ các show
-      const totalAmount = Math.max(totalEarnedFromEvents, totalFromSalaryRecords);
-      const paidAmount = paidFromSalaryRecords;
+      const directTxPaid = txPaidByMember.get(member.id) || 0;
+
+      // Tổng thù lao CHUẨN XÁC theo các show trong khung thời gian
+      const totalAmount = totalEarnedFromEvents;
+      const paidAmount = Math.min(totalAmount, Math.max(paidFromSalaryRecords, directTxPaid));
       const remainingAmount = Math.max(0, totalAmount - paidAmount);
 
       return {
@@ -590,6 +653,15 @@ export const salaryService = {
     return {
       summary,
       members: results,
+      membersList: allActiveMembers.map((m) => ({
+        id: m.id,
+        memberCode: m.memberCode,
+        fullName: m.fullName,
+        avatar: m.avatar,
+        phone: m.phone,
+        teams: m.teams.map((t) => t.name),
+        positions: m.positions.map((p) => p.name),
+      })),
     };
   },
 };

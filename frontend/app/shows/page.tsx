@@ -257,7 +257,17 @@ export default function PublicShowsPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              asChild
+              className="h-8 text-xs rounded-xl gap-1.5 border-amber-500/40 hover:bg-amber-500/10 text-amber-700 dark:text-amber-300 font-bold"
+            >
+              <Link href="/bang-luong">
+                <span>💰 Bảng lương</span>
+              </Link>
+            </Button>
             <Button
               variant="default"
               size="sm"
@@ -265,7 +275,7 @@ export default function PublicShowsPage() {
               className="h-8 text-xs rounded-xl gap-1.5 bg-gradient-to-r from-red-600 to-amber-500 hover:from-red-700 hover:to-amber-600 text-white font-bold shadow-xs shadow-amber-500/20"
             >
               <Link href="/dat-show">
-                <span>🏮 Đặt Show / Trang Trí</span>
+                <span>🏮 Đặt Show</span>
               </Link>
             </Button>
             <Button
@@ -276,7 +286,7 @@ export default function PublicShowsPage() {
               className="h-8 text-xs rounded-xl gap-1.5 border-amber-500/30 hover:bg-amber-500/10 text-amber-700 dark:text-amber-300 font-semibold"
             >
               <RefreshCw className={`size-3.5 ${isFetching ? 'animate-spin text-amber-500' : ''}`} />
-              <span className="hidden sm:inline">Làm mới lịch</span>
+              <span className="hidden sm:inline">Làm mới</span>
             </Button>
           </div>
         </div>

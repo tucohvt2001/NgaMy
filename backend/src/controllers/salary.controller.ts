@@ -32,12 +32,13 @@ export const salaryController = {
   }),
 
   getMemberSalariesToDate: asyncHandler(async (req: Request, res: Response) => {
-    const { fromDate, toDate, teamId, search } = req.query;
+    const { fromDate, toDate, teamId, search, memberId } = req.query;
     const data = await salaryService.getMemberSalariesToDate({
       fromDate: fromDate as string | undefined,
       toDate: toDate as string | undefined,
       teamId: teamId as string | undefined,
       search: search as string | undefined,
+      memberId: memberId as string | undefined,
     });
     sendSuccess(res, data);
   }),

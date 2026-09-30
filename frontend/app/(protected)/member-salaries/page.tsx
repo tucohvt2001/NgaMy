@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import Link from 'next/link';
 import {
   TrendingUp,
   Search,
@@ -19,6 +20,7 @@ import {
   Building2,
   Layers,
   ArrowUpDown,
+  ExternalLink,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -184,7 +186,19 @@ export default function MemberSalariesToDatePage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 self-start sm:self-auto">
+        <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+          <Button
+            variant="outline"
+            size="sm"
+            asChild
+            className="rounded-xl border-amber-500/40 text-amber-700 dark:text-amber-300 hover:bg-amber-500/10 text-xs font-bold gap-1.5 h-9"
+          >
+            <Link href="/bang-luong" target="_blank">
+              <ExternalLink className="size-3.5" />
+              Trang Public
+            </Link>
+          </Button>
+
           <Button
             variant="outline"
             size="sm"

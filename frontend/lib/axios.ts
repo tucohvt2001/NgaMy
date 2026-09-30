@@ -65,7 +65,9 @@ apiClient.interceptors.response.use(
           path.startsWith('/shows') ||
           path.startsWith('/lich-dien') ||
           path.startsWith('/dat-show') ||
-          path.startsWith('/booking');
+          path.startsWith('/booking') ||
+          path.startsWith('/bang-luong') ||
+          path.startsWith('/luong');
         if (!isPublicRoute) {
           window.location.href = '/login';
         }

@@ -16,6 +16,7 @@ import eventTypeRoutes from './eventType.routes';
 import reviewRoutes from './review.routes';
 import { bankRouter } from './bank.routes';
 import { eventController } from '../controllers/event.controller';
+import { salaryController } from '../controllers/salary.controller';
 
 const router = Router();
 
@@ -25,6 +26,7 @@ router.use('/', authRoutes);
 router.use('/', reviewRoutes);
 router.get('/public/schedules', eventController.getPublicUpcomingEvents);
 router.post('/public/booking', eventController.publicBookShow);
+router.get('/public/salaries', salaryController.getMemberSalariesToDate);
 
 // ============ PROTECTED ROUTES ============
 router.use('/', accountRoutes);
