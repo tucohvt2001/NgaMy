@@ -97,7 +97,7 @@ export const reportService = {
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month, 0, 23, 59, 59, 999);
 
-    const [events, members, attendances, eventMembers] = await Promise.all([
+    const [events, members, attendances, eventMembers, salaryConfigs, salaryDetails] = await Promise.all([
       prisma.event.findMany({
         where: { eventDate: { gte: startDate, lte: endDate } },
         orderBy: { eventDate: 'asc' },
@@ -105,6 +105,7 @@ export const reportService = {
           id: true,
           eventCode: true,
           name: true,
+          eventType: true,
           eventDate: true,
           location: true,
           status: true,
@@ -140,8 +141,22 @@ export const reportService = {
         select: {
           eventId: true,
           memberId: true,
-          position: { select: { name: true } },
+          positionId: true,
+          position: { select: { id: true, name: true } },
           status: true,
+        },
+      }),
+      prisma.salaryConfig.findMany({
+        where: { isActive: true },
+      }),
+      prisma.salaryDetail.findMany({
+        where: {
+          event: { eventDate: { gte: startDate, lte: endDate } },
+        },
+        select: {
+          eventId: true,
+          amount: true,
+          salaryRecord: { select: { memberId: true } },
         },
       }),
     ]);
@@ -153,17 +168,62 @@ export const reportService = {
     }
 
     // Map eventMembers: key = `${eventId}_${memberId}` (gom các vai trò lại)
-    const assignmentMap = new Map<string, { positionNames: string[]; status: string }>();
+    const assignmentMap = new Map<string, { positionIds: string[]; positionNames: string[]; status: string }>();
     for (const em of eventMembers) {
       const key = `${em.eventId}_${em.memberId}`;
       if (!assignmentMap.has(key)) {
         assignmentMap.set(key, {
+          positionIds: [],
           positionNames: [],
           status: em.status,
         });
       }
+      if (em.positionId) {
+        assignmentMap.get(key)!.positionIds.push(em.positionId);
+      }
       if (em.position?.name) {
         assignmentMap.get(key)!.positionNames.push(em.position.name);
+      }
+    }
+
+    // Map SalaryDetails
+    const salaryDetailMap = new Map<string, number>();
+    for (const sd of salaryDetails) {
+      if (sd.eventId && sd.salaryRecord?.memberId) {
+        salaryDetailMap.set(`${sd.eventId}_${sd.salaryRecord.memberId}`, sd.amount);
+      }
+    }
+
+    // Map SalaryConfigs theo cấp độ ưu tiên
+    const memberEventConfigMap = new Map<string, number>();
+    const eventConfigMap = new Map<string, number>();
+    const eventTypePositionConfigMap = new Map<string, number>();
+    const eventTypeConfigMap = new Map<string, number>();
+    const memberConfigMap = new Map<string, number>();
+    const positionConfigMap = new Map<string, number>();
+
+    for (const cfg of salaryConfigs) {
+      if (cfg.memberId && cfg.eventId) {
+        memberEventConfigMap.set(`${cfg.memberId}_${cfg.eventId}`, cfg.amount);
+      } else if (cfg.eventId && !cfg.memberId && !cfg.positionId) {
+        let isJsonDraft = false;
+        if (cfg.note && cfg.note.startsWith('{')) {
+          try {
+            JSON.parse(cfg.note);
+            isJsonDraft = true;
+          } catch {}
+        }
+        if (!isJsonDraft) {
+          eventConfigMap.set(cfg.eventId, cfg.amount);
+        }
+      } else if (cfg.eventType && cfg.positionId && !cfg.memberId && !cfg.eventId) {
+        eventTypePositionConfigMap.set(`${cfg.eventType}_${cfg.positionId}`, cfg.amount);
+      } else if (cfg.eventType && !cfg.positionId && !cfg.memberId && !cfg.eventId) {
+        eventTypeConfigMap.set(cfg.eventType, cfg.amount);
+      } else if (cfg.memberId && !cfg.eventId && !cfg.positionId) {
+        memberConfigMap.set(cfg.memberId, cfg.amount);
+      } else if (cfg.positionId && !cfg.memberId && !cfg.eventId && !cfg.eventType) {
+        positionConfigMap.set(cfg.positionId, cfg.amount);
       }
     }
 
@@ -176,10 +236,13 @@ export const reportService = {
           attendanceStatus: string | null;
           isAssigned: boolean;
           positionName: string | null;
+          payoutAmount: number;
+          earnedAmount: number;
         }
       > = {};
 
       let memberTotalAttended = 0;
+      let memberTotalEarned = 0;
 
       for (const ev of events) {
         const key = `${ev.id}_${member.id}`;
@@ -191,11 +254,43 @@ export const reportService = {
           memberTotalAttended++;
         }
 
+        const positionIds = assignment?.positionIds || [];
+
+        // Tính mức tiền công dự kiến/thực tế của show
+        let showAmount = 0;
+        if (salaryDetailMap.has(key)) {
+          showAmount = salaryDetailMap.get(key)!;
+        } else if (memberEventConfigMap.has(`${member.id}_${ev.id}`)) {
+          showAmount = memberEventConfigMap.get(`${member.id}_${ev.id}`)!;
+        } else if (eventConfigMap.has(ev.id)) {
+          showAmount = eventConfigMap.get(ev.id)!;
+        } else if (
+          ev.eventType &&
+          positionIds.length > 0 &&
+          positionIds.some((pId) => eventTypePositionConfigMap.has(`${ev.eventType}_${pId}`))
+        ) {
+          showAmount = positionIds.reduce(
+            (sum, pId) => sum + (eventTypePositionConfigMap.get(`${ev.eventType}_${pId}`) || 0),
+            0,
+          );
+        } else if (ev.eventType && eventTypeConfigMap.has(ev.eventType)) {
+          showAmount = eventTypeConfigMap.get(ev.eventType)!;
+        } else if (memberConfigMap.has(member.id)) {
+          showAmount = memberConfigMap.get(member.id)!;
+        } else if (positionIds.length > 0 && positionIds.some((pId) => positionConfigMap.has(pId))) {
+          showAmount = positionIds.reduce((sum, pId) => sum + (positionConfigMap.get(pId) || 0), 0);
+        }
+
+        const earnedForShow = isAttended ? showAmount : 0;
+        memberTotalEarned += earnedForShow;
+
         showAttendances[ev.id] = {
           isAttended,
           attendanceStatus: attStatus,
           isAssigned: !!assignment,
           positionName: assignment?.positionNames.join(', ') || null,
+          payoutAmount: showAmount,
+          earnedAmount: earnedForShow,
         };
       }
 
@@ -208,6 +303,7 @@ export const reportService = {
         teamNames: member.teams.map((t) => t.name).join(', ') || '-',
         positionNames: member.positions.map((p) => p.name).join(', ') || '-',
         totalAttended: memberTotalAttended,
+        totalEarned: memberTotalEarned,
         shows: showAttendances,
       };
     });
@@ -225,6 +321,7 @@ export const reportService = {
         eventId: event.id,
         eventCode: event.eventCode,
         name: event.name,
+        eventType: event.eventType,
         eventDate: event.eventDate,
         location: event.location,
         status: event.status,
