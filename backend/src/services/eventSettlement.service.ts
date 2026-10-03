@@ -306,28 +306,60 @@ export const eventSettlementService = {
       });
     }
 
-    // 2. Tạo Phiếu Thu (Doanh thu show + Tiền lộc) - Chỉ khi không phải bản nháp
+    // 2. Tạo hoặc Cập nhật Phiếu Thu (Doanh thu show + Tiền lộc) - Chỉ khi không phải bản nháp
     const totalIncome = input.contractAmount + (input.tipAmount || 0);
     if (!isDraft && input.createIncomeVoucher && totalIncome > 0) {
-      const code = await transactionService.generateCode('INCOME', txDate);
-      const incomeTx = await prisma.transaction.create({
-        data: {
-          code,
-          type: 'INCOME',
-          category: 'EVENT_REVENUE',
-          amount: totalIncome,
-          tipAmount: input.tipAmount || 0,
-          transactionDate: txDate,
-          paymentMethod: input.paymentMethod,
-          status: 'COMPLETED',
-          payerOrReceiver: input.payer || event.customerName || 'Khách hàng sự kiện',
-          description: `Thu tiền biểu diễn sự kiện: ${event.name}`,
-          eventId: event.id,
-          createdBy: userId,
-          notes: input.notes || null,
-        },
+      const existingIncomeTx = await prisma.transaction.findFirst({
+        where: { eventId: event.id, type: 'INCOME', category: 'EVENT_REVENUE' },
+        orderBy: { createdAt: 'desc' },
       });
-      createdTransactions.push(incomeTx);
+
+      if (existingIncomeTx) {
+        const updatedIncomeTx = await prisma.transaction.update({
+          where: { id: existingIncomeTx.id },
+          data: {
+            amount: totalIncome,
+            tipAmount: input.tipAmount || 0,
+            transactionDate: txDate,
+            paymentMethod: input.paymentMethod,
+            status: 'COMPLETED',
+            payerOrReceiver: input.payer || event.customerName || 'Khách hàng sự kiện',
+            description: `Thu tiền biểu diễn sự kiện: ${event.name}`,
+            notes: input.notes || null,
+          },
+        });
+        createdTransactions.push(updatedIncomeTx);
+
+        // Dọn dẹp các phiếu thu EVENT_REVENUE thừa (nếu có do lỗi trùng lặp trước đó)
+        await prisma.transaction.deleteMany({
+          where: {
+            eventId: event.id,
+            type: 'INCOME',
+            category: 'EVENT_REVENUE',
+            id: { not: existingIncomeTx.id },
+          },
+        });
+      } else {
+        const code = await transactionService.generateCode('INCOME', txDate);
+        const incomeTx = await prisma.transaction.create({
+          data: {
+            code,
+            type: 'INCOME',
+            category: 'EVENT_REVENUE',
+            amount: totalIncome,
+            tipAmount: input.tipAmount || 0,
+            transactionDate: txDate,
+            paymentMethod: input.paymentMethod,
+            status: 'COMPLETED',
+            payerOrReceiver: input.payer || event.customerName || 'Khách hàng sự kiện',
+            description: `Thu tiền biểu diễn sự kiện: ${event.name}`,
+            eventId: event.id,
+            createdBy: userId,
+            notes: input.notes || null,
+          },
+        });
+        createdTransactions.push(incomeTx);
+      }
     }
 
     // 3. Tạo các Phiếu Chi phát sinh - Chỉ khi không phải bản nháp

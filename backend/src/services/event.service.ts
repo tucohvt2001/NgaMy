@@ -9,7 +9,8 @@ function attachEventRevenue(ev: any) {
   let totalRevenue = contractValue;
 
   if (ev.transactions && ev.transactions.length > 0) {
-    tipAmount = ev.transactions.reduce((sum: number, t: any) => sum + (Number(t.tipAmount) || 0), 0);
+    const revenueTx = ev.transactions[0];
+    tipAmount = Number(revenueTx.tipAmount) || 0;
     totalRevenue = contractValue + tipAmount;
   } else if (ev.salaryConfigs && ev.salaryConfigs.length > 0) {
     const draftConfig = ev.salaryConfigs[0];
